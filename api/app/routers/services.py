@@ -1,0 +1,117 @@
+"""Household services directory (plan §9-G). Discovery-only: neighbors find
+each other and settle everything offline — no booking, no payments."""
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from .. import models, schemas
+from ..deps import get_db, require_member
+
+router = APIRouter(prefix="/services", tags=["services"])
+
+
+def service_out(db: Session, s: models.ServiceOffering) -> schemas.ServiceOut:
+    household = db.get(models.Household, s.household_id)
+    return schemas.ServiceOut(
+        id=s.id,
+        household_id=s.household_id,
+        household_name=household.family_name if household else "",
+        title=s.title,
+        category=s.category,
+        description=s.description,
+        price=s.price,
+        contact=s.contact,
+        active=s.active,
+        created_at=s.created_at,
+    )
+
+
+def _own_offering(db: Session, user: models.User, service_id: int) -> models.ServiceOffering:
+    s = db.get(models.ServiceOffering, service_id)
+    if s is None:
+        raise HTTPException(status_code=404, detail="Xizmat topilmadi")
+    if user.household_id is None or s.household_id != user.household_id:
+        raise HTTPException(
+            status_code=403, detail="Bu xizmat sizning xonadoningizga tegishli emas"
+        )
+    return s
+
+
+@router.get("", response_model=list[schemas.ServiceOut])
+def list_services(
+    category: str | None = None,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Active offerings in the viewer's mahalla, newest first."""
+    q = db.query(models.ServiceOffering).filter(
+        models.ServiceOffering.mahalla_id == user.mahalla_id,
+        models.ServiceOffering.active.is_(True),
+    )
+    if category:
+        q = q.filter(models.ServiceOffering.category == category)
+    offerings = q.order_by(models.ServiceOffering.created_at.desc()).all()
+    return [service_out(db, s) for s in offerings]
+
+
+@router.get("/mine", response_model=list[schemas.ServiceOut])
+def my_services(
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """All offerings of the viewer's household, including inactive ones."""
+    if user.household_id is None:
+        return []
+    offerings = (
+        db.query(models.ServiceOffering)
+        .filter_by(household_id=user.household_id)
+        .order_by(models.ServiceOffering.created_at.desc())
+        .all()
+    )
+    return [service_out(db, s) for s in offerings]
+
+
+@router.post("", response_model=schemas.ServiceOut)
+def create_service(
+    data: schemas.ServiceIn,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    if user.household_id is None:
+        raise HTTPException(status_code=400, detail="Avval xonadoningizni yarating")
+    s = models.ServiceOffering(
+        household_id=user.household_id,
+        mahalla_id=user.mahalla_id,
+        created_by=user.id,
+        **data.model_dump(),
+    )
+    db.add(s)
+    db.commit()
+    db.refresh(s)
+    return service_out(db, s)
+
+
+@router.patch("/{service_id}", response_model=schemas.ServiceOut)
+def update_service(
+    service_id: int,
+    data: schemas.ServiceUpdate,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    s = _own_offering(db, user, service_id)
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(s, field, value)
+    db.commit()
+    db.refresh(s)
+    return service_out(db, s)
+
+
+@router.delete("/{service_id}", status_code=204)
+def delete_service(
+    service_id: int,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    s = _own_offering(db, user, service_id)
+    db.delete(s)
+    db.commit()

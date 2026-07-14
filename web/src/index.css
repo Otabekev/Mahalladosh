@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  /* Skool-inspired: light gray canvas, white cards, near-black actions,
+     gold for points/honor, green for verified/help */
+  --color-bg: #f7f7f8;
+  --color-card: #ffffff;
+  --color-ink: #18181b;
+  --color-sub: #6b7280;
+  --color-line: #e5e7eb;
+  --color-brand: #111827;
+  --color-gold: #d97706;
+  --color-gold-soft: #fef3c7;
+  --color-accent: #2563eb;
+  --color-good: #16a34a;
+  --color-good-soft: #dcfce7;
+  --color-danger: #dc2626;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
+  --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.10);
+
+  --radius-card: 1rem;
+
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Scrollbar-free horizontal scroll areas (chips, tabs) */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
