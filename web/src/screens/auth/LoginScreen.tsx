@@ -1,9 +1,12 @@
-/** Landing + dev login. Full-screen, outside the app shell. */
+/** Landing + login. Full-screen, outside the app shell.
+ * Login methods come from GET /auth/config: the Telegram Login Widget when a
+ * bot is configured (production), the dev name-form in dev mode. */
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { api, ApiError } from '@/core/api/client'
-import type { User } from '@/core/api/types'
+import type { AuthConfig, User } from '@/core/api/types'
 import { useAuth } from '@/core/stores/auth'
 import { Button, Card, ErrorNote, FullScreenSpinner, Input } from '@/components/ui'
 
@@ -13,6 +16,56 @@ const FEATURES = [
   { icon: '⭐', title: "Obro'", text: "faol qo'shnilar e'zozlanadi" },
 ]
 
+interface TelegramAuthPayload {
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+  auth_date: number
+  hash: string
+}
+
+declare global {
+  interface Window {
+    onTelegramAuth?: (user: TelegramAuthPayload) => void
+  }
+}
+
+/** Renders the official Telegram Login Widget for the configured bot. */
+function TelegramLoginButton({ bot, onError }: { bot: string; onError: (msg: string) => void }) {
+  const navigate = useNavigate()
+  const holder = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    window.onTelegramAuth = async (payload: TelegramAuthPayload) => {
+      try {
+        await api<User>('/auth/telegram', { method: 'POST', body: payload })
+        await useAuth.getState().refresh()
+        navigate('/')
+      } catch (err) {
+        onError(err instanceof ApiError ? err.message : 'Telegram kirish xatosi')
+      }
+    }
+    const script = document.createElement('script')
+    script.src = 'https://telegram.org/js/telegram-widget.js?22'
+    script.async = true
+    script.setAttribute('data-telegram-login', bot)
+    script.setAttribute('data-size', 'large')
+    script.setAttribute('data-radius', '12')
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)')
+    script.setAttribute('data-request-access', 'write')
+    holder.current?.appendChild(script)
+    return () => {
+      window.onTelegramAuth = undefined
+      if (holder.current) holder.current.innerHTML = ''
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bot])
+
+  return <div ref={holder} className="flex justify-center" />
+}
+
 export default function LoginScreen() {
   const { me, status } = useAuth()
   const navigate = useNavigate()
@@ -20,6 +73,12 @@ export default function LoginScreen() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const { data: config } = useQuery({
+    queryKey: ['auth-config'],
+    queryFn: () => api<AuthConfig>('/auth/config'),
+    staleTime: Infinity,
+  })
 
   if (status === 'loading') return <FullScreenSpinner />
   if (me) return <Navigate to="/" replace />
@@ -69,35 +128,51 @@ export default function LoginScreen() {
           ))}
         </div>
 
-        {/* dev login */}
         <Card className="w-full p-5">
           <h2 className="text-lg font-bold text-ink mb-4">Kirish</h2>
           {error && <ErrorNote message={error} />}
-          <form onSubmit={submit}>
-            <div className="mb-3">
-              <Input
-                placeholder="Ismingiz"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                autoFocus
-              />
+
+          {config?.telegram_bot && (
+            <div className="mb-4">
+              <TelegramLoginButton bot={config.telegram_bot} onError={setError} />
             </div>
-            <label className="flex items-center gap-2 mb-4 text-sm text-sub cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isAdmin}
-                onChange={(e) => setIsAdmin(e.target.checked)}
-                className="w-4 h-4 accent-black"
-              />
-              Admin sifatida kirish
-            </label>
-            <Button type="submit" full loading={loading}>
-              Kirish
-            </Button>
-          </form>
+          )}
+
+          {config?.dev && (
+            <form onSubmit={submit}>
+              <div className="mb-3">
+                <Input
+                  placeholder="Ismingiz"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <label className="flex items-center gap-2 mb-4 text-sm text-sub cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAdmin}
+                  onChange={(e) => setIsAdmin(e.target.checked)}
+                  className="w-4 h-4 accent-black"
+                />
+                Admin sifatida kirish
+              </label>
+              <Button type="submit" full loading={loading}>
+                Kirish
+              </Button>
+            </form>
+          )}
+
+          {config && !config.dev && !config.telegram_bot && (
+            <p className="text-sm text-sub">Kirish hozircha sozlanmoqda — keyinroq urinib ko'ring.</p>
+          )}
         </Card>
 
-        <p className="text-xs text-sub mt-4 text-center">Telegram orqali kirish tez orada — hozircha dev rejim</p>
+        <p className="text-xs text-sub mt-4 text-center">
+          {config?.telegram_bot
+            ? 'Telegram hisobingiz bilan xavfsiz kirasiz'
+            : 'Telegram orqali kirish deploy bilan yoqiladi — hozircha dev rejim'}
+        </p>
       </div>
     </div>
   )

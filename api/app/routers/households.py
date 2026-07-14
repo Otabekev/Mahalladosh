@@ -5,7 +5,7 @@ add members (including elders without phones), and vouch for neighbors."""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, presenters, reputation, schemas
+from .. import models, notify, presenters, reputation, schemas
 from ..config import settings
 from ..deps import get_db, require_member
 
@@ -178,8 +178,36 @@ def vouch_household(
     vouch_count = db.query(models.Vouch).filter_by(household_id=household.id).count()
     mahalla = db.get(models.Mahalla, household.mahalla_id)
     is_raisi = bool(mahalla and mahalla.raisi_user_id == user.id)
+    newly_verified = False
     if vouch_count >= settings.vouch_threshold or is_raisi:
+        if household.verification_status != "verified":
+            newly_verified = True
         household.verification_status = "verified"
+
+    # tell the household's account holders about the vouch / verification
+    member_ids = [
+        uid
+        for (uid,) in db.query(models.User.id).filter(
+            models.User.household_id == household.id
+        )
+    ]
+    notify.notify(
+        db,
+        member_ids,
+        "vouch",
+        f"🤝 {user.full_name} xonadoningizga kafolat berdi",
+        link=f"/app/households/{household.id}",
+        mahalla_id=household.mahalla_id,
+    )
+    if newly_verified:
+        notify.notify(
+            db,
+            member_ids,
+            "verified",
+            "✅ Xonadoningiz qo'shnilar tomonidan tasdiqlandi!",
+            link=f"/app/households/{household.id}",
+            mahalla_id=household.mahalla_id,
+        )
 
     db.commit()
     db.refresh(household)

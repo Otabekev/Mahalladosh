@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, presenters, reputation, schemas
+from .. import models, notify, presenters, reputation, schemas
 from ..deps import get_db, require_admin
 from ..seed import normalize_name
 
@@ -86,6 +86,7 @@ def approve_mahalla(
         .all()
     )
     first_petitioner_id: int | None = None
+    enrolled_ids: list[int] = []
     for p in petitions:
         user = db.get(models.User, p.user_id)
         if user is None:
@@ -94,12 +95,23 @@ def approve_mahalla(
             first_petitioner_id = user.id
         if user.mahalla_id is None:
             user.mahalla_id = m.id
+            enrolled_ids.append(user.id)
             if not reputation.already_awarded(
                 db, user.id, "founding_member", "mahalla", m.id
             ):
                 reputation.award(
                     db, user, "founding_member", "mahalla", m.id, mahalla_id=m.id
                 )
+
+    # only those actually enrolled as founders get the founders' notification
+    notify.notify(
+        db,
+        enrolled_ids,
+        "post",
+        f"🎉 {m.name} mahallasi ochildi! Siz asoschilardansiz (+20 ball)",
+        link="/app",
+        mahalla_id=m.id,
+    )
 
     if first_petitioner_id is not None:
         db.add(

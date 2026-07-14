@@ -43,6 +43,31 @@ class TelegramLoginIn(BaseModel):
     hash: str
 
 
+class AuthConfig(BaseModel):
+    dev: bool = False
+    telegram_bot: Optional[str] = None  # bot username for the Login Widget
+
+
+# ---------- notifications ----------
+
+
+class NotificationOut(BaseModel):
+    id: int
+    type: str
+    text: str
+    link: Optional[str] = None
+    read: bool = False
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class NotificationsOut(BaseModel):
+    items: list[NotificationOut] = []
+    unread: int = 0
+
+
 # ---------- geo ----------
 
 

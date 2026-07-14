@@ -227,6 +227,36 @@ class Vote(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class MonthHonor(Base):
+    """Race-proof marker: one Faol qo'shni honor per mahalla per month.
+    The unique constraint is the idempotency guard for ensure_month_honor."""
+
+    __tablename__ = "month_honors"
+    __table_args__ = (UniqueConstraint("mahalla_id", "month"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
+    month: Mapped[str] = mapped_column(String(7))  # honored-for month, "2026-06"
+    winner_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Notification(Base):
+    """In-app hyperlocal notification (plan §9-H). Fan-out is synchronous —
+    fine at pilot scale; batch/push later."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    mahalla_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mahallas.id"))
+    type: Mapped[str] = mapped_column(String(30))  # post|response|thanks|vote|result|vouch|verified|honor|warning
+    text: Mapped[str] = mapped_column(String(300))
+    link: Mapped[Optional[str]] = mapped_column(String(200))  # in-app path, e.g. /app/posts/5
+    read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
+
 class ServiceOffering(Base):
     """Discovery-only directory (plan §9-G). No booking, no payment."""
 

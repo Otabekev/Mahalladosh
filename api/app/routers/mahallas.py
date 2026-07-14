@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from .. import models, presenters, reputation, schemas
+from .. import models, notify, presenters, reputation, schemas
 from ..config import settings
 from ..deps import get_current_user, get_db, require_member
 
@@ -136,6 +136,7 @@ def leaderboard(
     user: models.User = Depends(require_member),
 ):
     _require_local_member(user, mahalla_id)
+    notify.ensure_month_honor(db, mahalla_id)  # once a month: honor Faol qo'shni
     month_key = reputation.current_month_key()
 
     month_rows = (

@@ -20,6 +20,7 @@ const CreateProposalScreen = lazy(() => import('@/screens/proposals/CreatePropos
 const ProposalDetailScreen = lazy(() => import('@/screens/proposals/ProposalDetailScreen'))
 const ServicesScreen = lazy(() => import('@/screens/services/ServicesScreen'))
 const AdminScreen = lazy(() => import('@/screens/admin/AdminScreen'))
+const NotificationsScreen = lazy(() => import('@/screens/notifications/NotificationsScreen'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: true } },
@@ -100,6 +101,7 @@ export default function App() {
               <Route path="proposals/:id" element={<ProposalDetailScreen />} />
               <Route path="services" element={<ServicesScreen />} />
               <Route path="admin" element={<AdminScreen />} />
+              <Route path="notifications" element={<NotificationsScreen />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -5,7 +5,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import models  # noqa: F401 — register tables
 from .db import Base, SessionLocal, engine
-from .routers import admin, auth, geo, households, mahallas, posts, proposals, services
+from .routers import (
+    admin,
+    auth,
+    geo,
+    households,
+    mahallas,
+    notifications,
+    posts,
+    proposals,
+    services,
+)
 from .seed import seed
 
 
@@ -27,7 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for module in (auth, geo, mahallas, households, posts, proposals, services, admin):
+for module in (auth, geo, mahallas, households, posts, proposals, services, admin, notifications):
     app.include_router(module.router, prefix="/api")
 
 

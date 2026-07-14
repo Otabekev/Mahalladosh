@@ -14,6 +14,25 @@ export interface User {
   banned_until: string | null
 }
 
+export interface AuthConfig {
+  dev: boolean
+  telegram_bot: string | null
+}
+
+export interface AppNotification {
+  id: number
+  type: string
+  text: string
+  link: string | null
+  read: boolean
+  created_at: string
+}
+
+export interface Notifications {
+  items: AppNotification[]
+  unread: number
+}
+
 export interface Region {
   id: number
   name_uz: string

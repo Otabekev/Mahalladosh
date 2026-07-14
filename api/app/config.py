@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me"
     database_url: str = f"sqlite:///{BASE_DIR / 'mahalladosh.db'}"
     telegram_bot_token: str = ""
+    telegram_bot_username: str = ""  # e.g. MahalladoshBot — enables the Login Widget
     petition_threshold: int = 5
     vouch_threshold: int = 2
     proposal_seconds_coordination: int = 3

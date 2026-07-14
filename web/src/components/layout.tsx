@@ -2,7 +2,26 @@
 
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
+import { useNotifications } from '@/core/queries/notifications'
 import { Avatar } from './ui'
+
+function NotificationBell() {
+  const { data } = useNotifications()
+  const unread = data?.unread ?? 0
+  return (
+    <Link to="/app/notifications" className="relative p-1.5 text-sub hover:text-ink transition">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+      </svg>
+      {unread > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center">
+          {unread > 99 ? '99+' : unread}
+        </span>
+      )}
+    </Link>
+  )
+}
 
 const NAV_ITEMS: { to: string; label: string; icon: (active: boolean) => React.ReactNode; end?: boolean }[] = [
   {
@@ -68,9 +87,12 @@ export default function AppLayout() {
             </div>
           </Link>
           {me && (
-            <Link to="/app/profile">
-              <Avatar name={me.user.full_name} src={me.user.photo_url} size={34} />
-            </Link>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <Link to="/app/profile">
+                <Avatar name={me.user.full_name} src={me.user.photo_url} size={34} />
+              </Link>
+            </div>
           )}
         </div>
       </header>

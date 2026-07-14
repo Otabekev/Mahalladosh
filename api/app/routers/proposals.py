@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, presenters, schemas
+from .. import models, notify, presenters, schemas
 from ..config import settings
 from ..deps import get_db, require_member
 
@@ -36,35 +36,75 @@ def _apply_action(db: Session, p: models.Proposal) -> None:
 
 
 def _refresh(db: Session, p: models.Proposal) -> None:
-    """Lazily advance the proposal lifecycle. Commits if anything changed."""
-    changed = False
+    """Lazily advance the proposal lifecycle.
+
+    Concurrent requests can observe the same due transition, so each one is a
+    compare-and-swap UPDATE guarded on the current status — only the request
+    that wins the claim applies the action and fans out notifications."""
     now = datetime.utcnow()
 
     if p.status == "seconding":
         seconds = db.query(models.ProposalSecond).filter_by(proposal_id=p.id).count()
         if seconds >= p.seconds_needed:
-            p.status = "voting"
-            p.voting_opens_at = now
-            p.voting_closes_at = now + timedelta(hours=settings.proposal_window_hours)
-            changed = True
+            claimed = (
+                db.query(models.Proposal)
+                .filter_by(id=p.id, status="seconding")
+                .update(
+                    {
+                        "status": "voting",
+                        "voting_opens_at": now,
+                        "voting_closes_at": now
+                        + timedelta(hours=settings.proposal_window_hours),
+                    }
+                )
+            )
+            db.commit()
+            db.refresh(p)
+            if claimed:
+                notify.notify_mahalla(
+                    db,
+                    p.mahalla_id,
+                    "vote",
+                    f"🗳 Ovoz berish boshlandi: {p.title}",
+                    link=f"/app/proposals/{p.id}",
+                )
+                db.commit()
 
     if p.status == "voting" and p.voting_closes_at and now > p.voting_closes_at:
         yes = db.query(models.Vote).filter_by(proposal_id=p.id, choice=True).count()
         no = db.query(models.Vote).filter_by(proposal_id=p.id, choice=False).count()
         total = yes + no
         if total < settings.proposal_quorum:
-            p.status = "expired"  # kvorum yetmadi
+            new_status = "expired"  # kvorum yetmadi
         elif p.action == "ban_user":
             # punitive needs a supermajority (2/3)
-            p.status = "passed" if yes * 3 >= total * 2 else "rejected"
+            new_status = "passed" if yes * 3 >= total * 2 else "rejected"
         else:
-            p.status = "passed" if yes > no else "rejected"
-        if p.status == "passed":
-            _apply_action(db, p)
-        changed = True
+            new_status = "passed" if yes > no else "rejected"
 
-    if changed:
+        claimed = (
+            db.query(models.Proposal)
+            .filter_by(id=p.id, status="voting")
+            .update({"status": new_status})
+        )
         db.commit()
+        db.refresh(p)
+        if claimed:
+            if new_status == "passed":
+                _apply_action(db, p)
+            result_text = {
+                "passed": "✅ Qabul qilindi",
+                "rejected": "❌ Rad etildi",
+                "expired": "⏳ Kvorum yetmadi",
+            }[new_status]
+            notify.notify_mahalla(
+                db,
+                p.mahalla_id,
+                "result",
+                f"{result_text}: {p.title} (Ha {yes} · Yo'q {no})",
+                link=f"/app/proposals/{p.id}",
+            )
+            db.commit()
 
 
 def proposal_out(db: Session, p: models.Proposal, viewer: models.User) -> schemas.ProposalOut:
@@ -181,6 +221,26 @@ def create_proposal(
         seconds_needed=seconds_needed,
     )
     db.add(proposal)
+    db.flush()
+    if data.action == "ban_user" and target_user_id:
+        # plan §10: the accused is always notified and can respond
+        notify.notify(
+            db,
+            [target_user_id],
+            "warning",
+            "⚠️ Sizga nisbatan chetlatish taklifi kiritildi — javob berish huquqiga egasiz",
+            link=f"/app/proposals/{proposal.id}",
+            mahalla_id=user.mahalla_id,
+        )
+    elif data.action == "set_raisi" and target_user_id:
+        notify.notify(
+            db,
+            [target_user_id],
+            "vote",
+            f"👑 Sizni raisi lavozimiga taklif qilishdi: {proposal.title}",
+            link=f"/app/proposals/{proposal.id}",
+            mahalla_id=user.mahalla_id,
+        )
     db.commit()
     db.refresh(proposal)
     return proposal_out(db, proposal, user)

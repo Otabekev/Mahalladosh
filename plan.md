@@ -4,7 +4,11 @@
 > This document is the *how we build it* — the stack, the architecture, and the rules that keep
 > a cheap PWA today convertible into a real native app later without a rewrite.
 
-**Status:** Pre-build. Stack chosen. Features to be defined next.
+**Status:** MVP BUILT (2026-07-15) — full stack scaffolded, all §9 features implemented and
+E2E-verified locally. Login is dev-mode (name only); real Telegram Login Widget wiring comes
+with the first deploy. Repo: `api/` (FastAPI+SQLite) + `web/` (Vite+React PWA).
+**Run it:** start `api` (uvicorn, port 8000) and `web` (`npm run dev`, port 5174); open
+http://localhost:5174 — on the phone, same Wi-Fi, `http://<laptop-ip>:5174`.
 **Guiding constraint:** Build slowly. Pay nothing until the product is real (one live pilot mahalla).
 
 ---

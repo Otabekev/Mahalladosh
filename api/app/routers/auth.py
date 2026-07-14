@@ -9,6 +9,18 @@ from ..security import COOKIE_NAME, create_session_token, verify_telegram_auth
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+@router.get("/config", response_model=schemas.AuthConfig)
+def auth_config():
+    """Tells the login screen which methods are available. The Telegram widget
+    is only advertised when the token is also set — verification fails closed
+    without it, so a username alone would render a button that can't work."""
+    telegram_ready = bool(settings.telegram_bot_username and settings.telegram_bot_token)
+    return schemas.AuthConfig(
+        dev=settings.is_dev,
+        telegram_bot=settings.telegram_bot_username if telegram_ready else None,
+    )
+
+
 def _set_session(response: Response, user_id: int) -> None:
     response.set_cookie(
         COOKIE_NAME,
