@@ -107,20 +107,18 @@ export default function LoginScreen() {
     <div className="min-h-dvh bg-bg flex flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm flex flex-col items-center">
         {/* brand */}
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-brand text-white font-black flex items-center justify-center text-2xl">
-            M
-          </div>
-          <span className="text-2xl font-extrabold text-ink">Mahalladosh</span>
+        <div className="w-16 h-16 rounded-2xl bg-brand text-white font-black flex items-center justify-center text-3xl shadow-card">
+          M
         </div>
-        <p className="text-sub mt-2 mb-8 text-center">Mahallangiz bilan bog'laning</p>
+        <h1 className="text-[26px] font-extrabold text-ink mt-4">Mahalladosh</h1>
+        <p className="text-sm text-sub mt-1 text-center">Mahallangiz bilan bog'laning</p>
 
         {/* features */}
-        <div className="w-full space-y-3 mb-8">
+        <div className="w-full space-y-2.5 mt-8 mb-8">
           {FEATURES.map((f) => (
             <div key={f.title} className="flex items-center gap-3">
-              <span className="text-2xl shrink-0">{f.icon}</span>
-              <p className="text-sm">
+              <span className="text-xl w-8 text-center shrink-0">{f.icon}</span>
+              <p className="text-sm leading-snug">
                 <span className="font-semibold text-ink">{f.title}</span>
                 <span className="text-sub"> — {f.text}</span>
               </p>
@@ -129,7 +127,7 @@ export default function LoginScreen() {
         </div>
 
         <Card className="w-full p-5">
-          <h2 className="text-lg font-bold text-ink mb-4">Kirish</h2>
+          <h2 className="text-[15px] font-bold text-ink mb-4">Kirish</h2>
           {error && <ErrorNote message={error} />}
 
           {config?.telegram_bot && (
@@ -148,7 +146,7 @@ export default function LoginScreen() {
                   autoFocus
                 />
               </div>
-              <label className="flex items-center gap-2 mb-4 text-sm text-sub cursor-pointer">
+              <label className="flex items-center gap-2 mb-2 min-h-[44px] text-sm text-sub cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isAdmin}
@@ -157,7 +155,7 @@ export default function LoginScreen() {
                 />
                 Admin sifatida kirish
               </label>
-              <Button type="submit" full loading={loading}>
+              <Button type="submit" size="lg" full loading={loading}>
                 Kirish
               </Button>
             </form>

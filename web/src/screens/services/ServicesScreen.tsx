@@ -44,8 +44,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition ${
-        active ? 'bg-brand text-white' : 'bg-white text-sub border border-line hover:text-ink'
+      className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+        active ? 'bg-brand text-white' : 'bg-card border border-line text-sub hover:text-ink'
       }`}
     >
       {children}
@@ -91,15 +91,17 @@ function ServiceCard({ service }: { service: Service }) {
   return (
     <Card className="p-4 mb-3">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-bold text-ink">{service.title}</h3>
+        <h3 className="text-[15px] font-bold text-ink line-clamp-2 min-w-0">{service.title}</h3>
         {meta && (
-          <Badge>
-            {meta.emoji} {meta.label}
-          </Badge>
+          <span className="shrink-0">
+            <Badge>
+              {meta.emoji} {meta.label}
+            </Badge>
+          </span>
         )}
       </div>
       <div className="text-xs text-sub mt-0.5">{service.household_name} xonadoni</div>
-      {service.description && <p className="text-sm text-ink mt-2">{service.description}</p>}
+      {service.description && <p className="text-sm text-ink mt-2 line-clamp-3">{service.description}</p>}
       {(service.price || service.contact) && (
         <div className="flex items-center justify-between gap-2 mt-3">
           <span className="font-semibold text-good text-sm">{service.price ?? ''}</span>
@@ -117,8 +119,8 @@ function MyServiceRow({ service }: { service: Service }) {
   const del = useDeleteService()
   const meta = categoryMeta(service.category)
   return (
-    <div className="flex items-center justify-between gap-2 py-2">
-      <div className={`text-sm font-semibold truncate ${service.active ? 'text-ink' : 'text-sub'}`}>
+    <div className="flex items-center justify-between gap-2 py-3">
+      <div className={`flex-1 min-w-0 text-sm font-semibold truncate ${service.active ? 'text-ink' : 'text-sub'}`}>
         {meta?.emoji} {service.title}
         {!service.active && <span className="text-xs font-normal text-sub"> · yashirin</span>}
       </div>
@@ -133,7 +135,7 @@ function MyServiceRow({ service }: { service: Service }) {
         </Button>
         <button
           aria-label="O'chirish"
-          className="text-sub hover:text-danger text-xl leading-none px-2"
+          className="w-11 h-11 -my-2 -mr-2 flex items-center justify-center text-sub hover:text-danger text-xl leading-none"
           onClick={() => {
             if (window.confirm("Bu xizmat o'chirilsinmi?")) del.mutate(service.id)
           }}
@@ -243,8 +245,8 @@ export default function ServicesScreen() {
 
       {mine.data && mine.data.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-sm font-bold text-ink mb-2">Mening xizmatlarim</h2>
-          <Card className="px-4 py-1 divide-y divide-line">
+          <h2 className="text-[15px] font-bold text-ink mb-2">Mening xizmatlarim</h2>
+          <Card className="px-4 divide-y divide-line">
             {mine.data.map((s) => (
               <MyServiceRow key={s.id} service={s} />
             ))}
@@ -252,7 +254,7 @@ export default function ServicesScreen() {
         </div>
       )}
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3">
+      <div className="no-scrollbar overflow-x-auto flex gap-2 mb-4 -mx-4 px-4">
         <Chip active={category === 'all'} onClick={() => setCategory('all')}>
           Hammasi
         </Chip>
@@ -264,7 +266,7 @@ export default function ServicesScreen() {
       </div>
 
       {services.isPending && (
-        <div className="flex justify-center py-10">
+        <div className="flex justify-center py-12">
           <Spinner />
         </div>
       )}

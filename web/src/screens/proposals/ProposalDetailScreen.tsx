@@ -75,7 +75,7 @@ export default function ProposalDetailScreen() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-10">
+      <div className="flex justify-center py-12">
         <Spinner />
       </div>
     )
@@ -124,10 +124,10 @@ export default function ProposalDetailScreen() {
       </Card>
 
       {p.target && (p.action === 'set_raisi' || p.action === 'ban_user') && (
-        <Card className="p-3 mb-3 flex gap-3 items-center">
+        <Card className="p-4 mb-3 flex gap-3 items-center">
           <Avatar name={p.target.full_name} src={p.target.photo_url} size={40} />
-          <div>
-            <div className="font-semibold text-ink">{p.target.full_name}</div>
+          <div className="min-w-0">
+            <div className="font-semibold text-ink truncate">{p.target.full_name}</div>
             <div className="text-xs text-sub">
               {p.action === 'set_raisi'
                 ? 'Raisi lavozimiga taklif etilmoqda'
@@ -190,7 +190,8 @@ export default function ProposalDetailScreen() {
           {p.my_vote === null ? (
             <div className="grid grid-cols-2 gap-3 mt-3">
               <Button
-                className="bg-good hover:opacity-90 text-white"
+                size="lg"
+                className="bg-good! hover:opacity-90 text-white"
                 loading={vote.isPending && pendingChoice === true}
                 disabled={vote.isPending}
                 onClick={() => castVote(true)}
@@ -198,6 +199,7 @@ export default function ProposalDetailScreen() {
                 Ha ✅
               </Button>
               <Button
+                size="lg"
                 variant="danger"
                 loading={vote.isPending && pendingChoice === false}
                 disabled={vote.isPending}

@@ -31,7 +31,7 @@ export default function ProfileScreen() {
 
   if (!me) {
     return (
-      <div className="flex justify-center py-10">
+      <div className="flex justify-center py-12">
         <Spinner />
       </div>
     )
@@ -50,7 +50,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Card className="p-5 text-center">
         <div className="flex justify-center">
           <Avatar name={u.full_name} src={u.photo_url} size={72} />
@@ -61,11 +61,11 @@ export default function ProfileScreen() {
         <div className="flex justify-center gap-3 mt-3">
           <span className="inline-flex items-center gap-1.5">
             <PointsBadge points={u.rep_month} />
-            <span className="text-xs text-sub self-center">bu oy</span>
+            <span className="text-xs text-sub">bu oy</span>
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="font-bold text-ink">{u.rep_alltime}</span>
-            <span className="text-xs text-sub self-center">umumiy</span>
+            <span className="text-xs text-sub">umumiy</span>
           </span>
         </div>
         {(u.is_raisi || u.is_admin) && (
@@ -79,10 +79,12 @@ export default function ProfileScreen() {
       <Card className="p-0 divide-y divide-line">
         <MenuRow onClick={() => navigate('/app/household')}>
           <span>🏠</span> Mening xonadonim
+          <span className="ml-auto text-sub">›</span>
         </MenuRow>
         {u.is_admin && (
           <MenuRow onClick={() => navigate('/app/admin')}>
             <span>🛠</span> Admin panel
+            <span className="ml-auto text-sub">›</span>
           </MenuRow>
         )}
         <div>

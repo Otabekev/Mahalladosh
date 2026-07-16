@@ -6,6 +6,7 @@ venv/
 *.db-journal
 .env
 node_modules/
+uploads/
 dist/
 dev-dist/
 .DS_Store

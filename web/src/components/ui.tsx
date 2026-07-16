@@ -1,7 +1,7 @@
 /** Design system — Skool-inspired: white cards on light gray, near-black
  * actions, gold for points/honor. All screens build from these. */
 
-import { type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes } from 'react'
+import { useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes } from 'react'
 
 // ---------- buttons ----------
 
@@ -161,6 +161,7 @@ export const POST_TYPE_META: Record<string, { label: string; color: string; icon
   charity: { label: 'Xayriya', color: 'rose', icon: '❤️' },
   event: { label: "To'y-marosim", color: 'violet', icon: '🎉' },
   newcomer: { label: "Yangi qo'shni", color: 'green', icon: '👋' },
+  share: { label: 'Ulashish', color: 'gray', icon: '📷' },
 }
 
 export function TypePill({ type }: { type: string }) {
@@ -249,6 +250,83 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
         <div className="px-5 py-4">{children}</div>
       </div>
     </div>
+  )
+}
+
+// ---------- image upload ----------
+
+/** Uploads an image file to the API; returns its served URL. */
+export async function uploadImage(file: File): Promise<string> {
+  const form = new FormData()
+  form.append('file', file)
+  const res = await fetch('/api/uploads', { method: 'POST', body: form, credentials: 'include' })
+  if (!res.ok) {
+    let detail = 'Rasm yuklanmadi'
+    try {
+      const data = await res.json()
+      if (typeof data.detail === 'string') detail = data.detail
+    } catch {
+      /* non-JSON body */
+    }
+    throw new Error(detail)
+  }
+  const data = (await res.json()) as { url: string }
+  return data.url
+}
+
+/** Photo picker with preview — used by the share-post form. */
+export function ImagePicker({
+  value,
+  onChange,
+  onError,
+}: {
+  value: string | null
+  onChange: (url: string | null) => void
+  onError?: (msg: string) => void
+}) {
+  const [busy, setBusy] = useState(false)
+
+  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setBusy(true)
+    try {
+      onChange(await uploadImage(file))
+    } catch (err) {
+      onError?.(err instanceof Error ? err.message : 'Rasm yuklanmadi')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (value) {
+    return (
+      <div className="relative rounded-xl overflow-hidden border border-line mb-4">
+        <img src={value} alt="" className="w-full max-h-72 object-cover" />
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white text-lg leading-none"
+        >
+          ×
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <label className="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line bg-gray-50 py-8 mb-4 cursor-pointer hover:bg-gray-100 transition">
+      {busy ? (
+        <Spinner />
+      ) : (
+        <>
+          <span className="text-2xl">📷</span>
+          <span className="text-sm font-semibold text-sub">Rasm qo'shish</span>
+        </>
+      )}
+      <input type="file" accept="image/*" className="hidden" onChange={pick} disabled={busy} />
+    </label>
   )
 }
 

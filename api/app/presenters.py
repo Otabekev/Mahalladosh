@@ -72,6 +72,15 @@ def mahalla_detail(db: Session, m: models.Mahalla) -> schemas.MahallaDetail:
     )
 
 
+def author_place(db: Session, mahalla_id: int) -> str:
+    """'Yoshlik, Pop tumani' — where a discover-feed author is from."""
+    m = db.get(models.Mahalla, mahalla_id)
+    if m is None:
+        return ""
+    district = db.get(models.District, m.district_id)
+    return f"{m.name}, {district.name_uz}" if district else m.name
+
+
 def petition_status(db: Session, m: models.Mahalla, user: models.User) -> schemas.PetitionStatus:
     mine = db.query(models.Petition).filter_by(mahalla_id=m.id, user_id=user.id).first()
     return schemas.PetitionStatus(mahalla=mahalla_out(db, m), my_petition=mine is not None)
@@ -93,6 +102,7 @@ def household_out(db: Session, h: models.Household, viewer: models.User) -> sche
         family_name=h.family_name,
         resident_count=h.resident_count,
         street=h.street,
+        has_location=h.lat is not None and h.lng is not None,
         family_history=None if hide else h.family_history,
         generations_here=None if hide else h.generations_here,
         visibility=h.visibility,

@@ -49,7 +49,7 @@ export default function WaitingScreen() {
   return (
     <div className="min-h-dvh bg-bg flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
-        <Card className="p-6 text-center">
+        <Card className="p-5 text-center">
           <div className="text-5xl mb-3">🏘</div>
           <p className="font-semibold text-sub">{m.name} mahallasi</p>
           <h1 className="text-xl font-bold text-ink mt-1">So'rovingiz qabul qilindi!</h1>
@@ -71,6 +71,7 @@ export default function WaitingScreen() {
                 </p>
               </>
             )}
+            <p className="text-xs text-sub mt-3">Sahifa o'zi yangilanib turadi</p>
           </div>
 
           {error && (
@@ -79,11 +80,11 @@ export default function WaitingScreen() {
             </div>
           )}
 
-          <div className="mt-6 flex flex-col gap-1">
-            <Button variant="ghost" loading={cancel.isPending} onClick={() => void changeMahalla()}>
+          <div className="mt-6 flex flex-col gap-2">
+            <Button variant="secondary" full loading={cancel.isPending} onClick={() => void changeMahalla()}>
               Boshqa mahalla tanlash
             </Button>
-            <Button variant="ghost" onClick={() => void handleLogout()}>
+            <Button variant="ghost" full onClick={() => void handleLogout()}>
               Chiqish
             </Button>
           </div>

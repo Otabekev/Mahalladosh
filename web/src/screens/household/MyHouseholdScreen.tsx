@@ -19,10 +19,12 @@ import {
   Textarea,
 } from '@/components/ui'
 import {
+  getPosition,
   useAddMember,
   useCreateHousehold,
   useHousehold,
   useRemoveMember,
+  useSetLocation,
   useUpdateHousehold,
 } from '@/core/queries/households'
 import type { Household, HouseholdMember, HouseholdVisibility } from '@/core/api/types'
@@ -148,10 +150,64 @@ function MyHouseholdView({ id }: { id: number }) {
         )}
       </Card>
 
+      <DingDongCard household={household} />
       <MembersCard household={household} />
       <HistoryCard household={household} />
       <PrivacyCard household={household} />
     </div>
+  )
+}
+
+// ---------- DingDong (virtual doorbell) ----------
+
+function DingDongCard({ household }: { household: Household }) {
+  const setLocation = useSetLocation(household.id)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function mark() {
+    if (busy) return
+    setError(null)
+    setBusy(true)
+    try {
+      const pos = await getPosition()
+      await setLocation.mutateAsync(pos)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Joylashuvni belgilab bo'lmadi")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="p-5 mb-4">
+      <h3 className="font-bold text-ink mb-3">🔔 Eshik qo'ng'irog'i (DingDong)</h3>
+
+      {error && <ErrorNote message={error} />}
+
+      {household.has_location ? (
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <Badge color="green">✓ Uy joylashuvi belgilangan</Badge>
+          <Button variant="secondary" size="sm" loading={busy} onClick={mark}>
+            Qayta belgilash
+          </Button>
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-sub mb-3">
+            Uyingiz oldida turib joylashuvni belgilang — shunda qo'shnilar eshik qo'ng'irog'ingizni
+            chala oladi.
+          </p>
+          <Button full loading={busy} onClick={mark}>
+            📍 Shu yerda deb belgilash
+          </Button>
+        </>
+      )}
+
+      <p className="text-xs text-sub mt-3">
+        Koordinatalar hech kimga ko'rsatilmaydi — faqat qo'ng'iroq masofasini tekshirish uchun.
+      </p>
+    </Card>
   )
 }
 

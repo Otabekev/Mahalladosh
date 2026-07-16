@@ -24,7 +24,7 @@ type Period = 'month' | 'alltime'
 
 function CenterSpinner() {
   return (
-    <div className="flex justify-center py-10">
+    <div className="flex justify-center py-12">
       <Spinner />
     </div>
   )
@@ -67,7 +67,7 @@ function ReytingTab({ mahallaId }: { mahallaId: number }) {
   const entries = period === 'month' ? data.month : data.alltime
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <SegmentedTabs<Period>
         tabs={[
           { value: 'month', label: 'Bu oy' },
@@ -77,13 +77,11 @@ function ReytingTab({ mahallaId }: { mahallaId: number }) {
         onChange={setPeriod}
       />
       {entries.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon="⭐"
-            title={period === 'month' ? "Bu oy hali ball yig'ilmagan" : "Hali ball yig'ilmagan"}
-            text="Qo'shnilarga yordam bering — birinchi bo'ling!"
-          />
-        </Card>
+        <EmptyState
+          icon="⭐"
+          title={period === 'month' ? "Bu oy hali ball yig'ilmagan" : "Hali ball yig'ilmagan"}
+          text="Qo'shnilarga yordam bering — birinchi bo'ling!"
+        />
       ) : (
         <Card className="p-0 divide-y divide-line">
           {entries.map((entry) => (
@@ -103,9 +101,11 @@ function QoshnilarTab({ mahallaId }: { mahallaId: number }) {
 
   if (data.length === 0) {
     return (
-      <Card>
-        <EmptyState icon="👋" title="Hali qo'shnilar yo'q" />
-      </Card>
+      <EmptyState
+        icon="👋"
+        title="Hali qo'shnilar yo'q"
+        text="Qo'shnilaringizni Mahalladoshga taklif qiling."
+      />
     )
   }
 
@@ -127,7 +127,7 @@ function XonadonlarTab({ mahallaId }: { mahallaId: number }) {
   if (error) return <ErrorNote message={error.message} />
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {me && me.household === null && (
         <Card className="bg-good-soft border-green-200 p-4 flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-ink">Xonadoningiz hali yo'q</p>
@@ -137,9 +137,7 @@ function XonadonlarTab({ mahallaId }: { mahallaId: number }) {
         </Card>
       )}
       {data.length === 0 ? (
-        <Card>
-          <EmptyState icon="🏠" title="Hali xonadonlar yo'q" text="Birinchi xonadonni siz yarating!" />
-        </Card>
+        <EmptyState icon="🏠" title="Hali xonadonlar yo'q" text="Birinchi xonadonni siz yarating!" />
       ) : (
         <Card className="p-0 divide-y divide-line">
           {data.map((h: Household) => (
@@ -179,10 +177,10 @@ export default function MahallaScreen() {
   if (error) return <ErrorNote message={error.message} />
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Card className="p-5">
-        <h1 className="text-xl font-extrabold text-ink">{data.name} mahallasi</h1>
-        <p className="text-sm text-sub">
+        <h1 className="text-xl font-bold text-ink">{data.name} mahallasi</h1>
+        <p className="text-sm text-sub mt-0.5">
           {data.district_name}, {data.region_name}
         </p>
         <div className="flex gap-4 mt-3">
@@ -210,7 +208,7 @@ export default function MahallaScreen() {
 
       {data.faol_qoshni && (
         <Card className="bg-gold-soft border-amber-200 p-4 flex items-center gap-3">
-          <span className="text-2xl">🏆</span>
+          <span className="text-3xl">🏆</span>
           <div className="flex-1 min-w-0">
             <div className="text-xs text-gold font-semibold">O'tgan oyning faol qo'shnisi</div>
             <div className="font-bold text-ink truncate">{data.faol_qoshni.user.full_name}</div>

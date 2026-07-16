@@ -53,7 +53,7 @@ export default function NotificationsScreen() {
                 n.read ? '' : 'bg-blue-50/40'
               }`}
             >
-              <span className={`text-sm ${n.read ? 'text-ink' : 'font-semibold text-ink'}`}>
+              <span className={`text-sm text-ink line-clamp-2 ${n.read ? '' : 'font-semibold'}`}>
                 {n.text}
               </span>
               <span className="text-xs text-sub">{timeAgo(n.created_at)}</span>

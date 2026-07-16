@@ -1,13 +1,21 @@
-/** TanStack Query hooks for the feed (posts + responses). */
+/** TanStack Query hooks for the feed (posts + responses + discover). */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/core/api/client'
-import type { Post, PostDetail, PostIn } from '@/core/api/types'
+import type { DiscoverScope, Post, PostDetail, PostIn } from '@/core/api/types'
 
 export function usePosts(type?: string) {
   return useQuery({
     queryKey: ['posts', type ?? 'all'],
     queryFn: () => api<Post[]>(type ? `/posts?type=${encodeURIComponent(type)}` : '/posts'),
+  })
+}
+
+/** People's share posts beyond the mahalla — the viewer picks the lens. */
+export function useDiscover(scope: DiscoverScope) {
+  return useQuery({
+    queryKey: ['discover', scope],
+    queryFn: () => api<Post[]>(`/posts/discover?scope=${scope}`),
   })
 }
 
@@ -25,6 +33,7 @@ export function useCreatePost() {
     mutationFn: (input: PostIn) => api<Post>('/posts', { method: 'POST', body: input }),
     onSuccess: (post) => {
       void qc.invalidateQueries({ queryKey: ['posts'] })
+      void qc.invalidateQueries({ queryKey: ['discover'] })
       void qc.invalidateQueries({ queryKey: ['post', post.id] })
     },
   })
@@ -37,6 +46,7 @@ export function useRespond(postId: number) {
       api<unknown>(`/posts/${postId}/respond`, { method: 'POST', body: input }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['posts'] })
+      void qc.invalidateQueries({ queryKey: ['discover'] })
       void qc.invalidateQueries({ queryKey: ['post', postId] })
     },
   })
@@ -60,6 +70,7 @@ export function useClosePost(postId: number) {
     mutationFn: () => api<unknown>(`/posts/${postId}/close`, { method: 'POST' }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['posts'] })
+      void qc.invalidateQueries({ queryKey: ['discover'] })
       void qc.invalidateQueries({ queryKey: ['post', postId] })
     },
   })

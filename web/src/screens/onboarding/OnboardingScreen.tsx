@@ -27,7 +27,7 @@ import {
 } from '@/core/queries/onboarding'
 
 function Chevron() {
-  return <span className="text-gray-400 text-xl leading-none shrink-0">›</span>
+  return <span className="text-sub text-xl leading-none shrink-0">›</span>
 }
 
 function errText(e: unknown): string {
@@ -123,15 +123,15 @@ export default function OnboardingScreen() {
           <>
             <PageTitle title="Viloyatingiz" subtitle="Qaysi viloyatda yashaysiz?" />
             {regions.isPending && (
-              <div className="flex justify-center py-10">
+              <div className="flex justify-center py-12">
                 <Spinner />
               </div>
             )}
             {regions.isError && <ErrorNote message={errText(regions.error)} />}
             <div className="space-y-2">
               {regions.data?.map((r) => (
-                <Card key={r.id} onClick={() => setRegion(r)} className="px-4 py-4 flex items-center justify-between">
-                  <span className="font-semibold text-ink">{r.name_uz}</span>
+                <Card key={r.id} onClick={() => setRegion(r)} className="px-4 py-4 flex items-center justify-between gap-3">
+                  <span className="font-semibold text-ink min-w-0">{r.name_uz}</span>
                   <Chevron />
                 </Card>
               ))}
@@ -142,20 +142,20 @@ export default function OnboardingScreen() {
         {/* step 2: district */}
         {step === 2 && (
           <>
-            <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={() => setRegion(null)}>
+            <Button variant="ghost" size="sm" className="mb-2 -ml-2 min-h-[44px]" onClick={() => setRegion(null)}>
               ← Orqaga
             </Button>
             <PageTitle title="Tumaningiz" subtitle={region ? region.name_uz : undefined} />
             {districts.isPending && (
-              <div className="flex justify-center py-10">
+              <div className="flex justify-center py-12">
                 <Spinner />
               </div>
             )}
             {districts.isError && <ErrorNote message={errText(districts.error)} />}
             <div className="space-y-2">
               {districts.data?.map((d) => (
-                <Card key={d.id} onClick={() => setDistrict(d)} className="px-4 py-4 flex items-center justify-between">
-                  <span className="font-semibold text-ink">{d.name_uz}</span>
+                <Card key={d.id} onClick={() => setDistrict(d)} className="px-4 py-4 flex items-center justify-between gap-3">
+                  <span className="font-semibold text-ink min-w-0">{d.name_uz}</span>
                   <Chevron />
                 </Card>
               ))}
@@ -169,7 +169,7 @@ export default function OnboardingScreen() {
             <Button
               variant="ghost"
               size="sm"
-              className="mb-2 -ml-2"
+              className="mb-2 -ml-2 min-h-[44px]"
               onClick={() => {
                 setDistrict(null)
                 setQ('')
@@ -184,27 +184,26 @@ export default function OnboardingScreen() {
               <Input placeholder="Mahalla nomini qidiring" value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
             {mahallas.isPending && (
-              <div className="flex justify-center py-10">
+              <div className="flex justify-center py-12">
                 <Spinner />
               </div>
             )}
             {mahallas.isError && <ErrorNote message={errText(mahallas.error)} />}
             {mahallas.data && mahallas.data.length === 0 && (
-              <EmptyState icon="🏘" title="Bu tumanda MFY hali kiritilmagan" text="Admin tez orada qo'shadi" />
+              <EmptyState icon="🏘" title="Mahalla topilmadi" text="Bu tumanda mahallalar hali kiritilmagan. Tez orada qo'shiladi." />
             )}
             <div className="space-y-2">
               {mahallas.data?.map((m) => (
-                <Card key={m.id} className="px-4 py-3.5 flex items-center justify-between gap-3">
-                  <span className="font-semibold text-ink">{m.name}</span>
+                <Card key={m.id} className="px-4 py-4 flex items-center justify-between gap-3">
+                  <span className="font-semibold text-ink min-w-0 line-clamp-2">{m.name}</span>
 
                   {m.status === 'active' ? (
-                    <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <div className="flex items-center gap-2">
                         <Badge color="green">Ochiq</Badge>
                         <span className="text-xs text-sub">{m.member_count} a'zo</span>
                       </div>
                       <Button
-                        size="sm"
                         loading={join.isPending && join.variables === m.id}
                         onClick={() => void handleJoin(m)}
                       >
@@ -212,18 +211,18 @@ export default function OnboardingScreen() {
                       </Button>
                     </div>
                   ) : m.status === 'pending' ? (
-                    <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <Badge color="gold">Tasdiqlanmoqda</Badge>
-                      <Button size="sm" variant="secondary" onClick={() => openPetition(m)}>
+                      <Button variant="secondary" onClick={() => openPetition(m)}>
                         So'rov yuborish
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <span className="text-xs text-sub">
                         {m.petition_count}/{m.petition_threshold} so'rov
                       </span>
-                      <Button size="sm" variant="secondary" onClick={() => openPetition(m)}>
+                      <Button variant="secondary" onClick={() => openPetition(m)}>
                         So'rov yuborish
                       </Button>
                     </div>

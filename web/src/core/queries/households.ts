@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/core/api/client'
-import type { Household, HouseholdIn, HouseholdMember, HouseholdUpdate } from '@/core/api/types'
+import type { DingDongResult, Household, HouseholdIn, HouseholdMember, HouseholdUpdate } from '@/core/api/types'
 import { useAuth } from '@/core/stores/auth'
 
 /** Body for POST /households/{id}/members — mirrors backend MemberIn. */
@@ -80,5 +80,44 @@ export function useVouch(id: number) {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['households'] })
     },
+  })
+}
+
+// ---------- DingDong (virtual doorbell) ----------
+
+/** Reads the browser GPS position once. Rejects with an elder-friendly
+ * Uzbek message — geolocation needs HTTPS (or localhost) to exist at all. */
+export function getPosition(): Promise<{ lat: number; lng: number }> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Joylashuv faqat xavfsiz ulanishda ishlaydi (HTTPS)'))
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => reject(new Error("Joylashuvni aniqlab bo'lmadi — GPS yoqilganini tekshiring")),
+      { enableHighAccuracy: true, timeout: 10_000 },
+    )
+  })
+}
+
+/** POST /households/{id}/location — set house coordinates while standing at home. */
+export function useSetLocation(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { lat: number; lng: number }) =>
+      api<Household>(`/households/${id}/location`, { method: 'POST', body }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['households'] })
+      await useAuth.getState().refresh()
+    },
+  })
+}
+
+/** POST /households/{id}/dingdong — ring a neighbor's doorbell (GPS-checked server-side). */
+export function useDingDong(id: number) {
+  return useMutation({
+    mutationFn: (body: { lat: number; lng: number }) =>
+      api<DingDongResult>(`/households/${id}/dingdong`, { method: 'POST', body }),
   })
 }

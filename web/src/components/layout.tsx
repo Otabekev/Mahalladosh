@@ -1,13 +1,58 @@
 /** App shell: sticky header + content column + bottom tab bar (mobile-first PWA). */
 
+import { useEffect, useRef } from 'react'
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
 import { useNotifications } from '@/core/queries/notifications'
 import { Avatar } from './ui'
 
+/** Two-tone "ding-dong" via WebAudio — no asset file needed. */
+function playDingDong() {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    const ctx = new Ctx()
+    const tone = (freq: number, start: number) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0.001, ctx.currentTime + start)
+      gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + start + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + 0.9)
+      osc.connect(gain).connect(ctx.destination)
+      osc.start(ctx.currentTime + start)
+      osc.stop(ctx.currentTime + start + 1)
+    }
+    tone(784, 0) // G5 "ding"
+    tone(659, 0.45) // E5 "dong"
+    navigator.vibrate?.([300, 100, 300])
+  } catch {
+    /* audio unavailable (e.g. no user gesture yet) — the notification still shows */
+  }
+}
+
 function NotificationBell() {
   const { data } = useNotifications()
   const unread = data?.unread ?? 0
+  const initialized = useRef(false)
+  const lastDingdongId = useRef(0)
+
+  // ring audibly when a fresh unread dingdong arrives (poll-based, ~30s worst case);
+  // only the very first FETCH is suppressed (don't replay pre-session rings) —
+  // any ring that arrives on a later poll must sound
+  useEffect(() => {
+    if (!data) return
+    const ding = data.items.find((n) => n.type === 'dingdong' && !n.read)
+    if (!initialized.current) {
+      initialized.current = true
+      lastDingdongId.current = ding?.id ?? 0
+      return
+    }
+    if (ding && ding.id > lastDingdongId.current) {
+      lastDingdongId.current = ding.id
+      playDingDong()
+    }
+  }, [data])
   return (
     <Link to="/app/notifications" className="relative p-1.5 text-sub hover:text-ink transition">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

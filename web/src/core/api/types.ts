@@ -111,6 +111,7 @@ export interface Household {
   verification_status: 'pending' | 'verified'
   vouch_count: number
   my_vouch: boolean
+  has_location: boolean
   members: HouseholdMember[]
   created_by: number
   created_at: string
@@ -131,17 +132,19 @@ export interface HouseholdUpdate {
   visibility?: HouseholdVisibility
 }
 
-export type PostType = 'help' | 'announcement' | 'charity' | 'event' | 'newcomer'
+export type PostType = 'help' | 'announcement' | 'charity' | 'event' | 'newcomer' | 'share'
 export type HelpCategory = 'tool' | 'ride' | 'labor' | 'childcare' | 'other'
 export type PostStatus = 'open' | 'resolved' | 'closed'
+export type DiscoverScope = 'region' | 'country'
 
 export interface PostIn {
   type: PostType
-  title: string
+  title?: string | null
   body?: string | null
   category?: HelpCategory | null
   event_date?: string | null
   goal?: string | null
+  image_url?: string | null
 }
 
 export interface Post {
@@ -152,11 +155,22 @@ export interface Post {
   category: HelpCategory | null
   event_date: string | null
   goal: string | null
+  image_url: string | null
   status: PostStatus
   author: User
+  author_place: string
   response_count: number
   my_response: boolean
   created_at: string
+}
+
+export interface UploadResult {
+  url: string
+}
+
+export interface DingDongResult {
+  ok: boolean
+  message: string
 }
 
 export interface PostResponse {

@@ -4,6 +4,7 @@ from typing import Optional
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -102,6 +103,10 @@ class Household(Base):
     generations_here: Mapped[Optional[int]] = mapped_column(Integer)
     visibility: Mapped[str] = mapped_column(String(20), default="neighbors")  # neighbors|family_only
     verification_status: Mapped[str] = mapped_column(String(20), default="pending")  # pending|verified
+    # house coordinates for the DingDong doorbell — set by the household while
+    # standing at home; NEVER exposed via the API (server-side proximity only)
+    lat: Mapped[Optional[float]] = mapped_column(Float)
+    lng: Mapped[Optional[float]] = mapped_column(Float)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
@@ -138,7 +143,9 @@ class Vouch(Base):
 
 class Post(Base):
     """A structured, typed post (plan §8). Never free chat.
-    type: help|announcement|charity|event|newcomer"""
+    type: help|announcement|charity|event|newcomer|share
+    'share' is the open people-post (photo/text) — visible beyond the mahalla
+    via the discover feed, filtered by the VIEWER's chosen scope."""
 
     __tablename__ = "posts"
 
@@ -148,6 +155,8 @@ class Post(Base):
     type: Mapped[str] = mapped_column(String(20), index=True)
     title: Mapped[str] = mapped_column(String(200))
     body: Mapped[Optional[str]] = mapped_column(Text)
+    image_path: Mapped[Optional[str]] = mapped_column(String(300))  # /api/uploads/<file>
+
     category: Mapped[Optional[str]] = mapped_column(String(30))  # help: tool|ride|labor|childcare|other
     event_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
     goal: Mapped[Optional[str]] = mapped_column(String(200))  # charity

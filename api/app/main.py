@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from . import models  # noqa: F401 — register tables
 from .db import Base, SessionLocal, engine
@@ -15,7 +16,9 @@ from .routers import (
     posts,
     proposals,
     services,
+    uploads,
 )
+from .routers.uploads import UPLOAD_DIR
 from .seed import seed
 
 
@@ -37,8 +40,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for module in (auth, geo, mahallas, households, posts, proposals, services, admin, notifications):
+for module in (auth, geo, mahallas, households, posts, proposals, services, admin, notifications, uploads):
     app.include_router(module.router, prefix="/api")
+
+app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 
 @app.get("/api/health")

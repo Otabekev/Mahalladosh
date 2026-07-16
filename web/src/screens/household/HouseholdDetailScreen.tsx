@@ -1,5 +1,7 @@
-/** Another family's household page (plan §9-B) — read-only view + neighbor vouching. */
+/** Another family's household page (plan §9-B) — read-only view, neighbor
+ * vouching and the DingDong virtual doorbell. */
 
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
 import {
@@ -11,7 +13,8 @@ import {
   ErrorNote,
   Spinner,
 } from '@/components/ui'
-import { useHousehold, useVouch } from '@/core/queries/households'
+import { getPosition, useDingDong, useHousehold, useVouch } from '@/core/queries/households'
+import type { Household } from '@/core/api/types'
 
 export default function HouseholdDetailScreen() {
   const { id } = useParams<{ id: string }>()
@@ -69,6 +72,8 @@ export default function HouseholdDetailScreen() {
           )}
         </div>
       </Card>
+
+      {!isMine && <DingDongRingCard household={household} />}
 
       {isEmpty ? (
         <Card className="mb-4">
@@ -129,5 +134,66 @@ export default function HouseholdDetailScreen() {
           </Card>
         ))}
     </div>
+  )
+}
+
+// ---------- DingDong (virtual doorbell) ----------
+
+function DingDongRingCard({ household }: { household: Household }) {
+  const dingdong = useDingDong(household.id)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const timer = useRef<number | null>(null)
+
+  useEffect(
+    () => () => {
+      if (timer.current != null) window.clearTimeout(timer.current)
+    },
+    [],
+  )
+
+  if (!household.has_location) {
+    return (
+      <Card className="p-4 mb-4">
+        <p className="text-sm text-sub">🔔 Bu xonadon hali eshik qo'ng'irog'ini yoqmagan</p>
+      </Card>
+    )
+  }
+
+  async function ring() {
+    if (busy) return
+    setError(null)
+    setSuccess(null)
+    setBusy(true)
+    try {
+      const pos = await getPosition()
+      const result = await dingdong.mutateAsync(pos)
+      setSuccess(result.message)
+      if (timer.current != null) window.clearTimeout(timer.current)
+      timer.current = window.setTimeout(() => setSuccess(null), 6000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Qo'ng'iroq chalinmadi")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="p-5 mb-4">
+      {error && <ErrorNote message={error} />}
+      {success && (
+        <div className="rounded-xl bg-good-soft text-good text-sm font-semibold px-4 py-3 mb-4">
+          {success}
+        </div>
+      )}
+      <Button full size="lg" loading={busy} onClick={ring}>
+        🔔 Eshik qo'ng'irog'ini chalish
+      </Button>
+      <p className="text-xs text-sub mt-2">
+        Faqat eshik oldida turganingizda ishlaydi — GPS tekshiriladi. Xonadon telefonida
+        qo'ng'iroq jiringlaydi.
+      </p>
+    </Card>
   )
 }

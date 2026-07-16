@@ -184,23 +184,36 @@ class HouseholdOut(BaseModel):
     verification_status: str = "pending"
     vouch_count: int = 0
     my_vouch: bool = False
+    has_location: bool = False  # coordinates themselves are never exposed
     members: list[MemberOut] = []
     created_by: int
     created_at: datetime
 
 
+class LocationIn(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
+
+
+class DingDongOut(BaseModel):
+    ok: bool = True
+    message: str = ""
+
+
 # ---------- posts ----------
 
-PostType = Literal["help", "announcement", "charity", "event", "newcomer"]
+PostType = Literal["help", "announcement", "charity", "event", "newcomer", "share"]
 
 
 class PostIn(BaseModel):
     type: PostType
-    title: str = Field(min_length=3, max_length=200)
+    # share posts don't need a title (derived from body); others require one
+    title: Optional[str] = Field(default=None, max_length=200)
     body: Optional[str] = Field(default=None, max_length=4000)
     category: Optional[Literal["tool", "ride", "labor", "childcare", "other"]] = None
     event_date: Optional[datetime] = None
     goal: Optional[str] = Field(default=None, max_length=200)
+    image_url: Optional[str] = Field(default=None, max_length=300)
 
 
 class ResponseIn(BaseModel):
@@ -222,8 +235,10 @@ class PostOut(BaseModel):
     category: Optional[str] = None
     event_date: Optional[datetime] = None
     goal: Optional[str] = None
+    image_url: Optional[str] = None
     status: str
     author: UserOut
+    author_place: str = ""  # "Yoshlik, Pop" — shown on discover cards
     response_count: int = 0
     my_response: bool = False
     created_at: datetime

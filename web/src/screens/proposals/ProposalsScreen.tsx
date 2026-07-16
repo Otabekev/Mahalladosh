@@ -65,7 +65,7 @@ export default function ProposalsScreen() {
       </div>
 
       {isLoading && (
-        <div className="flex justify-center py-10">
+        <div className="flex justify-center py-12">
           <Spinner />
         </div>
       )}
@@ -93,7 +93,7 @@ export default function ProposalsScreen() {
               <StatusBadge p={p} />
             </div>
 
-            <h3 className="font-bold text-ink">{p.title}</h3>
+            <h3 className="text-[15px] font-bold text-ink line-clamp-2">{p.title}</h3>
 
             <div className="flex items-center gap-2 mt-2">
               <Avatar name={p.author.full_name} src={p.author.photo_url} size={24} />

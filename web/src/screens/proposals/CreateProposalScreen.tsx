@@ -106,7 +106,7 @@ export default function CreateProposalScreen() {
             <div className="mb-4">
               <p className="text-sm font-semibold text-ink mb-1.5">Qo'shnini tanlang</p>
               {members.isLoading && (
-                <div className="flex justify-center py-6">
+                <div className="flex justify-center py-12">
                   <Spinner />
                 </div>
               )}
@@ -118,7 +118,7 @@ export default function CreateProposalScreen() {
                   onClick={() => setTargetId(u.id)}
                 >
                   <Avatar name={u.full_name} src={u.photo_url} size={32} />
-                  <span className="text-sm font-semibold text-ink">{u.full_name}</span>
+                  <span className="text-sm font-semibold text-ink truncate min-w-0">{u.full_name}</span>
                 </Card>
               ))}
               {members.data && selectable.length === 0 && (
@@ -130,9 +130,9 @@ export default function CreateProposalScreen() {
           {action === 'ban_user' && (
             <Card className="p-4 mb-4 bg-red-50 border-red-200">
               <p className="text-sm text-ink">
-                Jazo taklifi uchun yuqori talab: 5 kishi qo'llab-quvvatlashi, ⅔ ko'pchilik va
-                kvorum kerak. Ayblanuvchi xabardor qilinadi va javob bera oladi. Chetlatish
-                vaqtinchalik (30 kun).
+                Jazo taklifi uchun talab yuqori: 5 kishi qo'llab-quvvatlashi, uchdan ikki
+                ko'pchilik va kvorum kerak. Ayblanuvchi xabardor qilinadi va javob bera oladi.
+                Chetlatish vaqtinchalik (30 kun).
               </p>
             </Card>
           )}

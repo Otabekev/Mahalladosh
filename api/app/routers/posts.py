@@ -11,7 +11,7 @@ from ..deps import get_db, require_member
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
-TYPE_EMOJI = {"help": "🤝", "announcement": "📢", "charity": "❤️", "event": "🎉"}
+TYPE_EMOJI = {"help": "🤝", "announcement": "📢", "charity": "❤️", "event": "🎉", "share": "📷"}
 
 # Anti-gaming soft cap (plan §9-C): max thanked-awards per month from the same
 # requester to the same helper. Resolve still works past the cap — only the
@@ -56,8 +56,10 @@ def post_out(db: Session, p: models.Post, viewer: models.User) -> schemas.PostOu
         category=p.category,
         event_date=p.event_date,
         goal=p.goal,
+        image_url=p.image_path,
         status=p.status,
         author=presenters.user_out(db, author),
+        author_place=presenters.author_place(db, p.mahalla_id),
         response_count=response_count,
         my_response=my_response,
         created_at=p.created_at,
@@ -92,9 +94,12 @@ def post_detail(db: Session, p: models.Post, viewer: models.User) -> schemas.Pos
 
 
 def _get_post(db: Session, post_id: int, user: models.User) -> models.Post:
-    """Post must exist and belong to the viewer's mahalla — foreign posts are 404."""
+    """Post must exist and belong to the viewer's mahalla — foreign posts are
+    404, EXCEPT share posts, which are open to every member via discover."""
     post = db.get(models.Post, post_id)
-    if post is None or post.mahalla_id != user.mahalla_id:
+    if post is None:
+        raise HTTPException(status_code=404, detail="E'lon topilmadi")
+    if post.mahalla_id != user.mahalla_id and post.type != "share":
         raise HTTPException(status_code=404, detail="E'lon topilmadi")
     return post
 
@@ -130,29 +135,81 @@ def create_post(
         raise HTTPException(status_code=400, detail="Yordam turini tanlang")
     if data.type == "event" and data.event_date is None:
         raise HTTPException(status_code=400, detail="Sanani kiriting")
+
+    if data.type == "share":
+        # open people-post: needs text or a photo; title derives from the text
+        body = (data.body or "").strip()
+        if not body and not data.image_url:
+            raise HTTPException(status_code=400, detail="Matn yoki rasm qo'shing")
+        title = body[:80] if body else "📷 Rasm"
+        image_url = data.image_url
+        if image_url and not image_url.startswith("/api/uploads/"):
+            raise HTTPException(status_code=400, detail="Rasm avval yuklanishi kerak")
+    else:
+        if not data.title or len(data.title.strip()) < 3:
+            raise HTTPException(status_code=400, detail="Sarlavha kiriting")
+        title = data.title.strip()
+        image_url = None
+
     post = models.Post(
         mahalla_id=user.mahalla_id,
         author_id=user.id,
         type=data.type,
-        title=data.title,
+        title=title,
         body=data.body,
         category=data.category,
         event_date=data.event_date,
         goal=data.goal,
+        image_path=image_url,
     )
     db.add(post)
     db.flush()
-    notify.notify_mahalla(
-        db,
-        user.mahalla_id,
-        "post",
-        f"{TYPE_EMOJI.get(post.type, '📌')} {user.full_name}: {post.title}",
-        link=f"/app/posts/{post.id}",
-        exclude=[user.id],
-    )
+    # share posts don't ping the whole mahalla — they're browse-content, not a
+    # call to action; the structured types keep their fan-out
+    if post.type != "share":
+        notify.notify_mahalla(
+            db,
+            user.mahalla_id,
+            "post",
+            f"{TYPE_EMOJI.get(post.type, '📌')} {user.full_name}: {post.title}",
+            link=f"/app/posts/{post.id}",
+            exclude=[user.id],
+        )
     db.commit()
     db.refresh(post)
     return post_out(db, post, user)
+
+
+@router.get("/discover", response_model=list[schemas.PostOut])
+def discover(
+    scope: str = "region",
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """People-posts beyond the mahalla. The VIEWER picks the lens:
+    scope=region → share posts by people in my region; scope=country → all of
+    Uzbekistan. Only real people's share posts — nothing else."""
+    q = db.query(models.Post).filter(models.Post.type == "share")
+    if scope != "country":
+        my_mahalla = db.get(models.Mahalla, user.mahalla_id)
+        my_district = db.get(models.District, my_mahalla.district_id) if my_mahalla else None
+        if my_district is None:
+            return []
+        region_district_ids = [
+            did
+            for (did,) in db.query(models.District.id).filter(
+                models.District.region_id == my_district.region_id
+            )
+        ]
+        region_mahalla_ids = [
+            mid
+            for (mid,) in db.query(models.Mahalla.id).filter(
+                models.Mahalla.district_id.in_(region_district_ids)
+            )
+        ]
+        q = q.filter(models.Post.mahalla_id.in_(region_mahalla_ids))
+    posts = q.order_by(models.Post.created_at.desc()).limit(100).all()
+    return [post_out(db, p, user) for p in posts]
 
 
 @router.get("/{post_id}", response_model=schemas.PostDetail)

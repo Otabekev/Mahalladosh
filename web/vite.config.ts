@@ -31,7 +31,8 @@ export default defineConfig({
   },
   server: {
     host: true,
-    port: 5174,
+    // The dev launcher assigns a free port via PORT; 5174 is the manual-run fallback.
+    port: Number(process.env.PORT) || 5174,
     proxy: { '/api': 'http://localhost:8000' },
     // The dev launcher starts vite via an 8.3 short path (spaces in the user dir);
     // strict fs matching rejects it as "outside" the long-path root.

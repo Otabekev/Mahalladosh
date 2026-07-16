@@ -4,9 +4,13 @@
 > This document is the *how we build it* — the stack, the architecture, and the rules that keep
 > a cheap PWA today convertible into a real native app later without a rewrite.
 
-**Status:** MVP BUILT (2026-07-15) — full stack scaffolded, all §9 features implemented and
-E2E-verified locally. Login is dev-mode (name only); real Telegram Login Widget wiring comes
-with the first deploy. Repo: `api/` (FastAPI+SQLite) + `web/` (Vite+React PWA).
+**Status:** MVP CODE-COMPLETE (2026-07-15) — all §9 features built and E2E-verified locally,
+including in-app notifications (§9-H), automatic monthly Faol qo'shni honor, the anti-gaming
+pair cap, and Telegram Login Widget wiring (activates itself when bot token+username are set
+in env; dev name-login until then). Adversarially reviewed (11 findings fixed).
+Repo: `api/` (FastAPI+SQLite) + `web/` (Vite+React PWA).
+**Remaining before pilot:** deploy-day tasks (Alembic, hosting, BotFather bot, prod env,
+first-admin bootstrap) + hand-curated real MFY list for the launch district + wipe test data.
 **Run it:** start `api` (uvicorn, port 8000) and `web` (`npm run dev`, port 5174); open
 http://localhost:5174 — on the phone, same Wi-Fi, `http://<laptop-ip>:5174`.
 **Guiding constraint:** Build slowly. Pay nothing until the product is real (one live pilot mahalla).

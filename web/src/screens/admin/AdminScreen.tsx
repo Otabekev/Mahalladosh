@@ -30,14 +30,20 @@ function PetitionsTab() {
 
   if (petitions.isPending) {
     return (
-      <div className="flex justify-center py-10">
+      <div className="flex justify-center py-12">
         <Spinner />
       </div>
     )
   }
   if (petitions.error) return <ErrorNote message={petitions.error.message} />
   if (!petitions.data || petitions.data.length === 0) {
-    return <EmptyState icon="✅" title="Kutilayotgan so'rovlar yo'q" />
+    return (
+      <EmptyState
+        icon="✅"
+        title="Kutilayotgan so'rovlar yo'q"
+        text="Yangi mahalla so'rovlari shu yerda ko'rinadi."
+      />
+    )
   }
 
   return (
@@ -47,7 +53,7 @@ function PetitionsTab() {
       )}
       {petitions.data.map((p) => (
         <Card key={p.mahalla.id} className="p-4 mb-3">
-          <div className="font-bold text-ink">{p.mahalla.name} mahallasi</div>
+          <div className="text-[15px] font-bold text-ink">{p.mahalla.name} mahallasi</div>
           <div className="text-xs text-sub mt-0.5">
             {p.district_name}, {p.region_name}
             {p.mahalla.estimated_households != null && ` · ~${p.mahalla.estimated_households} xonadon`}
@@ -62,7 +68,7 @@ function PetitionsTab() {
           </div>
           <div className="grid grid-cols-2 gap-2 mt-3">
             <Button
-              className="bg-good text-white"
+              className="bg-good! hover:opacity-90 text-white"
               loading={approve.isPending && approve.variables === p.mahalla.id}
               onClick={() => {
                 if (window.confirm("Mahalla ochilsinmi? Asoschilar a'zo qilinadi va +20 ball oladi.")) {
@@ -87,7 +93,7 @@ function PetitionsTab() {
             </Button>
           </div>
           <p className="text-xs text-sub mt-2">
-            {"Tasdiqlashdan oldin nom to'g'riligini va takrorlanmasligini tekshiring (§13)."}
+            {"Tasdiqlashdan oldin nom to'g'riligini va takrorlanmasligini tekshiring."}
           </p>
         </Card>
       ))}
@@ -172,7 +178,7 @@ function MfyTab() {
           {"Qo'shish"}
         </Button>
         <p className="text-xs text-sub mt-3">
-          {"MFY ro'yxati oldindan kiritiladi — foydalanuvchilar nom yozmaydi, tanlaydi (§13 qoidasi)."}
+          {"MFY ro'yxati oldindan kiritiladi — foydalanuvchilar nom yozmaydi, ro'yxatdan tanlaydi."}
         </p>
       </form>
     </Card>
@@ -186,7 +192,7 @@ function StatsTab() {
 
   if (stats.isPending) {
     return (
-      <div className="flex justify-center py-10">
+      <div className="flex justify-center py-12">
         <Spinner />
       </div>
     )

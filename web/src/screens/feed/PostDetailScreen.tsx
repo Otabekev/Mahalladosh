@@ -28,12 +28,14 @@ const RESPOND_PLACEHOLDER: Partial<Record<PostType, string>> = {
   help: 'Qanday yordam bera olasiz?',
   newcomer: 'Xush kelibsiz deb yozing',
   event: 'Kelasizmi?',
+  share: 'Fikr bildiring...',
 }
 
 function respondLabel(type: PostType): string {
   if (type === 'help') return '🤝 Yordam beraman'
   if (type === 'event') return '✅ Qatnashaman'
   if (type === 'newcomer') return '👋 Xush kelibsiz'
+  if (type === 'share') return 'Yozish'
   return 'Javob berish'
 }
 
@@ -130,6 +132,7 @@ export default function PostDetailScreen() {
   if (!post) return null
 
   const isAuthor = me !== null && post.author.id === me.user.id
+  const isShare = post.type === 'share'
   const canRespond = post.status === 'open' && me !== null && !isAuthor && !post.my_response
 
   const sendResponse = () => {
@@ -176,23 +179,33 @@ export default function PostDetailScreen() {
         </div>
       )}
 
-      {/* full post */}
+      {/* full post — share posts render social-style: no pill/status/title */}
       <Card className="p-4 mb-3">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <TypePill type={post.type} />
-          {post.status === 'resolved' && !post.resolved_helper && (
-            <span className="text-xs font-semibold text-good">✓ Bajarildi</span>
-          )}
-          {post.status === 'closed' && <span className="text-xs font-semibold text-sub">Yopilgan</span>}
-        </div>
-        <h1 className="text-lg font-bold text-ink">{post.title}</h1>
-        {post.body && <p className="text-[15px] text-ink whitespace-pre-wrap mt-2">{post.body}</p>}
+        {!isShare && (
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <TypePill type={post.type} />
+            {post.status === 'resolved' && !post.resolved_helper && (
+              <span className="text-xs font-semibold text-good">✓ Bajarildi</span>
+            )}
+            {post.status === 'closed' && <span className="text-xs font-semibold text-sub">Yopilgan</span>}
+          </div>
+        )}
+        {!isShare && <h1 className="text-lg font-bold text-ink">{post.title}</h1>}
+        {post.body && (
+          <p className={`text-[15px] text-ink whitespace-pre-wrap ${isShare ? '' : 'mt-2'}`}>{post.body}</p>
+        )}
+        {post.image_url && <img src={post.image_url} alt="" className="rounded-xl w-full mt-3" />}
         {post.event_date && <p className="text-sm text-sub mt-2">📅 {formatEventDate(post.event_date)}</p>}
         {post.goal && <p className="text-sm text-sub mt-1">🎯 {post.goal}</p>}
         <div className="flex items-center gap-2 mt-4 pt-3 border-t border-line">
           <Avatar name={post.author.full_name} src={post.author.photo_url} size={28} />
-          <span className="text-sm font-semibold text-ink">{post.author.full_name}</span>
-          <span className="text-xs text-sub ml-auto">{timeAgo(post.created_at)}</span>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-ink truncate">{post.author.full_name}</div>
+            {isShare && post.author_place && (
+              <div className="text-xs text-sub truncate">{post.author_place}</div>
+            )}
+          </div>
+          <span className="text-xs text-sub ml-auto shrink-0">{timeAgo(post.created_at)}</span>
         </div>
       </Card>
 
