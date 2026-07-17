@@ -2,6 +2,9 @@
  * actions, gold for points/honor. All screens build from these. */
 
 import { useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes } from 'react'
+import { fmt, pick, useLang } from '@/core/i18n'
+import { common, postTypeLabels, time } from '@/core/i18n/common'
+import { translateBackend } from '@/core/i18n/backend'
 
 // ---------- buttons ----------
 
@@ -154,21 +157,29 @@ export function Badge({ color = 'gray', children }: { color?: string; children: 
   )
 }
 
-/** Post-type chip — one color per structured type (plan §8). */
-export const POST_TYPE_META: Record<string, { label: string; color: string; icon: string }> = {
-  help: { label: 'Yordam kerak', color: 'gold', icon: '🤝' },
-  announcement: { label: "E'lon", color: 'blue', icon: '📢' },
-  charity: { label: 'Xayriya', color: 'rose', icon: '❤️' },
-  event: { label: "To'y-marosim", color: 'violet', icon: '🎉' },
-  newcomer: { label: "Yangi qo'shni", color: 'green', icon: '👋' },
-  share: { label: 'Ulashish', color: 'gray', icon: '📷' },
+/** Post-type chip — one color per structured type (plan §8).
+ * Labels are localized: use usePostTypeLabel() in screens, never a raw label. */
+export const POST_TYPE_META: Record<string, { color: string; icon: string }> = {
+  help: { color: 'gold', icon: '🤝' },
+  announcement: { color: 'blue', icon: '📢' },
+  charity: { color: 'rose', icon: '❤️' },
+  event: { color: 'violet', icon: '🎉' },
+  newcomer: { color: 'green', icon: '👋' },
+  share: { color: 'gray', icon: '📷' },
+}
+
+/** Returns a resolver for localized post-type labels (re-renders on language change). */
+export function usePostTypeLabel(): (type: string) => string {
+  const lang = useLang((s) => s.lang)
+  return (type: string) => postTypeLabels[type]?.[lang] ?? postTypeLabels[type]?.uz ?? type
 }
 
 export function TypePill({ type }: { type: string }) {
-  const meta = POST_TYPE_META[type] ?? { label: type, color: 'gray', icon: '' }
+  const label = usePostTypeLabel()
+  const meta = POST_TYPE_META[type] ?? { color: 'gray', icon: '' }
   return (
     <Badge color={meta.color}>
-      <span>{meta.icon}</span> {meta.label}
+      <span>{meta.icon}</span> {label(type)}
     </Badge>
   )
 }
@@ -232,7 +243,13 @@ export function EmptyState({ icon, title, text, action }: { icon: string; title:
 }
 
 export function ErrorNote({ message }: { message: string }) {
-  return <div className="rounded-xl bg-red-50 border border-red-100 text-danger text-sm px-4 py-3 mb-4">{message}</div>
+  // backend errors arrive in Uzbek — localize them; unknown strings pass through
+  useLang((s) => s.lang) // re-render on language change
+  return (
+    <div className="rounded-xl bg-red-50 border border-red-100 text-danger text-sm px-4 py-3 mb-4">
+      {translateBackend(message)}
+    </div>
+  )
 }
 
 // ---------- modal ----------
@@ -286,7 +303,7 @@ export function ImagePicker({
 }) {
   const [busy, setBusy] = useState(false)
 
-  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const pickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
@@ -294,11 +311,13 @@ export function ImagePicker({
     try {
       onChange(await uploadImage(file))
     } catch (err) {
-      onError?.(err instanceof Error ? err.message : 'Rasm yuklanmadi')
+      onError?.(err instanceof Error ? err.message : pick(common.uploadFailed))
     } finally {
       setBusy(false)
     }
   }
+
+  const lang = useLang((s) => s.lang)
 
   if (value) {
     return (
@@ -322,10 +341,10 @@ export function ImagePicker({
       ) : (
         <>
           <span className="text-2xl">📷</span>
-          <span className="text-sm font-semibold text-sub">Rasm qo'shish</span>
+          <span className="text-sm font-semibold text-sub">{common.addPhoto[lang]}</span>
         </>
       )}
-      <input type="file" accept="image/*" className="hidden" onChange={pick} disabled={busy} />
+      <input type="file" accept="image/*" className="hidden" onChange={pickFile} disabled={busy} />
     </label>
   )
 }
@@ -335,12 +354,12 @@ export function ImagePicker({
 export function timeAgo(iso: string): string {
   const then = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z').getTime()
   const mins = Math.floor((Date.now() - then) / 60000)
-  if (mins < 1) return 'hozir'
-  if (mins < 60) return `${mins} daqiqa oldin`
+  if (mins < 1) return pick(time.now)
+  if (mins < 60) return fmt(pick(time.minutes), { n: mins })
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} soat oldin`
+  if (hours < 24) return fmt(pick(time.hours), { n: hours })
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days} kun oldin`
+  if (days < 30) return fmt(pick(time.days), { n: days })
   return new Date(then).toLocaleDateString('uz')
 }
 

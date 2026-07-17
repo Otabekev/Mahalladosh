@@ -13,32 +13,38 @@ import {
   POST_TYPE_META,
   Select,
   Textarea,
+  usePostTypeLabel,
 } from '@/components/ui'
+import { useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { feedStrings } from '@/core/i18n/feed'
 import { useCreatePost } from '@/core/queries/posts'
 import type { HelpCategory, PostIn, PostType } from '@/core/api/types'
 
 type CreatableType = Exclude<PostType, 'newcomer'>
+type FeedKey = keyof typeof feedStrings
 
-const SHARE_DESC = "Rasm yoki fikringizni ulashing — butun O'zbekiston ko'rishi mumkin"
-
-const TYPE_OPTIONS: { type: Exclude<CreatableType, 'share'>; desc: string; placeholder: string }[] = [
-  { type: 'help', desc: "Qo'shnilardan yordam so'rang", placeholder: 'Narvon kerak' },
-  { type: 'announcement', desc: 'Mahallaga xabar bering', placeholder: "Ertaga hashar bo'ladi" },
-  { type: 'charity', desc: "Xayriya yig'ing yoki e'lon qiling", placeholder: 'Muhtoj oilaga yordam' },
-  { type: 'event', desc: "To'y-marosimga taklif qiling", placeholder: "To'yga marhamat" },
+const TYPE_OPTIONS: { type: Exclude<CreatableType, 'share'>; descKey: FeedKey; placeholderKey: FeedKey }[] = [
+  { type: 'help', descKey: 'helpDesc', placeholderKey: 'helpPlaceholder' },
+  { type: 'announcement', descKey: 'announcementDesc', placeholderKey: 'announcementPlaceholder' },
+  { type: 'charity', descKey: 'charityDesc', placeholderKey: 'charityPlaceholder' },
+  { type: 'event', descKey: 'eventDesc', placeholderKey: 'eventPlaceholder' },
 ]
 
-const HELP_CATEGORIES: { value: HelpCategory; label: string }[] = [
-  { value: 'tool', label: 'Asbob-uskuna' },
-  { value: 'ride', label: 'Transport' },
-  { value: 'labor', label: 'Mehnat' },
-  { value: 'childcare', label: 'Bola qarash' },
-  { value: 'other', label: 'Boshqa' },
+const HELP_CATEGORIES: { value: HelpCategory; labelKey: FeedKey }[] = [
+  { value: 'tool', labelKey: 'catTool' },
+  { value: 'ride', labelKey: 'catRide' },
+  { value: 'labor', labelKey: 'catLabor' },
+  { value: 'childcare', labelKey: 'catChildcare' },
+  { value: 'other', labelKey: 'catOther' },
 ]
 
 export default function CreatePostScreen() {
   const navigate = useNavigate()
   const create = useCreatePost()
+  const s = useStrings(feedStrings)
+  const c = useStrings(common)
+  const typeLabel = usePostTypeLabel()
 
   const [type, setType] = useState<CreatableType | null>(null)
   const [title, setTitle] = useState('')
@@ -54,7 +60,7 @@ export default function CreatePostScreen() {
     const shareMeta = POST_TYPE_META.share
     return (
       <div>
-        <PageTitle title="Yangi e'lon" subtitle="Nima haqida yozmoqchisiz?" />
+        <PageTitle title={s.newPost} subtitle={s.createSubtitle} />
         <div className="grid grid-cols-1 gap-2">
           <Card
             className="p-5 flex items-center gap-4 ring-2 ring-brand shadow-pop"
@@ -62,8 +68,8 @@ export default function CreatePostScreen() {
           >
             <span className="text-3xl">{shareMeta.icon}</span>
             <div>
-              <div className="text-[15px] font-bold text-ink">{shareMeta.label}</div>
-              <div className="text-sm text-sub">{SHARE_DESC}</div>
+              <div className="text-[15px] font-bold text-ink">{typeLabel('share')}</div>
+              <div className="text-sm text-sub">{s.shareDesc}</div>
             </div>
           </Card>
           {TYPE_OPTIONS.map((opt) => {
@@ -72,8 +78,8 @@ export default function CreatePostScreen() {
               <Card key={opt.type} className="p-4 flex items-center gap-4" onClick={() => setType(opt.type)}>
                 <span className="text-2xl">{meta.icon}</span>
                 <div>
-                  <div className="font-bold text-ink">{meta.label}</div>
-                  <div className="text-sm text-sub">{opt.desc}</div>
+                  <div className="font-bold text-ink">{typeLabel(opt.type)}</div>
+                  <div className="text-sm text-sub">{s[opt.descKey]}</div>
                 </div>
               </Card>
             )
@@ -114,13 +120,13 @@ export default function CreatePostScreen() {
             setType(null)
             setError(null) // an image-upload error must not follow into another type's form
           }}
-          aria-label="Orqaga"
+          aria-label={c.back}
           className="text-xl text-sub hover:text-ink px-1"
         >
           ←
         </button>
         <h1 className="text-xl font-bold text-ink">
-          {meta.icon} {meta.label}
+          {meta.icon} {typeLabel(type)}
         </h1>
       </div>
 
@@ -135,7 +141,7 @@ export default function CreatePostScreen() {
                 rows={4}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="Nima yangilik?..."
+                placeholder={s.sharePlaceholder}
                 maxLength={4000}
                 autoFocus
                 className="mb-4"
@@ -151,22 +157,22 @@ export default function CreatePostScreen() {
             </>
           ) : (
             <>
-              <Field label="Sarlavha">
+              <Field label={s.fieldTitle}>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={option?.placeholder}
+                  placeholder={option ? s[option.placeholderKey] : undefined}
                   maxLength={200}
                   autoFocus
                 />
               </Field>
 
               {type === 'help' && (
-                <Field label="Yordam turi">
+                <Field label={s.fieldHelpType}>
                   <Select value={category} onChange={(e) => setCategory(e.target.value as HelpCategory)}>
-                    {HELP_CATEGORIES.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {c.label}
+                    {HELP_CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {s[cat.labelKey]}
                       </option>
                     ))}
                   </Select>
@@ -174,27 +180,27 @@ export default function CreatePostScreen() {
               )}
 
               {type === 'event' && (
-                <Field label="Sana">
+                <Field label={s.fieldDate}>
                   <Input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
                 </Field>
               )}
 
               {type === 'charity' && (
-                <Field label="Maqsad">
+                <Field label={s.fieldGoal}>
                   <Input
                     value={goal}
                     onChange={(e) => setGoal(e.target.value)}
-                    placeholder="5 mln so'm"
+                    placeholder={s.goalPlaceholder}
                     maxLength={200}
                   />
                 </Field>
               )}
 
-              <Field label="Batafsil (shart emas)">
+              <Field label={s.fieldDetails}>
                 <Textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder="Qisqacha yozing..."
+                  placeholder={s.detailsPlaceholder}
                   maxLength={4000}
                 />
               </Field>
@@ -202,15 +208,10 @@ export default function CreatePostScreen() {
           )}
 
           <Button type="submit" full loading={create.isPending} disabled={!canSubmit}>
-            E'lon qilish
+            {s.submitPost}
           </Button>
 
-          {type === 'share' && (
-            <p className="text-xs text-sub mt-3">
-              Post mahallangiz lentasida va "Kashf" bo'limida ko'rinadi — viloyatingiz va butun O'zbekiston
-              bo'ylab.
-            </p>
-          )}
+          {type === 'share' && <p className="text-xs text-sub mt-3">{s.shareFootnote}</p>}
         </form>
       </Card>
     </div>

@@ -1,0 +1,178 @@
+/** Strings for the Services directory, Admin panel, and Notifications screens. */
+
+import type { Dict } from './index'
+
+export const servicesStrings = {
+  // ---------- services: categories ----------
+  catFood: { uz: 'Oziq-ovqat', uzc: 'Озиқ-овқат', ru: 'Продукты', en: 'Food' },
+  catGoods: { uz: 'Buyumlar', uzc: 'Буюмлар', ru: 'Вещи', en: 'Goods' },
+  catRental: { uz: 'Ijara', uzc: 'Ижара', ru: 'Аренда', en: 'Rental' },
+  catService: { uz: 'Xizmat', uzc: 'Хизмат', ru: 'Услуга', en: 'Service' },
+  catSkill: { uz: 'Hunar', uzc: 'Ҳунар', ru: 'Ремесло', en: 'Craft' },
+  // ---------- services: directory ----------
+  svcSubtitle: {
+    uz: "Qo'shnilar nima taklif qiladi",
+    uzc: 'Қўшнилар нима таклиф қилади',
+    ru: 'Что предлагают соседи',
+    en: 'What neighbors offer',
+  },
+  addBtn: { uz: "+ Qo'shish", uzc: '+ Қўшиш', ru: '+ Добавить', en: '+ Add' },
+  myServices: { uz: 'Mening xizmatlarim', uzc: 'Менинг хизматларим', ru: 'Мои услуги', en: 'My services' },
+  allChip: { uz: 'Hammasi', uzc: 'Ҳаммаси', ru: 'Все', en: 'All' },
+  contact: { uz: "📞 Bog'lanish", uzc: '📞 Боғланиш', ru: '📞 Связаться', en: '📞 Contact' },
+  copied: { uz: 'Nusxalandi ✓', uzc: 'Нусхаланди ✓', ru: 'Скопировано ✓', en: 'Copied ✓' },
+  householdSuffix: {
+    uz: '{name} xonadoni',
+    uzc: '{name} хонадони',
+    ru: 'Дом {name}',
+    en: '{name} household',
+  },
+  hiddenTag: { uz: 'yashirin', uzc: 'яширин', ru: 'скрыто', en: 'hidden' },
+  hide: { uz: 'Yashirish', uzc: 'Яшириш', ru: 'Скрыть', en: 'Hide' },
+  show: { uz: "Ko'rsatish", uzc: 'Кўрсатиш', ru: 'Показать', en: 'Show' },
+  confirmDeleteService: {
+    uz: "Bu xizmat o'chirilsinmi?",
+    uzc: 'Бу хизмат ўчирилсинми?',
+    ru: 'Удалить эту услугу?',
+    en: 'Delete this service?',
+  },
+  svcEmptyTitle: {
+    uz: "Hozircha xizmatlar yo'q",
+    uzc: 'Ҳозирча хизматлар йўқ',
+    ru: 'Пока услуг нет',
+    en: 'No services yet',
+  },
+  svcEmptyText: {
+    uz: "Tuxum sotasizmi? Asbob ijaraga berasizmi? Birinchi bo'lib qo'shing!",
+    uzc: 'Тухум сотасизми? Асбоб ижарага берасизми? Биринчи бўлиб қўшинг!',
+    ru: 'Продаёте яйца? Сдаёте инструмент в аренду? Добавьте первым!',
+    en: 'Selling eggs? Renting out a tool? Be the first to add one!',
+  },
+  // ---------- services: create form ----------
+  addServiceTitle: { uz: "Xizmat qo'shish", uzc: 'Хизмат қўшиш', ru: 'Добавить услугу', en: 'Add service' },
+  fieldName: { uz: 'Nomi', uzc: 'Номи', ru: 'Название', en: 'Name' },
+  fieldType: { uz: 'Turi', uzc: 'Тури', ru: 'Тип', en: 'Type' },
+  fieldDesc: {
+    uz: 'Tavsif (shart emas)',
+    uzc: 'Тавсиф (шарт эмас)',
+    ru: 'Описание (необязательно)',
+    en: 'Description (optional)',
+  },
+  fieldPrice: {
+    uz: 'Narx (shart emas)',
+    uzc: 'Нарх (шарт эмас)',
+    ru: 'Цена (необязательно)',
+    en: 'Price (optional)',
+  },
+  fieldPhone: {
+    uz: 'Telefon (shart emas)',
+    uzc: 'Телефон (шарт эмас)',
+    ru: 'Телефон (необязательно)',
+    en: 'Phone (optional)',
+  },
+  phTitle: { uz: 'Uy tuxumi', uzc: 'Уй тухуми', ru: 'Домашние яйца', en: 'Fresh eggs' },
+  phPrice: {
+    uz: "10 000 so'm / dona",
+    uzc: '10 000 сўм / дона',
+    ru: '10 000 сум / шт.',
+    en: '10,000 UZS each',
+  },
+  // ---------- services: no-household modal ----------
+  needHouseholdTitle: { uz: 'Xonadon kerak', uzc: 'Хонадон керак', ru: 'Нужен дом', en: 'Household needed' },
+  needHouseholdText: {
+    uz: "Xizmat qo'shish uchun avval xonadoningizni yarating",
+    uzc: 'Хизмат қўшиш учун аввал хонадонингизни яратинг',
+    ru: 'Чтобы добавить услугу, сначала создайте свой дом',
+    en: 'Create your household first to add a service',
+  },
+  createHousehold: { uz: 'Xonadon yaratish', uzc: 'Хонадон яратиш', ru: 'Создать дом', en: 'Create household' },
+  // ---------- admin: screen ----------
+  adminTitle: { uz: 'Admin panel', uzc: 'Админ панель', ru: 'Админ-панель', en: 'Admin panel' },
+  adminSubtitle: {
+    uz: 'Operator boshqaruvi',
+    uzc: 'Оператор бошқаруви',
+    ru: 'Панель оператора',
+    en: 'Operator controls',
+  },
+  tabPetitions: { uz: "So'rovlar", uzc: 'Сўровлар', ru: 'Заявки', en: 'Petitions' },
+  tabMfy: { uz: "MFY qo'shish", uzc: 'МФЙ қўшиш', ru: 'Добавить МФЙ', en: 'Add MFY' },
+  tabStats: { uz: 'Statistika', uzc: 'Статистика', ru: 'Статистика', en: 'Statistics' },
+  // ---------- admin: petitions ----------
+  petitionsEmptyTitle: {
+    uz: "Kutilayotgan so'rovlar yo'q",
+    uzc: 'Кутилаётган сўровлар йўқ',
+    ru: 'Нет ожидающих заявок',
+    en: 'No pending petitions',
+  },
+  petitionsEmptyText: {
+    uz: "Yangi mahalla so'rovlari shu yerda ko'rinadi.",
+    uzc: 'Янги маҳалла сўровлари шу ерда кўринади.',
+    ru: 'Новые заявки на махалли будут появляться здесь.',
+    en: 'New mahalla petitions will show up here.',
+  },
+  householdsApprox: { uz: '~{n} xonadon', uzc: '~{n} хонадон', ru: '~{n} домов', en: '~{n} households' },
+  confirmApprove: {
+    uz: "Mahalla ochilsinmi? Asoschilar a'zo qilinadi va +20 ball oladi.",
+    uzc: 'Маҳалла очилсинми? Асосчилар аъзо қилинади ва +20 балл олади.',
+    ru: 'Открыть махаллю? Основатели станут участниками и получат +20 баллов.',
+    en: 'Open this mahalla? Founders become members and receive +20 points.',
+  },
+  approve: { uz: '✓ Tasdiqlash', uzc: '✓ Тасдиқлаш', ru: '✓ Одобрить', en: '✓ Approve' },
+  reject: { uz: 'Rad etish', uzc: 'Рад этиш', ru: 'Отклонить', en: 'Reject' },
+  confirmReject: {
+    uz: "Bu so'rov rad etilsinmi?",
+    uzc: 'Бу сўров рад этилсинми?',
+    ru: 'Отклонить эту заявку?',
+    en: 'Reject this petition?',
+  },
+  approveHint: {
+    uz: "Tasdiqlashdan oldin nom to'g'riligini va takrorlanmasligini tekshiring.",
+    uzc: 'Тасдиқлашдан олдин ном тўғрилигини ва такрорланмаслигини текширинг.',
+    ru: 'Перед одобрением проверьте, что название верное и не повторяется.',
+    en: 'Before approving, check the name is correct and not a duplicate.',
+  },
+  // ---------- admin: MFY form ----------
+  addedOk: { uz: "Qo'shildi ✓", uzc: 'Қўшилди ✓', ru: 'Добавлено ✓', en: 'Added ✓' },
+  region: { uz: 'Viloyat', uzc: 'Вилоят', ru: 'Область', en: 'Region' },
+  district: { uz: 'Tuman', uzc: 'Туман', ru: 'Район', en: 'District' },
+  mfyName: { uz: 'MFY nomi', uzc: 'МФЙ номи', ru: 'Название МФЙ', en: 'MFY name' },
+  choose: { uz: 'Tanlang', uzc: 'Танланг', ru: 'Выберите', en: 'Select' },
+  mfyHint: {
+    uz: "MFY ro'yxati oldindan kiritiladi — foydalanuvchilar nom yozmaydi, ro'yxatdan tanlaydi.",
+    uzc: 'МФЙ рўйхати олдиндан киритилади — фойдаланувчилар ном ёзмайди, рўйхатдан танлайди.',
+    ru: 'Список МФЙ вводится заранее — пользователи не пишут название, а выбирают из списка.',
+    en: 'The MFY list is entered in advance — users pick from the list instead of typing a name.',
+  },
+  // ---------- admin: stats ----------
+  statUsers: { uz: 'Foydalanuvchilar', uzc: 'Фойдаланувчилар', ru: 'Пользователи', en: 'Users' },
+  statActiveMahallas: {
+    uz: 'Faol mahallalar',
+    uzc: 'Фаол маҳаллалар',
+    ru: 'Активные махалли',
+    en: 'Active mahallas',
+  },
+  statPending: { uz: 'Kutilmoqda', uzc: 'Кутилмоқда', ru: 'В ожидании', en: 'Pending' },
+  statForming: { uz: 'Shakllanmoqda', uzc: 'Шаклланмоқда', ru: 'Формируются', en: 'Forming' },
+  statHouseholds: { uz: 'Xonadonlar', uzc: 'Хонадонлар', ru: 'Дома', en: 'Households' },
+  statPosts: { uz: "E'lonlar", uzc: 'Эълонлар', ru: 'Записи', en: 'Posts' },
+  // ---------- notifications ----------
+  notifTitle: { uz: 'Bildirishnomalar', uzc: 'Билдиришномалар', ru: 'Уведомления', en: 'Notifications' },
+  notifSubtitle: {
+    uz: "Mahallangizda nima bo'lyapti",
+    uzc: 'Маҳаллангизда нима бўляпти',
+    ru: 'Что происходит в вашей махалле',
+    en: "What's happening in your mahalla",
+  },
+  notifEmptyTitle: {
+    uz: "Hozircha bildirishnoma yo'q",
+    uzc: 'Ҳозирча билдиришнома йўқ',
+    ru: 'Пока уведомлений нет',
+    en: 'No notifications yet',
+  },
+  notifEmptyText: {
+    uz: "Qo'shnilaringiz faollashganda bu yerda ko'rasiz.",
+    uzc: 'Қўшниларингиз фаоллашганда бу ерда кўрасиз.',
+    ru: 'Когда соседи станут активнее, вы увидите это здесь.',
+    en: "You'll see it here when your neighbors get active.",
+  },
+} satisfies Dict

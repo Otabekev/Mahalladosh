@@ -16,17 +16,24 @@ import {
 import { useCreateProposal } from '@/core/queries/proposals'
 import { useMembers } from '@/core/queries/mahalla'
 import { useAuth } from '@/core/stores/auth'
+import { fmt, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { proposalsStrings } from '@/core/i18n/proposals'
 import type { ProposalAction } from '@/core/api/types'
 
-const TYPE_CARDS: { action: ProposalAction; icon: string; label: string; desc: string }[] = [
-  { action: 'none', icon: '💡', label: 'Oddiy taklif', desc: 'Hashar, obodonlashtirish, umumiy qaror' },
-  { action: 'set_raisi', icon: '👑', label: 'Raisi saylash', desc: 'Mahallaga raisi taklif qiling' },
-  { action: 'ban_user', icon: '⚠️', label: 'Chetlatish', desc: 'Qoidabuzarni vaqtincha chetlatish' },
+type StringKey = keyof typeof proposalsStrings
+
+const TYPE_CARDS: { action: ProposalAction; icon: string; labelKey: StringKey; descKey: StringKey }[] = [
+  { action: 'none', icon: '💡', labelKey: 'typeSimpleLabel', descKey: 'typeSimpleDesc' },
+  { action: 'set_raisi', icon: '👑', labelKey: 'typeRaisiLabel', descKey: 'typeRaisiDesc' },
+  { action: 'ban_user', icon: '⚠️', labelKey: 'typeBanLabel', descKey: 'typeBanDesc' },
 ]
 
 export default function CreateProposalScreen() {
   const navigate = useNavigate()
-  const me = useAuth((s) => s.me)
+  const s = useStrings(proposalsStrings)
+  const c = useStrings(common)
+  const me = useAuth((st) => st.me)
   const [action, setAction] = useState<ProposalAction | null>(null)
   const [targetId, setTargetId] = useState<number | null>(null)
   const [title, setTitle] = useState('')
@@ -60,11 +67,11 @@ export default function CreateProposalScreen() {
 
   return (
     <div>
-      <PageTitle title="Yangi taklif" />
+      <PageTitle title={s.createTitle} />
 
       {action === null ? (
         <div>
-          <p className="text-sm text-sub mb-3">Taklif turini tanlang</p>
+          <p className="text-sm text-sub mb-3">{s.pickType}</p>
           {TYPE_CARDS.map((t) => (
             <Card
               key={t.action}
@@ -77,8 +84,8 @@ export default function CreateProposalScreen() {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{t.icon}</span>
                 <div>
-                  <div className="font-bold text-ink">{t.label}</div>
-                  <div className="text-sm text-sub">{t.desc}</div>
+                  <div className="font-bold text-ink">{s[t.labelKey]}</div>
+                  <div className="text-sm text-sub">{s[t.descKey]}</div>
                 </div>
               </div>
             </Card>
@@ -88,7 +95,7 @@ export default function CreateProposalScreen() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold text-ink">
-              {chosen?.icon} {chosen?.label}
+              {chosen?.icon} {chosen && s[chosen.labelKey]}
             </span>
             <Button
               variant="ghost"
@@ -98,13 +105,13 @@ export default function CreateProposalScreen() {
                 setTargetId(null)
               }}
             >
-              ← Orqaga
+              ← {c.back}
             </Button>
           </div>
 
           {needsTarget && (
             <div className="mb-4">
-              <p className="text-sm font-semibold text-ink mb-1.5">Qo'shnini tanlang</p>
+              <p className="text-sm font-semibold text-ink mb-1.5">{s.pickNeighbor}</p>
               {members.isLoading && (
                 <div className="flex justify-center py-12">
                   <Spinner />
@@ -122,35 +129,31 @@ export default function CreateProposalScreen() {
                 </Card>
               ))}
               {members.data && selectable.length === 0 && (
-                <p className="text-sm text-sub">Tanlash uchun qo'shni topilmadi</p>
+                <p className="text-sm text-sub">{s.noNeighbors}</p>
               )}
             </div>
           )}
 
           {action === 'ban_user' && (
             <Card className="p-4 mb-4 bg-red-50 border-red-200">
-              <p className="text-sm text-ink">
-                Jazo taklifi uchun talab yuqori: 5 kishi qo'llab-quvvatlashi, uchdan ikki
-                ko'pchilik va kvorum kerak. Ayblanuvchi xabardor qilinadi va javob bera oladi.
-                Chetlatish vaqtinchalik (30 kun).
-              </p>
+              <p className="text-sm text-ink">{s.banWarning}</p>
             </Card>
           )}
 
-          <Field label="Sarlavha">
+          <Field label={s.titleLabel}>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Qisqa nom yozing"
+              placeholder={s.titlePlaceholder}
               maxLength={200}
             />
           </Field>
 
-          <Field label="Tushuntirish">
+          <Field label={s.descLabel}>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Nima uchun? Qisqacha yozing"
+              placeholder={s.descPlaceholder}
               maxLength={4000}
             />
           </Field>
@@ -158,13 +161,10 @@ export default function CreateProposalScreen() {
           {create.error && <ErrorNote message={create.error.message} />}
 
           <Button full loading={create.isPending} disabled={!canSubmit} onClick={submit}>
-            Yuborish
+            {c.send}
           </Button>
 
-          <p className="text-xs text-sub mt-3">
-            Taklif avval {secondsNeeded} qo'shnining qo'llab-quvvatlashini olishi kerak — shunda
-            ovozga qo'yiladi. Bu keraksiz ovozlardan himoya.
-          </p>
+          <p className="text-xs text-sub mt-3">{fmt(s.secondingNote, { n: secondsNeeded })}</p>
         </div>
       )}
     </div>

@@ -24,14 +24,17 @@ import {
   useServices,
   useUpdateService,
 } from '@/core/queries/services'
+import { fmt, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { servicesStrings } from '@/core/i18n/services'
 import type { Service, ServiceCategory } from '@/core/api/types'
 
-const CATEGORIES: { value: ServiceCategory; label: string; emoji: string }[] = [
-  { value: 'food', label: 'Oziq-ovqat', emoji: '🥚' },
-  { value: 'goods', label: 'Buyumlar', emoji: '📦' },
-  { value: 'rental', label: 'Ijara', emoji: '🔧' },
-  { value: 'service', label: 'Xizmat', emoji: '🛠' },
-  { value: 'skill', label: 'Hunar', emoji: '🎨' },
+const CATEGORIES: { value: ServiceCategory; key: keyof typeof servicesStrings; emoji: string }[] = [
+  { value: 'food', key: 'catFood', emoji: '🥚' },
+  { value: 'goods', key: 'catGoods', emoji: '📦' },
+  { value: 'rental', key: 'catRental', emoji: '🔧' },
+  { value: 'service', key: 'catService', emoji: '🛠' },
+  { value: 'skill', key: 'catSkill', emoji: '🎨' },
 ]
 
 function categoryMeta(cat: string) {
@@ -56,6 +59,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 // ---------- contact button: tel: link for phones, clipboard copy otherwise ----------
 
 function ContactButton({ contact }: { contact: string }) {
+  const s = useStrings(servicesStrings)
   const [copied, setCopied] = useState(false)
   const trimmed = contact.trim()
 
@@ -65,7 +69,7 @@ function ContactButton({ contact }: { contact: string }) {
         href={`tel:${trimmed.replace(/[^+\d]/g, '')}`}
         className="inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all bg-white text-ink border border-line hover:bg-gray-50 active:scale-[0.98] px-3 py-1.5 text-sm"
       >
-        {"📞 Bog'lanish"}
+        {s.contact}
       </a>
     )
   }
@@ -79,7 +83,7 @@ function ContactButton({ contact }: { contact: string }) {
         window.setTimeout(() => setCopied(false), 1500)
       }}
     >
-      {copied ? 'Nusxalandi ✓' : "📞 Bog'lanish"}
+      {copied ? s.copied : s.contact}
     </Button>
   )
 }
@@ -87,6 +91,7 @@ function ContactButton({ contact }: { contact: string }) {
 // ---------- directory card ----------
 
 function ServiceCard({ service }: { service: Service }) {
+  const s = useStrings(servicesStrings)
   const meta = categoryMeta(service.category)
   return (
     <Card className="p-4 mb-3">
@@ -95,12 +100,12 @@ function ServiceCard({ service }: { service: Service }) {
         {meta && (
           <span className="shrink-0">
             <Badge>
-              {meta.emoji} {meta.label}
+              {meta.emoji} {s[meta.key]}
             </Badge>
           </span>
         )}
       </div>
-      <div className="text-xs text-sub mt-0.5">{service.household_name} xonadoni</div>
+      <div className="text-xs text-sub mt-0.5">{fmt(s.householdSuffix, { name: service.household_name })}</div>
       {service.description && <p className="text-sm text-ink mt-2 line-clamp-3">{service.description}</p>}
       {(service.price || service.contact) && (
         <div className="flex items-center justify-between gap-2 mt-3">
@@ -115,6 +120,8 @@ function ServiceCard({ service }: { service: Service }) {
 // ---------- my services row: hide/show + delete ----------
 
 function MyServiceRow({ service }: { service: Service }) {
+  const s = useStrings(servicesStrings)
+  const c = useStrings(common)
   const update = useUpdateService(service.id)
   const del = useDeleteService()
   const meta = categoryMeta(service.category)
@@ -122,7 +129,7 @@ function MyServiceRow({ service }: { service: Service }) {
     <div className="flex items-center justify-between gap-2 py-3">
       <div className={`flex-1 min-w-0 text-sm font-semibold truncate ${service.active ? 'text-ink' : 'text-sub'}`}>
         {meta?.emoji} {service.title}
-        {!service.active && <span className="text-xs font-normal text-sub"> · yashirin</span>}
+        {!service.active && <span className="text-xs font-normal text-sub"> · {s.hiddenTag}</span>}
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <Button
@@ -131,13 +138,13 @@ function MyServiceRow({ service }: { service: Service }) {
           loading={update.isPending}
           onClick={() => update.mutate({ active: !service.active })}
         >
-          {service.active ? 'Yashirish' : "Ko'rsatish"}
+          {service.active ? s.hide : s.show}
         </Button>
         <button
-          aria-label="O'chirish"
+          aria-label={c.remove}
           className="w-11 h-11 -my-2 -mr-2 flex items-center justify-center text-sub hover:text-danger text-xl leading-none"
           onClick={() => {
-            if (window.confirm("Bu xizmat o'chirilsinmi?")) del.mutate(service.id)
+            if (window.confirm(s.confirmDeleteService)) del.mutate(service.id)
           }}
         >
           ×
@@ -150,6 +157,8 @@ function MyServiceRow({ service }: { service: Service }) {
 // ---------- create form modal ----------
 
 function CreateServiceModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const s = useStrings(servicesStrings)
+  const c = useStrings(common)
   const create = useCreateService()
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState<ServiceCategory>('food')
@@ -182,32 +191,32 @@ function CreateServiceModal({ open, onClose }: { open: boolean; onClose: () => v
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Xizmat qo'shish">
+    <Modal open={open} onClose={onClose} title={s.addServiceTitle}>
       <form onSubmit={submit}>
         {create.error && <ErrorNote message={create.error.message} />}
-        <Field label="Nomi">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Uy tuxumi" required />
+        <Field label={s.fieldName}>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={s.phTitle} required />
         </Field>
-        <Field label="Turi">
+        <Field label={s.fieldType}>
           <Select value={category} onChange={(e) => setCategory(e.target.value as ServiceCategory)}>
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.emoji} {c.label}
+            {CATEGORIES.map((cat) => (
+              <option key={cat.value} value={cat.value}>
+                {cat.emoji} {s[cat.key]}
               </option>
             ))}
           </Select>
         </Field>
-        <Field label="Tavsif (shart emas)">
+        <Field label={s.fieldDesc}>
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
-        <Field label="Narx (shart emas)">
-          <Input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="10 000 so'm / dona" />
+        <Field label={s.fieldPrice}>
+          <Input value={price} onChange={(e) => setPrice(e.target.value)} placeholder={s.phPrice} />
         </Field>
-        <Field label="Telefon (shart emas)">
+        <Field label={s.fieldPhone}>
           <Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="+998 90 123 45 67" />
         </Field>
         <Button type="submit" full loading={create.isPending} disabled={title.trim().length < 2}>
-          {"Qo'shish"}
+          {c.add}
         </Button>
       </form>
     </Modal>
@@ -217,7 +226,9 @@ function CreateServiceModal({ open, onClose }: { open: boolean; onClose: () => v
 // ---------- screen ----------
 
 export default function ServicesScreen() {
-  const me = useAuth((s) => s.me)
+  const s = useStrings(servicesStrings)
+  const c = useStrings(common)
+  const me = useAuth((state) => state.me)
   const navigate = useNavigate()
   const [category, setCategory] = useState<ServiceCategory | 'all'>('all')
   const [createOpen, setCreateOpen] = useState(false)
@@ -234,21 +245,21 @@ export default function ServicesScreen() {
   return (
     <div>
       <PageTitle
-        title="Xizmatlar"
-        subtitle="Qo'shnilar nima taklif qiladi"
+        title={c.navServices}
+        subtitle={s.svcSubtitle}
         action={
           <Button size="sm" onClick={openAdd}>
-            {"+ Qo'shish"}
+            {s.addBtn}
           </Button>
         }
       />
 
       {mine.data && mine.data.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-[15px] font-bold text-ink mb-2">Mening xizmatlarim</h2>
+          <h2 className="text-[15px] font-bold text-ink mb-2">{s.myServices}</h2>
           <Card className="px-4 divide-y divide-line">
-            {mine.data.map((s) => (
-              <MyServiceRow key={s.id} service={s} />
+            {mine.data.map((sv) => (
+              <MyServiceRow key={sv.id} service={sv} />
             ))}
           </Card>
         </div>
@@ -256,11 +267,11 @@ export default function ServicesScreen() {
 
       <div className="no-scrollbar overflow-x-auto flex gap-2 mb-4 -mx-4 px-4">
         <Chip active={category === 'all'} onClick={() => setCategory('all')}>
-          Hammasi
+          {s.allChip}
         </Chip>
-        {CATEGORIES.map((c) => (
-          <Chip key={c.value} active={category === c.value} onClick={() => setCategory(c.value)}>
-            {c.emoji} {c.label}
+        {CATEGORIES.map((cat) => (
+          <Chip key={cat.value} active={category === cat.value} onClick={() => setCategory(cat.value)}>
+            {cat.emoji} {s[cat.key]}
           </Chip>
         ))}
       </div>
@@ -272,22 +283,18 @@ export default function ServicesScreen() {
       )}
       {services.error && <ErrorNote message={services.error.message} />}
       {services.data && services.data.length === 0 && (
-        <EmptyState
-          icon="🧺"
-          title="Hozircha xizmatlar yo'q"
-          text="Tuxum sotasizmi? Asbob ijaraga berasizmi? Birinchi bo'lib qo'shing!"
-        />
+        <EmptyState icon="🧺" title={s.svcEmptyTitle} text={s.svcEmptyText} />
       )}
-      {services.data?.map((s) => (
-        <ServiceCard key={s.id} service={s} />
+      {services.data?.map((sv) => (
+        <ServiceCard key={sv.id} service={sv} />
       ))}
 
       <CreateServiceModal open={createOpen} onClose={() => setCreateOpen(false)} />
 
-      <Modal open={noHouseholdOpen} onClose={() => setNoHouseholdOpen(false)} title="Xonadon kerak">
-        <p className="text-sm text-ink mb-4">{"Xizmat qo'shish uchun avval xonadoningizni yarating"}</p>
+      <Modal open={noHouseholdOpen} onClose={() => setNoHouseholdOpen(false)} title={s.needHouseholdTitle}>
+        <p className="text-sm text-ink mb-4">{s.needHouseholdText}</p>
         <Button full onClick={() => navigate('/app/household')}>
-          Xonadon yaratish
+          {s.createHousehold}
         </Button>
       </Modal>
     </div>

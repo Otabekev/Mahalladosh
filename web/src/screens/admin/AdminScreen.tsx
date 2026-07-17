@@ -18,12 +18,17 @@ import {
 } from '@/components/ui'
 import { useAddMfy, useAdminPetitions, useAdminStats, useApprove, useReject } from '@/core/queries/admin'
 import { useDistricts, useRegions } from '@/core/queries/onboarding'
+import { fmt, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { servicesStrings } from '@/core/i18n/services'
 
 type Tab = 'petitions' | 'mfy' | 'stats'
 
 // ---------- So'rovlar: pending mahalla petitions ----------
 
 function PetitionsTab() {
+  const s = useStrings(servicesStrings)
+  const c = useStrings(common)
   const petitions = useAdminPetitions()
   const approve = useApprove()
   const reject = useReject()
@@ -37,26 +42,21 @@ function PetitionsTab() {
   }
   if (petitions.error) return <ErrorNote message={petitions.error.message} />
   if (!petitions.data || petitions.data.length === 0) {
-    return (
-      <EmptyState
-        icon="✅"
-        title="Kutilayotgan so'rovlar yo'q"
-        text="Yangi mahalla so'rovlari shu yerda ko'rinadi."
-      />
-    )
+    return <EmptyState icon="✅" title={s.petitionsEmptyTitle} text={s.petitionsEmptyText} />
   }
 
   return (
     <div>
       {(approve.error ?? reject.error) && (
-        <ErrorNote message={(approve.error ?? reject.error)?.message ?? 'Xatolik'} />
+        <ErrorNote message={(approve.error ?? reject.error)?.message ?? c.error} />
       )}
       {petitions.data.map((p) => (
         <Card key={p.mahalla.id} className="p-4 mb-3">
-          <div className="text-[15px] font-bold text-ink">{p.mahalla.name} mahallasi</div>
+          <div className="text-[15px] font-bold text-ink">{fmt(c.mahallaSuffix, { name: p.mahalla.name })}</div>
           <div className="text-xs text-sub mt-0.5">
             {p.district_name}, {p.region_name}
-            {p.mahalla.estimated_households != null && ` · ~${p.mahalla.estimated_households} xonadon`}
+            {p.mahalla.estimated_households != null &&
+              ` · ${fmt(s.householdsApprox, { n: p.mahalla.estimated_households })}`}
           </div>
           <div className="flex flex-wrap gap-2 mt-2">
             {p.petitioners.map((u) => (
@@ -71,7 +71,7 @@ function PetitionsTab() {
               className="bg-good! hover:opacity-90 text-white"
               loading={approve.isPending && approve.variables === p.mahalla.id}
               onClick={() => {
-                if (window.confirm("Mahalla ochilsinmi? Asoschilar a'zo qilinadi va +20 ball oladi.")) {
+                if (window.confirm(s.confirmApprove)) {
                   approve.mutate(p.mahalla.id, {
                     onSuccess: () => {
                       void useAuth.getState().refresh()
@@ -80,21 +80,19 @@ function PetitionsTab() {
                 }
               }}
             >
-              ✓ Tasdiqlash
+              {s.approve}
             </Button>
             <Button
               variant="danger"
               loading={reject.isPending && reject.variables === p.mahalla.id}
               onClick={() => {
-                if (window.confirm("Bu so'rov rad etilsinmi?")) reject.mutate(p.mahalla.id)
+                if (window.confirm(s.confirmReject)) reject.mutate(p.mahalla.id)
               }}
             >
-              Rad etish
+              {s.reject}
             </Button>
           </div>
-          <p className="text-xs text-sub mt-2">
-            {"Tasdiqlashdan oldin nom to'g'riligini va takrorlanmasligini tekshiring."}
-          </p>
+          <p className="text-xs text-sub mt-2">{s.approveHint}</p>
         </Card>
       ))}
     </div>
@@ -104,6 +102,8 @@ function PetitionsTab() {
 // ---------- MFY qo'shish: seed the pre-entered MFY list ----------
 
 function MfyTab() {
+  const s = useStrings(servicesStrings)
+  const c = useStrings(common)
   const regions = useRegions()
   const [regionId, setRegionId] = useState<number | ''>('')
   const districts = useDistricts(regionId === '' ? undefined : regionId)
@@ -133,10 +133,10 @@ function MfyTab() {
         {addMfy.error && <ErrorNote message={addMfy.error.message} />}
         {done && (
           <div className="rounded-xl bg-good-soft text-good text-sm font-semibold px-4 py-3 mb-4">
-            {"Qo'shildi ✓"}
+            {s.addedOk}
           </div>
         )}
-        <Field label="Viloyat">
+        <Field label={s.region}>
           <Select
             value={regionId}
             onChange={(e) => {
@@ -144,7 +144,7 @@ function MfyTab() {
               setDistrictId('')
             }}
           >
-            <option value="">Tanlang</option>
+            <option value="">{s.choose}</option>
             {(regions.data ?? []).map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name_uz}
@@ -152,13 +152,13 @@ function MfyTab() {
             ))}
           </Select>
         </Field>
-        <Field label="Tuman">
+        <Field label={s.district}>
           <Select
             value={districtId}
             onChange={(e) => setDistrictId(e.target.value === '' ? '' : Number(e.target.value))}
             disabled={regionId === ''}
           >
-            <option value="">Tanlang</option>
+            <option value="">{s.choose}</option>
             {(districts.data ?? []).map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name_uz}
@@ -166,7 +166,7 @@ function MfyTab() {
             ))}
           </Select>
         </Field>
-        <Field label="MFY nomi">
+        <Field label={s.mfyName}>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Yoshlik" required />
         </Field>
         <Button
@@ -175,11 +175,9 @@ function MfyTab() {
           loading={addMfy.isPending}
           disabled={districtId === '' || name.trim().length < 2}
         >
-          {"Qo'shish"}
+          {c.add}
         </Button>
-        <p className="text-xs text-sub mt-3">
-          {"MFY ro'yxati oldindan kiritiladi — foydalanuvchilar nom yozmaydi, ro'yxatdan tanlaydi."}
-        </p>
+        <p className="text-xs text-sub mt-3">{s.mfyHint}</p>
       </form>
     </Card>
   )
@@ -188,6 +186,7 @@ function MfyTab() {
 // ---------- Statistika ----------
 
 function StatsTab() {
+  const s = useStrings(servicesStrings)
   const stats = useAdminStats()
 
   if (stats.isPending) {
@@ -201,12 +200,12 @@ function StatsTab() {
   if (!stats.data) return null
 
   const items: { label: string; value: number }[] = [
-    { label: 'Foydalanuvchilar', value: stats.data.users },
-    { label: 'Faol mahallalar', value: stats.data.mahallas_active },
-    { label: 'Kutilmoqda', value: stats.data.mahallas_pending },
-    { label: 'Shakllanmoqda', value: stats.data.mahallas_forming },
-    { label: 'Xonadonlar', value: stats.data.households },
-    { label: "E'lonlar", value: stats.data.posts },
+    { label: s.statUsers, value: stats.data.users },
+    { label: s.statActiveMahallas, value: stats.data.mahallas_active },
+    { label: s.statPending, value: stats.data.mahallas_pending },
+    { label: s.statForming, value: stats.data.mahallas_forming },
+    { label: s.statHouseholds, value: stats.data.households },
+    { label: s.statPosts, value: stats.data.posts },
   ]
 
   return (
@@ -224,20 +223,21 @@ function StatsTab() {
 // ---------- screen ----------
 
 export default function AdminScreen() {
-  const me = useAuth((s) => s.me)
+  const s = useStrings(servicesStrings)
+  const me = useAuth((state) => state.me)
   const [tab, setTab] = useState<Tab>('petitions')
 
   if (!me?.user.is_admin) return <Navigate to="/app" replace />
 
   return (
     <div>
-      <PageTitle title="Admin panel" subtitle="Operator boshqaruvi" />
+      <PageTitle title={s.adminTitle} subtitle={s.adminSubtitle} />
       <div className="mb-4">
         <SegmentedTabs<Tab>
           tabs={[
-            { value: 'petitions', label: "So'rovlar" },
-            { value: 'mfy', label: "MFY qo'shish" },
-            { value: 'stats', label: 'Statistika' },
+            { value: 'petitions', label: s.tabPetitions },
+            { value: 'mfy', label: s.tabMfy },
+            { value: 'stats', label: s.tabStats },
           ]}
           value={tab}
           onChange={setTab}

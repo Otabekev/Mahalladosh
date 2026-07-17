@@ -8,7 +8,15 @@
 including in-app notifications (§9-H), automatic monthly Faol qo'shni honor, the anti-gaming
 pair cap, and Telegram Login Widget wiring (activates itself when bot token+username are set
 in env; dev name-login until then). Adversarially reviewed (11 findings fixed).
-Repo: `api/` (FastAPI+SQLite) + `web/` (Vite+React PWA).
+Repo: `api/` (FastAPI+SQLite) + `web/` (Vite+React PWA). Published: github.com/Otabekev/Mahalladosh.
+
+**Round 3 (2026-07-16):** share posts (photo/text) + discover feed with viewer-scope tabs
+(Mahallam / Viloyatim / O'zbekiston — people's posts only; video reels stay Phase 4); image
+uploads (EXIF-stripped, size-capped); **DingDong 🔔 virtual doorbell** — house coordinates
+stored server-side only, GPS proximity ≤100m to ring, in-app chime; distance never disclosed
+(anti-trilateration). Skool-style consistency pass over every screen (Inter font). Phone GPS
+requires HTTPS → DingDong works on real phones after tunnel/deploy; force-ringing a closed
+phone needs web push (deploy-day).
 **Remaining before pilot:** deploy-day tasks (Alembic, hosting, BotFather bot, prod env,
 first-admin bootstrap) + hand-curated real MFY list for the launch district + wipe test data.
 **Run it:** start `api` (uvicorn, port 8000) and `web` (`npm run dev`, port 5174); open

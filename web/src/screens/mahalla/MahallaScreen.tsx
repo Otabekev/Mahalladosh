@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
+import { fmt, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { mahallaStrings } from '@/core/i18n/mahalla'
 import {
   Avatar,
   Badge,
@@ -31,12 +34,13 @@ function CenterSpinner() {
 }
 
 function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
+  const s = useStrings(mahallaStrings)
   return (
     <div className="px-4 py-3 flex items-center gap-3">
       <RankNumber rank={entry.rank} />
       <Avatar name={entry.user.full_name} src={entry.user.photo_url} size={36} />
       <span className="font-semibold text-sm text-ink truncate">{entry.user.full_name}</span>
-      {entry.user.is_raisi && <Badge color="gold">Raisi</Badge>}
+      {entry.user.is_raisi && <Badge color="gold">{s.raisi}</Badge>}
       <span className="ml-auto shrink-0">
         <PointsBadge points={entry.points} />
       </span>
@@ -45,11 +49,12 @@ function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
 }
 
 function MemberRow({ user }: { user: User }) {
+  const s = useStrings(mahallaStrings)
   return (
     <div className="px-4 py-3 flex items-center gap-3">
       <Avatar name={user.full_name} src={user.photo_url} size={36} />
       <span className="font-semibold text-sm text-ink truncate">{user.full_name}</span>
-      {user.is_raisi && <Badge color="gold">Raisi</Badge>}
+      {user.is_raisi && <Badge color="gold">{s.raisi}</Badge>}
       <span className="ml-auto shrink-0">
         <PointsBadge size="sm" points={user.rep_month} />
       </span>
@@ -58,6 +63,7 @@ function MemberRow({ user }: { user: User }) {
 }
 
 function ReytingTab({ mahallaId }: { mahallaId: number }) {
+  const s = useStrings(mahallaStrings)
   const [period, setPeriod] = useState<Period>('month')
   const { data, isPending, error } = useLeaderboard(mahallaId)
 
@@ -70,8 +76,8 @@ function ReytingTab({ mahallaId }: { mahallaId: number }) {
     <div className="space-y-4">
       <SegmentedTabs<Period>
         tabs={[
-          { value: 'month', label: 'Bu oy' },
-          { value: 'alltime', label: 'Umumiy' },
+          { value: 'month', label: s.periodMonth },
+          { value: 'alltime', label: s.periodAllTime },
         ]}
         value={period}
         onChange={setPeriod}
@@ -79,8 +85,8 @@ function ReytingTab({ mahallaId }: { mahallaId: number }) {
       {entries.length === 0 ? (
         <EmptyState
           icon="⭐"
-          title={period === 'month' ? "Bu oy hali ball yig'ilmagan" : "Hali ball yig'ilmagan"}
-          text="Qo'shnilarga yordam bering — birinchi bo'ling!"
+          title={period === 'month' ? s.emptyRatingMonthTitle : s.emptyRatingAllTitle}
+          text={s.emptyRatingText}
         />
       ) : (
         <Card className="p-0 divide-y divide-line">
@@ -94,19 +100,14 @@ function ReytingTab({ mahallaId }: { mahallaId: number }) {
 }
 
 function QoshnilarTab({ mahallaId }: { mahallaId: number }) {
+  const s = useStrings(mahallaStrings)
   const { data, isPending, error } = useMembers(mahallaId)
 
   if (isPending) return <CenterSpinner />
   if (error) return <ErrorNote message={error.message} />
 
   if (data.length === 0) {
-    return (
-      <EmptyState
-        icon="👋"
-        title="Hali qo'shnilar yo'q"
-        text="Qo'shnilaringizni Mahalladoshga taklif qiling."
-      />
-    )
+    return <EmptyState icon="👋" title={s.emptyNeighborsTitle} text={s.emptyNeighborsText} />
   }
 
   return (
@@ -119,8 +120,9 @@ function QoshnilarTab({ mahallaId }: { mahallaId: number }) {
 }
 
 function XonadonlarTab({ mahallaId }: { mahallaId: number }) {
+  const s = useStrings(mahallaStrings)
   const navigate = useNavigate()
-  const me = useAuth((s) => s.me)
+  const me = useAuth((state) => state.me)
   const { data, isPending, error } = useHouseholds(mahallaId)
 
   if (isPending) return <CenterSpinner />
@@ -130,14 +132,14 @@ function XonadonlarTab({ mahallaId }: { mahallaId: number }) {
     <div className="space-y-4">
       {me && me.household === null && (
         <Card className="bg-good-soft border-green-200 p-4 flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-ink">Xonadoningiz hali yo'q</p>
+          <p className="text-sm font-semibold text-ink">{s.noHouseholdYet}</p>
           <Button size="sm" onClick={() => navigate('/app/household')}>
-            Xonadon yaratish
+            {s.createHousehold}
           </Button>
         </Card>
       )}
       {data.length === 0 ? (
-        <EmptyState icon="🏠" title="Hali xonadonlar yo'q" text="Birinchi xonadonni siz yarating!" />
+        <EmptyState icon="🏠" title={s.emptyHouseholdsTitle} text={s.emptyHouseholdsText} />
       ) : (
         <Card className="p-0 divide-y divide-line">
           {data.map((h: Household) => (
@@ -147,16 +149,18 @@ function XonadonlarTab({ mahallaId }: { mahallaId: number }) {
               className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition"
             >
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm text-ink truncate">{h.family_name} xonadoni</div>
+                <div className="font-semibold text-sm text-ink truncate">
+                  {fmt(s.householdOf, { name: h.family_name })}
+                </div>
                 <div className="text-xs text-sub">
-                  {h.resident_count} kishi
+                  {fmt(s.residents, { n: h.resident_count })}
                   {h.street ? ` · ${h.street}` : ''}
                 </div>
               </div>
               {h.verification_status === 'verified' ? (
-                <Badge color="green">✓ Tasdiqlangan</Badge>
+                <Badge color="green">{s.verifiedBadge}</Badge>
               ) : (
-                <Badge color="gray">Kutilmoqda</Badge>
+                <Badge color="gray">{s.pendingBadge}</Badge>
               )}
             </div>
           ))}
@@ -167,7 +171,9 @@ function XonadonlarTab({ mahallaId }: { mahallaId: number }) {
 }
 
 export default function MahallaScreen() {
-  const me = useAuth((s) => s.me)
+  const s = useStrings(mahallaStrings)
+  const c = useStrings(common)
+  const me = useAuth((state) => state.me)
   const mahallaId = me?.mahalla?.id
   const [tab, setTab] = useState<Tab>('reyting')
   const { data, isPending, error } = useMahallaDetail(mahallaId)
@@ -179,29 +185,23 @@ export default function MahallaScreen() {
   return (
     <div className="space-y-4">
       <Card className="p-5">
-        <h1 className="text-xl font-bold text-ink">{data.name} mahallasi</h1>
+        <h1 className="text-xl font-bold text-ink">{fmt(c.mahallaSuffix, { name: data.name })}</h1>
         <p className="text-sm text-sub mt-0.5">
           {data.district_name}, {data.region_name}
         </p>
-        <div className="flex gap-4 mt-3">
-          <div>
-            <div className="font-bold text-ink">{data.member_count}</div>
-            <div className="text-xs text-sub">a'zo</div>
-          </div>
-          <div>
-            <div className="font-bold text-ink">{data.household_count}</div>
-            <div className="text-xs text-sub">xonadon</div>
-          </div>
+        <div className="flex gap-4 mt-3 text-sm text-sub">
+          <div>{fmt(s.statMembers, { n: data.member_count })}</div>
+          <div>{fmt(s.statHouseholds, { n: data.household_count })}</div>
         </div>
         <div className="mt-4">
           {data.raisi ? (
             <div className="flex items-center gap-3">
               <Avatar name={data.raisi.full_name} src={data.raisi.photo_url} size={36} />
               <span className="font-semibold text-sm text-ink truncate">{data.raisi.full_name}</span>
-              <Badge color="gold">Raisi</Badge>
+              <Badge color="gold">{s.raisi}</Badge>
             </div>
           ) : (
-            <p className="text-sm text-sub">Raisi hali saylanmagan — Ovozlar bo'limida taklif qiling</p>
+            <p className="text-sm text-sub">{s.noRaisi}</p>
           )}
         </div>
       </Card>
@@ -210,7 +210,7 @@ export default function MahallaScreen() {
         <Card className="bg-gold-soft border-amber-200 p-4 flex items-center gap-3">
           <span className="text-3xl">🏆</span>
           <div className="flex-1 min-w-0">
-            <div className="text-xs text-gold font-semibold">O'tgan oyning faol qo'shnisi</div>
+            <div className="text-xs text-gold font-semibold">{s.faolQoshniTitle}</div>
             <div className="font-bold text-ink truncate">{data.faol_qoshni.user.full_name}</div>
           </div>
           <span className="shrink-0">
@@ -221,9 +221,9 @@ export default function MahallaScreen() {
 
       <SegmentedTabs<Tab>
         tabs={[
-          { value: 'reyting', label: 'Reyting' },
-          { value: 'qoshnilar', label: "Qo'shnilar" },
-          { value: 'xonadonlar', label: 'Xonadonlar' },
+          { value: 'reyting', label: s.tabRating },
+          { value: 'qoshnilar', label: s.tabNeighbors },
+          { value: 'xonadonlar', label: s.tabHouseholds },
         ]}
         value={tab}
         onChange={setTab}

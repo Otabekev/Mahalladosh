@@ -25,17 +25,22 @@ import {
   usePetition,
   useRegions,
 } from '@/core/queries/onboarding'
+import { fmt, pick, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { onboardingStrings } from '@/core/i18n/onboarding'
 
 function Chevron() {
   return <span className="text-sub text-xl leading-none shrink-0">›</span>
 }
 
 function errText(e: unknown): string {
-  return e instanceof ApiError ? e.message : 'Xatolik yuz berdi'
+  return e instanceof ApiError ? e.message : pick(common.error)
 }
 
 export default function OnboardingScreen() {
   const navigate = useNavigate()
+  const s = useStrings(onboardingStrings)
+  const sc = useStrings(common)
 
   const [region, setRegion] = useState<Region | null>(null)
   const [district, setDistrict] = useState<District | null>(null)
@@ -110,18 +115,18 @@ export default function OnboardingScreen() {
             <span className="font-extrabold text-[15px] text-ink">Mahalladosh</span>
           </div>
           <Button variant="ghost" size="sm" onClick={handleLogout}>
-            Chiqish
+            {sc.logout}
           </Button>
         </div>
       </header>
 
       <main className="max-w-xl mx-auto px-4 pt-5 pb-16">
-        <p className="text-xs font-semibold text-sub mb-2">{step}/3 qadam</p>
+        <p className="text-xs font-semibold text-sub mb-2">{fmt(s.stepLabel, { n: step })}</p>
 
         {/* step 1: region */}
         {step === 1 && (
           <>
-            <PageTitle title="Viloyatingiz" subtitle="Qaysi viloyatda yashaysiz?" />
+            <PageTitle title={s.regionTitle} subtitle={s.regionSubtitle} />
             {regions.isPending && (
               <div className="flex justify-center py-12">
                 <Spinner />
@@ -143,9 +148,9 @@ export default function OnboardingScreen() {
         {step === 2 && (
           <>
             <Button variant="ghost" size="sm" className="mb-2 -ml-2 min-h-[44px]" onClick={() => setRegion(null)}>
-              ← Orqaga
+              {`← ${sc.back}`}
             </Button>
-            <PageTitle title="Tumaningiz" subtitle={region ? region.name_uz : undefined} />
+            <PageTitle title={s.districtTitle} subtitle={region ? region.name_uz : undefined} />
             {districts.isPending && (
               <div className="flex justify-center py-12">
                 <Spinner />
@@ -176,12 +181,12 @@ export default function OnboardingScreen() {
                 setDebouncedQ('')
               }}
             >
-              ← Orqaga
+              {`← ${sc.back}`}
             </Button>
-            <PageTitle title="Mahallangiz" subtitle={district ? district.name_uz : undefined} />
+            <PageTitle title={s.mahallaTitle} subtitle={district ? district.name_uz : undefined} />
             {error && <ErrorNote message={error} />}
             <div className="mb-4">
-              <Input placeholder="Mahalla nomini qidiring" value={q} onChange={(e) => setQ(e.target.value)} />
+              <Input placeholder={s.searchPlaceholder} value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
             {mahallas.isPending && (
               <div className="flex justify-center py-12">
@@ -190,7 +195,7 @@ export default function OnboardingScreen() {
             )}
             {mahallas.isError && <ErrorNote message={errText(mahallas.error)} />}
             {mahallas.data && mahallas.data.length === 0 && (
-              <EmptyState icon="🏘" title="Mahalla topilmadi" text="Bu tumanda mahallalar hali kiritilmagan. Tez orada qo'shiladi." />
+              <EmptyState icon="🏘" title={s.emptyTitle} text={s.emptyText} />
             )}
             <div className="space-y-2">
               {mahallas.data?.map((m) => (
@@ -200,30 +205,30 @@ export default function OnboardingScreen() {
                   {m.status === 'active' ? (
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <div className="flex items-center gap-2">
-                        <Badge color="green">Ochiq</Badge>
-                        <span className="text-xs text-sub">{m.member_count} a'zo</span>
+                        <Badge color="green">{s.statusOpen}</Badge>
+                        <span className="text-xs text-sub">{fmt(s.memberCount, { n: m.member_count })}</span>
                       </div>
                       <Button
                         loading={join.isPending && join.variables === m.id}
                         onClick={() => void handleJoin(m)}
                       >
-                        Qo'shilish
+                        {s.join}
                       </Button>
                     </div>
                   ) : m.status === 'pending' ? (
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <Badge color="gold">Tasdiqlanmoqda</Badge>
+                      <Badge color="gold">{s.statusPending}</Badge>
                       <Button variant="secondary" onClick={() => openPetition(m)}>
-                        So'rov yuborish
+                        {s.sendPetition}
                       </Button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <span className="text-xs text-sub">
-                        {m.petition_count}/{m.petition_threshold} so'rov
+                        {fmt(s.petitionCount, { count: m.petition_count, total: m.petition_threshold })}
                       </span>
                       <Button variant="secondary" onClick={() => openPetition(m)}>
-                        So'rov yuborish
+                        {s.sendPetition}
                       </Button>
                     </div>
                   )}
@@ -235,19 +240,19 @@ export default function OnboardingScreen() {
       </main>
 
       {/* petition modal */}
-      <Modal open={petitionTarget !== null} onClose={() => setPetitionTarget(null)} title="So'rov yuborish">
+      <Modal open={petitionTarget !== null} onClose={() => setPetitionTarget(null)} title={s.sendPetition}>
         {modalError && <ErrorNote message={modalError} />}
-        <Field label="Mahallada taxminan nechta xonadon bor?" hint="Shart emas">
+        <Field label={s.householdsLabel} hint={s.householdsHint}>
           <Input
             type="number"
             min={1}
-            placeholder="Masalan: 40"
+            placeholder={s.householdsPlaceholder}
             value={households}
             onChange={(e) => setHouseholds(e.target.value)}
           />
         </Field>
         <Button full loading={petition.isPending} onClick={() => void submitPetition()}>
-          Yuborish
+          {sc.send}
         </Button>
       </Modal>
     </div>

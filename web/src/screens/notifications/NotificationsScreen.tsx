@@ -3,8 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { ApiError } from '@/core/api/client'
 import { useMarkAllRead, useNotifications } from '@/core/queries/notifications'
 import { Card, EmptyState, ErrorNote, PageTitle, Spinner, timeAgo } from '@/components/ui'
+import { useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { servicesStrings } from '@/core/i18n/services'
 
 export default function NotificationsScreen() {
+  const s = useStrings(servicesStrings)
+  const c = useStrings(common)
   const navigate = useNavigate()
   const { data, isLoading, isError, error } = useNotifications()
   const markRead = useMarkAllRead()
@@ -26,8 +31,8 @@ export default function NotificationsScreen() {
   if (isError) {
     return (
       <div>
-        <PageTitle title="Bildirishnomalar" />
-        <ErrorNote message={error instanceof ApiError ? error.message : 'Xatolik yuz berdi'} />
+        <PageTitle title={s.notifTitle} />
+        <ErrorNote message={error instanceof ApiError ? error.message : c.error} />
       </div>
     )
   }
@@ -36,13 +41,9 @@ export default function NotificationsScreen() {
 
   return (
     <div>
-      <PageTitle title="Bildirishnomalar" subtitle="Mahallangizda nima bo'lyapti" />
+      <PageTitle title={s.notifTitle} subtitle={s.notifSubtitle} />
       {items.length === 0 ? (
-        <EmptyState
-          icon="🔔"
-          title="Hozircha bildirishnoma yo'q"
-          text="Qo'shnilaringiz faollashganda bu yerda ko'rasiz."
-        />
+        <EmptyState icon="🔔" title={s.notifEmptyTitle} text={s.notifEmptyText} />
       ) : (
         <Card className="p-0 divide-y divide-line">
           {items.map((n) => (

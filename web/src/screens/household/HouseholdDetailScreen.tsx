@@ -4,6 +4,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
+import { fmt, useStrings } from '@/core/i18n'
+import { householdStrings } from '@/core/i18n/household'
 import {
   Avatar,
   Badge,
@@ -17,16 +19,17 @@ import { getPosition, useDingDong, useHousehold, useVouch } from '@/core/queries
 import type { Household } from '@/core/api/types'
 
 export default function HouseholdDetailScreen() {
+  const s = useStrings(householdStrings)
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const me = useAuth((s) => s.me)
+  const me = useAuth((st) => st.me)
   const householdId = Number(id)
   const query = useHousehold(Number.isFinite(householdId) ? householdId : undefined)
   const vouch = useVouch(householdId)
 
   const back = (
     <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={() => navigate(-1)}>
-      ← Mahalla
+      {s.backToMahalla}
     </Button>
   )
 
@@ -59,16 +62,16 @@ export default function HouseholdDetailScreen() {
       {back}
 
       <Card className="p-5 mb-4">
-        <h2 className="text-lg font-extrabold text-ink">{household.family_name} xonadoni</h2>
+        <h2 className="text-lg font-extrabold text-ink">{fmt(s.householdOf, { name: household.family_name })}</h2>
         <p className="text-sm text-sub">
-          {household.resident_count} kishi
+          {fmt(s.nPeople, { n: household.resident_count })}
           {household.street ? ` · ${household.street}` : ''}
         </p>
         <div className="mt-2">
           {verified ? (
-            <Badge color="green">✓ Qo'shnilar tasdiqlagan</Badge>
+            <Badge color="green">{s.verifiedBadge}</Badge>
           ) : (
-            <Badge color="gray">Kafolat kutilmoqda ({household.vouch_count}/2)</Badge>
+            <Badge color="gray">{fmt(s.awaitingVouch, { n: household.vouch_count })}</Badge>
           )}
         </div>
       </Card>
@@ -77,14 +80,14 @@ export default function HouseholdDetailScreen() {
 
       {isEmpty ? (
         <Card className="mb-4">
-          <EmptyState icon="🌱" title="Bu oila hali ma'lumot kiritmagan" />
+          <EmptyState icon="🌱" title={s.emptyFamily} />
         </Card>
       ) : (
         <>
           {household.members.length > 0 && (
             <Card className="p-5 mb-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-ink">Oila a'zolari</h3>
+                <h3 className="font-bold text-ink">{s.membersTitle}</h3>
                 <span className="text-sm text-sub">{household.members.length}</span>
               </div>
               <div className="space-y-2">
@@ -94,7 +97,7 @@ export default function HouseholdDetailScreen() {
                     <span className="text-sm font-semibold text-ink flex-1 min-w-0 truncate">
                       {m.full_name}
                     </span>
-                    {m.is_elder && <Badge color="gold">Otaxon/Onaxon</Badge>}
+                    {m.is_elder && <Badge color="gold">{s.elderBadge}</Badge>}
                   </div>
                 ))}
               </div>
@@ -103,10 +106,10 @@ export default function HouseholdDetailScreen() {
 
           {household.family_history && (
             <div className="bg-amber-50/50 border border-amber-200 rounded-2xl shadow-card p-5 mb-4">
-              <h3 className="font-bold text-ink mb-2">📖 Oila tarixi</h3>
+              <h3 className="font-bold text-ink mb-2">{s.historyTitle}</h3>
               {household.generations_here != null && (
                 <p className="text-sm font-semibold text-ink mb-2">
-                  🏠 {household.generations_here} avloddan beri shu mahallada
+                  {fmt(s.generationsHere, { n: household.generations_here })}
                 </p>
               )}
               <p className="text-sm text-ink whitespace-pre-wrap">{household.family_history}</p>
@@ -118,19 +121,16 @@ export default function HouseholdDetailScreen() {
       {!isMine &&
         (household.my_vouch ? (
           <div className="mb-4">
-            <Badge color="green">✓ Siz kafolat bergansiz</Badge>
+            <Badge color="green">{s.youVouched}</Badge>
           </div>
         ) : (
           <Card className="p-4 mb-4">
             {vouch.error && <ErrorNote message={vouch.error.message} />}
-            <p className="text-sm text-ink mb-3">Bu oila haqiqatan mahallangizda yashaydimi?</p>
+            <p className="text-sm text-ink mb-3">{s.vouchQuestion}</p>
             <Button full variant="secondary" loading={vouch.isPending} onClick={() => vouch.mutate()}>
-              🤝 Kafolat beraman
+              {s.vouchButton}
             </Button>
-            <p className="text-xs text-sub mt-2">
-              Kafolat — qo'shnichilik ishonchi. {household.vouch_count}/2 to'planganda oila
-              tasdiqlanadi.
-            </p>
+            <p className="text-xs text-sub mt-2">{fmt(s.vouchExplain, { n: household.vouch_count })}</p>
           </Card>
         ))}
     </div>
@@ -140,6 +140,7 @@ export default function HouseholdDetailScreen() {
 // ---------- DingDong (virtual doorbell) ----------
 
 function DingDongRingCard({ household }: { household: Household }) {
+  const s = useStrings(householdStrings)
   const dingdong = useDingDong(household.id)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -156,7 +157,7 @@ function DingDongRingCard({ household }: { household: Household }) {
   if (!household.has_location) {
     return (
       <Card className="p-4 mb-4">
-        <p className="text-sm text-sub">🔔 Bu xonadon hali eshik qo'ng'irog'ini yoqmagan</p>
+        <p className="text-sm text-sub">{s.noBell}</p>
       </Card>
     )
   }
@@ -173,7 +174,7 @@ function DingDongRingCard({ household }: { household: Household }) {
       if (timer.current != null) window.clearTimeout(timer.current)
       timer.current = window.setTimeout(() => setSuccess(null), 6000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Qo'ng'iroq chalinmadi")
+      setError(err instanceof Error ? err.message : s.ringFail)
     } finally {
       setBusy(false)
     }
@@ -188,12 +189,9 @@ function DingDongRingCard({ household }: { household: Household }) {
         </div>
       )}
       <Button full size="lg" loading={busy} onClick={ring}>
-        🔔 Eshik qo'ng'irog'ini chalish
+        {s.ringButton}
       </Button>
-      <p className="text-xs text-sub mt-2">
-        Faqat eshik oldida turganingizda ishlaydi — GPS tekshiriladi. Xonadon telefonida
-        qo'ng'iroq jiringlaydi.
-      </p>
+      <p className="text-xs text-sub mt-2">{s.ringExplain}</p>
     </Card>
   )
 }

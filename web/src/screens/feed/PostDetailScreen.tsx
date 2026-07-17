@@ -13,9 +13,14 @@ import {
   TypePill,
   timeAgo,
 } from '@/components/ui'
+import { fmt, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { feedStrings } from '@/core/i18n/feed'
 import { useAuth } from '@/core/stores/auth'
 import { useClosePost, usePost, useResolve, useRespond } from '@/core/queries/posts'
 import type { PostDetail, PostType } from '@/core/api/types'
+
+type FeedKey = keyof typeof feedStrings
 
 function formatEventDate(iso: string): string {
   const d = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z')
@@ -24,19 +29,18 @@ function formatEventDate(iso: string): string {
     d.toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' })
 }
 
-const RESPOND_PLACEHOLDER: Partial<Record<PostType, string>> = {
-  help: 'Qanday yordam bera olasiz?',
-  newcomer: 'Xush kelibsiz deb yozing',
-  event: 'Kelasizmi?',
-  share: 'Fikr bildiring...',
+const RESPOND_PLACEHOLDER_KEYS: Partial<Record<PostType, FeedKey>> = {
+  help: 'respondPlaceholderHelp',
+  newcomer: 'respondPlaceholderNewcomer',
+  event: 'respondPlaceholderEvent',
+  share: 'respondPlaceholderShare',
 }
 
-function respondLabel(type: PostType): string {
-  if (type === 'help') return '🤝 Yordam beraman'
-  if (type === 'event') return '✅ Qatnashaman'
-  if (type === 'newcomer') return '👋 Xush kelibsiz'
-  if (type === 'share') return 'Yozish'
-  return 'Javob berish'
+const RESPOND_LABEL_KEYS: Partial<Record<PostType, FeedKey>> = {
+  help: 'respondHelp',
+  event: 'respondEvent',
+  newcomer: 'respondNewcomer',
+  share: 'respondShare',
 }
 
 function ResolveModal({
@@ -50,6 +54,7 @@ function ResolveModal({
   onClose: () => void
   postId: number
 }) {
+  const s = useStrings(feedStrings)
   const [helperId, setHelperId] = useState<number | null>(null)
   const resolve = useResolve(postId)
 
@@ -72,9 +77,9 @@ function ResolveModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Kim yordam berdi?">
+    <Modal open={open} onClose={onClose} title={s.resolveTitle}>
       {resolve.error && <ErrorNote message={resolve.error.message} />}
-      {responders.length === 0 && <p className="text-sm text-sub mb-4">Hali hech kim javob bermagan.</p>}
+      {responders.length === 0 && <p className="text-sm text-sub mb-4">{s.noRespondersYet}</p>}
       {responders.map((r) => (
         <button
           key={r.user.id}
@@ -88,9 +93,9 @@ function ResolveModal({
           <span className="text-sm font-semibold text-ink">{r.user.full_name}</span>
         </button>
       ))}
-      <p className="text-sm text-sub mb-3">Tanlangan qo'shni +10 ball oladi</p>
+      <p className="text-sm text-sub mb-3">{s.helperGetsPoints}</p>
       <Button full onClick={confirm} disabled={helperId === null} loading={resolve.isPending}>
-        Tasdiqlash
+        {s.confirm}
       </Button>
     </Modal>
   )
@@ -101,6 +106,8 @@ export default function PostDetailScreen() {
   const postId = Number(id)
   const navigate = useNavigate()
   const me = useAuth((s) => s.me)
+  const s = useStrings(feedStrings)
+  const c = useStrings(common)
 
   const { data: post, isLoading, error } = usePost(Number.isFinite(postId) ? postId : undefined)
   const respond = useRespond(postId)
@@ -122,7 +129,7 @@ export default function PostDetailScreen() {
     return (
       <div>
         <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
-          ← Lenta
+          ← {c.navFeed}
         </Button>
         <ErrorNote message={error.message} />
       </div>
@@ -169,13 +176,13 @@ export default function PostDetailScreen() {
   return (
     <div>
       <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
-        ← Lenta
+        ← {c.navFeed}
       </Button>
 
       {/* status banner */}
       {post.status === 'resolved' && post.resolved_helper && (
         <div className="rounded-2xl bg-gold-soft border border-amber-200 shadow-card p-4 mb-3 text-sm font-semibold text-gold">
-          🎉 {post.resolved_helper.full_name} yordam berdi — rahmat! (+10 ball)
+          {fmt(s.resolvedBanner, { name: post.resolved_helper.full_name })}
         </div>
       )}
 
@@ -185,9 +192,9 @@ export default function PostDetailScreen() {
           <div className="flex items-center justify-between gap-2 mb-2">
             <TypePill type={post.type} />
             {post.status === 'resolved' && !post.resolved_helper && (
-              <span className="text-xs font-semibold text-good">✓ Bajarildi</span>
+              <span className="text-xs font-semibold text-good">✓ {s.doneBadge}</span>
             )}
-            {post.status === 'closed' && <span className="text-xs font-semibold text-sub">Yopilgan</span>}
+            {post.status === 'closed' && <span className="text-xs font-semibold text-sub">{s.closedBadge}</span>}
           </div>
         )}
         {!isShare && <h1 className="text-lg font-bold text-ink">{post.title}</h1>}
@@ -216,21 +223,21 @@ export default function PostDetailScreen() {
           {closePost.error && <ErrorNote message={closePost.error.message} />}
           {post.type === 'help' ? (
             <Button variant="gold" full onClick={() => setModalOpen(true)}>
-              ✓ Bajarildi deb belgilash
+              {s.markResolved}
             </Button>
           ) : (
             <Button variant="secondary" full onClick={finishWithoutHelper} loading={resolve.isPending}>
-              Yakunlash
+              {s.finish}
             </Button>
           )}
           <Button variant="ghost" full onClick={close} loading={closePost.isPending}>
-            Yopish
+            {c.close}
           </Button>
         </div>
       )}
 
       {/* responses */}
-      <h2 className="font-bold text-ink mb-2">Javoblar ({post.responses.length})</h2>
+      <h2 className="font-bold text-ink mb-2">{fmt(s.responsesHeading, { n: post.responses.length })}</h2>
       {post.responses.length > 0 && (
         <Card className="mb-3 divide-y divide-line">
           {post.responses.map((r) => (
@@ -247,7 +254,7 @@ export default function PostDetailScreen() {
           ))}
         </Card>
       )}
-      {post.responses.length === 0 && <p className="text-sm text-sub mb-3">Hali javob yo'q.</p>}
+      {post.responses.length === 0 && <p className="text-sm text-sub mb-3">{s.noResponsesYet}</p>}
 
       {/* respond box */}
       {canRespond && (
@@ -256,12 +263,12 @@ export default function PostDetailScreen() {
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={RESPOND_PLACEHOLDER[post.type] ?? 'Fikringizni yozing (shart emas)'}
+            placeholder={s[RESPOND_PLACEHOLDER_KEYS[post.type] ?? 'respondPlaceholderDefault']}
             maxLength={300}
           />
-          {post.type === 'newcomer' && <p className="text-xs text-gold mt-1">+5 ball</p>}
+          {post.type === 'newcomer' && <p className="text-xs text-gold mt-1">{s.newcomerPoints}</p>}
           <Button full className="mt-3" onClick={sendResponse} loading={respond.isPending}>
-            {respondLabel(post.type)}
+            {s[RESPOND_LABEL_KEYS[post.type] ?? 'respondDefault']}
           </Button>
         </Card>
       )}

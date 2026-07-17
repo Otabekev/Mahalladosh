@@ -4,6 +4,9 @@
 
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '@/core/stores/auth'
+import { fmt, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { householdStrings } from '@/core/i18n/household'
 import {
   Avatar,
   Badge,
@@ -39,6 +42,7 @@ export default function MyHouseholdScreen() {
 // ---------- CASE A: create ----------
 
 function CreateHouseholdView() {
+  const s = useStrings(householdStrings)
   const create = useCreateHousehold()
   const [familyName, setFamilyName] = useState('')
   const [residents, setResidents] = useState('')
@@ -58,27 +62,24 @@ function CreateHouseholdView() {
 
   return (
     <div>
-      <PageTitle title="Xonadoningiz" />
+      <PageTitle title={s.title} />
 
       <Card className="p-5 mb-4 text-center">
         <div className="text-4xl mb-2">🏠</div>
-        <p className="text-sm text-ink">
-          Xonadoningizni yarating — faqat familiya va nechta kishi yashashini kiriting. Qolganini
-          xohlasangiz keyin to'ldirasiz.
-        </p>
+        <p className="text-sm text-ink">{s.createIntro}</p>
       </Card>
 
       <Card className="p-5">
         {create.error && <ErrorNote message={create.error.message} />}
         <form onSubmit={submit}>
-          <Field label="Oila familiyasi">
+          <Field label={s.familyNameLabel}>
             <Input
               value={familyName}
               onChange={(e) => setFamilyName(e.target.value)}
-              placeholder="Rustamovlar"
+              placeholder={s.familyNamePlaceholder}
             />
           </Field>
-          <Field label="Nechta kishi yashaydi?">
+          <Field label={s.residentsLabel}>
             <Input
               type="number"
               min={1}
@@ -87,15 +88,13 @@ function CreateHouseholdView() {
               placeholder="4"
             />
           </Field>
-          <Field label="Ko'cha (shart emas)">
-            <Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Guliston ko'chasi" />
+          <Field label={s.streetLabel}>
+            <Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder={s.streetPlaceholder} />
           </Field>
           <Button type="submit" full loading={create.isPending} disabled={!canSubmit}>
-            Yaratish
+            {s.create}
           </Button>
-          <p className="text-xs text-sub mt-3 text-center">
-            Mahalla lentasida qo'shnilarga e'lon qilinadi 👋
-          </p>
+          <p className="text-xs text-sub mt-3 text-center">{s.createAnnounceNote}</p>
         </form>
       </Card>
     </div>
@@ -105,6 +104,7 @@ function CreateHouseholdView() {
 // ---------- CASE B: my household ----------
 
 function MyHouseholdView({ id }: { id: number }) {
+  const s = useStrings(householdStrings)
   const query = useHousehold(id)
 
   if (query.isPending) {
@@ -117,7 +117,7 @@ function MyHouseholdView({ id }: { id: number }) {
   if (query.error) {
     return (
       <div>
-        <PageTitle title="Xonadoningiz" />
+        <PageTitle title={s.title} />
         <ErrorNote message={query.error.message} />
       </div>
     )
@@ -128,26 +128,22 @@ function MyHouseholdView({ id }: { id: number }) {
 
   return (
     <div>
-      <PageTitle title="Xonadoningiz" />
+      <PageTitle title={s.title} />
 
       <Card className="p-5 mb-4">
-        <h2 className="text-lg font-extrabold text-ink">{household.family_name} xonadoni</h2>
+        <h2 className="text-lg font-extrabold text-ink">{fmt(s.householdOf, { name: household.family_name })}</h2>
         <p className="text-sm text-sub">
-          {household.resident_count} kishi
+          {fmt(s.nPeople, { n: household.resident_count })}
           {household.street ? ` · ${household.street}` : ''}
         </p>
         <div className="mt-2">
           {verified ? (
-            <Badge color="green">✓ Qo'shnilar tasdiqlagan</Badge>
+            <Badge color="green">{s.verifiedBadge}</Badge>
           ) : (
-            <Badge color="gray">Kafolat kutilmoqda ({household.vouch_count}/2)</Badge>
+            <Badge color="gray">{fmt(s.awaitingVouch, { n: household.vouch_count })}</Badge>
           )}
         </div>
-        {!verified && (
-          <p className="text-xs text-sub mt-2">
-            Qo'shnilaringiz sahifangizga kirib kafolat berishi mumkin.
-          </p>
-        )}
+        {!verified && <p className="text-xs text-sub mt-2">{s.vouchHint}</p>}
       </Card>
 
       <DingDongCard household={household} />
@@ -161,6 +157,7 @@ function MyHouseholdView({ id }: { id: number }) {
 // ---------- DingDong (virtual doorbell) ----------
 
 function DingDongCard({ household }: { household: Household }) {
+  const s = useStrings(householdStrings)
   const setLocation = useSetLocation(household.id)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -173,7 +170,7 @@ function DingDongCard({ household }: { household: Household }) {
       const pos = await getPosition()
       await setLocation.mutateAsync(pos)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Joylashuvni belgilab bo'lmadi")
+      setError(err instanceof Error ? err.message : s.locationFail)
     } finally {
       setBusy(false)
     }
@@ -181,32 +178,27 @@ function DingDongCard({ household }: { household: Household }) {
 
   return (
     <Card className="p-5 mb-4">
-      <h3 className="font-bold text-ink mb-3">🔔 Eshik qo'ng'irog'i (DingDong)</h3>
+      <h3 className="font-bold text-ink mb-3">{s.dingdongTitle}</h3>
 
       {error && <ErrorNote message={error} />}
 
       {household.has_location ? (
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <Badge color="green">✓ Uy joylashuvi belgilangan</Badge>
+          <Badge color="green">{s.locationSet}</Badge>
           <Button variant="secondary" size="sm" loading={busy} onClick={mark}>
-            Qayta belgilash
+            {s.setAgain}
           </Button>
         </div>
       ) : (
         <>
-          <p className="text-sm text-sub mb-3">
-            Uyingiz oldida turib joylashuvni belgilang — shunda qo'shnilar eshik qo'ng'irog'ingizni
-            chala oladi.
-          </p>
+          <p className="text-sm text-sub mb-3">{s.setLocationExplain}</p>
           <Button full loading={busy} onClick={mark}>
-            📍 Shu yerda deb belgilash
+            {s.markHere}
           </Button>
         </>
       )}
 
-      <p className="text-xs text-sub mt-3">
-        Koordinatalar hech kimga ko'rsatilmaydi — faqat qo'ng'iroq masofasini tekshirish uchun.
-      </p>
+      <p className="text-xs text-sub mt-3">{s.locationPrivacyNote}</p>
     </Card>
   )
 }
@@ -214,6 +206,8 @@ function DingDongCard({ household }: { household: Household }) {
 // ---------- members ----------
 
 function MembersCard({ household }: { household: Household }) {
+  const s = useStrings(householdStrings)
+  const c = useStrings(common)
   const addMember = useAddMember(household.id)
   const removeMember = useRemoveMember()
   const [open, setOpen] = useState(false)
@@ -236,13 +230,13 @@ function MembersCard({ household }: { household: Household }) {
   }
 
   function remove(m: HouseholdMember) {
-    if (window.confirm("O'chirilsinmi?")) removeMember.mutate(m.id)
+    if (window.confirm(s.confirmRemove)) removeMember.mutate(m.id)
   }
 
   return (
     <Card className="p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-bold text-ink">Oila a'zolari</h3>
+        <h3 className="font-bold text-ink">{s.membersTitle}</h3>
         <span className="text-sm text-sub">{household.members.length}</span>
       </div>
 
@@ -250,7 +244,7 @@ function MembersCard({ household }: { household: Household }) {
       {removeMember.error && <ErrorNote message={removeMember.error.message} />}
 
       {household.members.length === 0 && (
-        <p className="text-sm text-sub mb-2">Hali a'zo qo'shilmagan.</p>
+        <p className="text-sm text-sub mb-2">{s.noMembers}</p>
       )}
       <div className="space-y-2">
         {household.members.map((m) => (
@@ -259,11 +253,11 @@ function MembersCard({ household }: { household: Household }) {
             <span className="text-sm font-semibold text-ink flex-1 min-w-0 truncate">
               {m.full_name}
             </span>
-            {m.is_elder && <Badge color="gold">Otaxon/Onaxon</Badge>}
+            {m.is_elder && <Badge color="gold">{s.elderBadge}</Badge>}
             <Button
               variant="ghost"
               size="sm"
-              aria-label="O'chirish"
+              aria-label={c.remove}
               onClick={() => remove(m)}
               loading={removeMember.isPending && removeMember.variables === m.id}
             >
@@ -279,7 +273,7 @@ function MembersCard({ household }: { household: Household }) {
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ismi va familiyasi"
+              placeholder={s.memberNamePlaceholder}
             />
           </div>
           <label className="flex items-center gap-2 mb-3 text-sm text-ink">
@@ -289,28 +283,26 @@ function MembersCard({ household }: { household: Household }) {
               onChange={(e) => setElder(e.target.checked)}
               className="w-4 h-4 accent-black"
             />
-            Keksa avlod vakili
+            {s.elderCheckbox}
           </label>
           <div className="flex gap-2">
             <Button type="submit" size="sm" loading={addMember.isPending} disabled={name.trim().length < 2}>
-              Qo'shish
+              {c.add}
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-              Bekor qilish
+              {c.cancel}
             </Button>
           </div>
         </form>
       ) : (
         <div className="mt-4">
           <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
-            + A'zo qo'shish
+            {s.addMember}
           </Button>
         </div>
       )}
 
-      <p className="text-xs text-sub mt-3">
-        Telefoni yo'q keksalarni ham yozing — ular ham mahalla xotirasining bir qismi.
-      </p>
+      <p className="text-xs text-sub mt-3">{s.membersHint}</p>
     </Card>
   )
 }
@@ -318,6 +310,8 @@ function MembersCard({ household }: { household: Household }) {
 // ---------- family history (the moat) ----------
 
 function HistoryCard({ household }: { household: Household }) {
+  const s = useStrings(householdStrings)
+  const c = useStrings(common)
   const update = useUpdateHousehold(household.id)
   const [generations, setGenerations] = useState(household.generations_here?.toString() ?? '')
   const [history, setHistory] = useState(household.family_history ?? '')
@@ -337,20 +331,16 @@ function HistoryCard({ household }: { household: Household }) {
   return (
     <div className="bg-amber-50/50 border border-amber-200 rounded-2xl shadow-card p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-bold text-ink">📖 Oila tarixi</h3>
+        <h3 className="font-bold text-ink">{s.historyTitle}</h3>
         {!hasHistory && <PointsBadge points={15} size="sm" />}
       </div>
 
-      {!hasHistory && (
-        <p className="text-sm text-sub mb-3">
-          Keksalar xotirasi — mahallaning boyligi. Yozib qoldiring (+15 ball).
-        </p>
-      )}
+      {!hasHistory && <p className="text-sm text-sub mb-3">{s.historyEncourage}</p>}
 
       {update.error && <ErrorNote message={update.error.message} />}
 
       <form onSubmit={submit}>
-        <Field label="Necha avloddan beri shu yerda yashaysiz?">
+        <Field label={s.generationsLabel}>
           <Input
             type="number"
             min={1}
@@ -359,19 +349,19 @@ function HistoryCard({ household }: { household: Household }) {
             placeholder="3"
           />
         </Field>
-        <Field label="Tarix">
+        <Field label={s.historyLabel}>
           <Textarea
             rows={5}
             value={history}
             onChange={(e) => setHistory(e.target.value)}
-            placeholder="Bobolaringiz qachon kelgan? Ko'chada kimlar yashagan? Keksalardan so'rab yozing..."
+            placeholder={s.historyPlaceholder}
           />
         </Field>
         <div className="flex items-center gap-3">
           <Button type="submit" loading={update.isPending}>
-            Saqlash
+            {c.save}
           </Button>
-          {update.isSuccess && !update.isPending && <Badge color="green">✓ Saqlandi</Badge>}
+          {update.isSuccess && !update.isPending && <Badge color="green">{s.saved}</Badge>}
         </div>
       </form>
     </div>
@@ -381,24 +371,23 @@ function HistoryCard({ household }: { household: Household }) {
 // ---------- privacy ----------
 
 function PrivacyCard({ household }: { household: Household }) {
+  const s = useStrings(householdStrings)
   const update = useUpdateHousehold(household.id)
 
   return (
     <Card className="p-5 mb-4">
       {update.error && <ErrorNote message={update.error.message} />}
-      <Field label="Kim ko'ra oladi?">
+      <Field label={s.privacyLabel}>
         <Select
           value={household.visibility}
           disabled={update.isPending}
           onChange={(e) => update.mutate({ visibility: e.target.value as HouseholdVisibility })}
         >
-          <option value="neighbors">Tasdiqlangan qo'shnilar</option>
-          <option value="family_only">Faqat oilamiz</option>
+          <option value="neighbors">{s.visNeighbors}</option>
+          <option value="family_only">{s.visFamily}</option>
         </Select>
       </Field>
-      <p className="text-xs text-sub -mt-1">
-        Ma'lumotlaringiz faqat mahalla ichida. Hech qanday davlat tizimiga berilmaydi.
-      </p>
+      <p className="text-xs text-sub -mt-1">{s.privacyFooter}</p>
     </Card>
   )
 }

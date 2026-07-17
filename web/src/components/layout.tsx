@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react'
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
 import { useNotifications } from '@/core/queries/notifications'
+import { fmt, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
 import { Avatar } from './ui'
 
 /** Two-tone "ding-dong" via WebAudio — no asset file needed. */
@@ -68,11 +70,11 @@ function NotificationBell() {
   )
 }
 
-const NAV_ITEMS: { to: string; label: string; icon: (active: boolean) => React.ReactNode; end?: boolean }[] = [
+const NAV_ITEMS: { to: string; labelKey: keyof typeof common; icon: (active: boolean) => React.ReactNode; end?: boolean }[] = [
   {
     to: '/app',
     end: true,
-    label: 'Lenta',
+    labelKey: 'navFeed' as const,
     icon: (a) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={a ? 2.4 : 1.8} strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" />
@@ -81,7 +83,7 @@ const NAV_ITEMS: { to: string; label: string; icon: (active: boolean) => React.R
   },
   {
     to: '/app/mahalla',
-    label: 'Mahalla',
+    labelKey: 'navMahalla' as const,
     icon: (a) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={a ? 2.4 : 1.8} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.2 3.4-5 6.5-5s5.7 1.8 6.5 5" /><circle cx="17" cy="9" r="2.5" /><path d="M17.5 14.5c2.2.4 3.7 1.8 4.2 4" />
@@ -90,7 +92,7 @@ const NAV_ITEMS: { to: string; label: string; icon: (active: boolean) => React.R
   },
   {
     to: '/app/services',
-    label: 'Xizmatlar',
+    labelKey: 'navServices' as const,
     icon: (a) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={a ? 2.4 : 1.8} strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -99,7 +101,7 @@ const NAV_ITEMS: { to: string; label: string; icon: (active: boolean) => React.R
   },
   {
     to: '/app/proposals',
-    label: 'Ovozlar',
+    labelKey: 'navVotes' as const,
     icon: (a) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={a ? 2.4 : 1.8} strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 12l2 2 4-5" /><path d="M5 3h14l-1.5 18h-11z" />
@@ -108,7 +110,7 @@ const NAV_ITEMS: { to: string; label: string; icon: (active: boolean) => React.R
   },
   {
     to: '/app/profile',
-    label: 'Profil',
+    labelKey: 'navProfile' as const,
     icon: (a) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={a ? 2.4 : 1.8} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6" />
@@ -118,7 +120,8 @@ const NAV_ITEMS: { to: string; label: string; icon: (active: boolean) => React.R
 ]
 
 export default function AppLayout() {
-  const me = useAuth((s) => s.me)
+  const me = useAuth((state) => state.me)
+  const s = useStrings(common)
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -128,7 +131,7 @@ export default function AppLayout() {
             <div className="w-8 h-8 rounded-xl bg-brand text-white font-black flex items-center justify-center text-base">M</div>
             <div className="leading-tight">
               <div className="font-extrabold text-[15px] text-ink">Mahalladosh</div>
-              {me?.mahalla && <div className="text-[11px] text-sub -mt-0.5">{me.mahalla.name} mahallasi</div>}
+              {me?.mahalla && <div className="text-[11px] text-sub -mt-0.5">{fmt(s.mahallaSuffix, { name: me.mahalla.name })}</div>}
             </div>
           </Link>
           {me && (
@@ -160,7 +163,7 @@ export default function AppLayout() {
               {({ isActive }) => (
                 <>
                   {item.icon(isActive)}
-                  <span>{item.label}</span>
+                  <span>{s[item.labelKey]}</span>
                 </>
               )}
             </NavLink>

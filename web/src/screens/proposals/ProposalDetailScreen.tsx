@@ -13,24 +13,27 @@ import {
 } from '@/components/ui'
 import { useProposal, useSecond, useVote } from '@/core/queries/proposals'
 import { useAuth } from '@/core/stores/auth'
+import { fmt, useStrings } from '@/core/i18n'
+import { proposalsStrings } from '@/core/i18n/proposals'
 import type { Proposal } from '@/core/api/types'
 
 function StatusBadge({ p }: { p: Proposal }) {
+  const s = useStrings(proposalsStrings)
   switch (p.status) {
     case 'seconding':
       return (
         <Badge color="gray">
-          Qo'llab-quvvatlash {p.seconds_count}/{p.seconds_needed}
+          {fmt(s.statusSeconding, { n: p.seconds_count, m: p.seconds_needed })}
         </Badge>
       )
     case 'voting':
-      return <Badge color="gold">🗳 Ovoz berilmoqda</Badge>
+      return <Badge color="gold">{s.statusVoting}</Badge>
     case 'passed':
-      return <Badge color="green">✓ Qabul qilindi</Badge>
+      return <Badge color="green">{s.statusPassed}</Badge>
     case 'rejected':
-      return <Badge color="red">Rad etildi</Badge>
+      return <Badge color="red">{s.statusRejected}</Badge>
     case 'expired':
-      return <Badge color="gray">Kvorum yetmadi</Badge>
+      return <Badge color="gray">{s.statusExpired}</Badge>
   }
 }
 
@@ -59,9 +62,10 @@ function ResultBar({ label, count, total, color }: { label: string; count: numbe
 
 export default function ProposalDetailScreen() {
   const navigate = useNavigate()
+  const s = useStrings(proposalsStrings)
   const { id } = useParams()
   const pid = id !== undefined ? Number(id) : undefined
-  const me = useAuth((s) => s.me)
+  const me = useAuth((st) => st.me)
 
   const { data: p, isLoading, error } = useProposal(pid)
   const second = useSecond(pid ?? 0)
@@ -84,7 +88,7 @@ export default function ProposalDetailScreen() {
     return (
       <div>
         <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
-          ← Ovozlar
+          {s.backToVotes}
         </Button>
         <ErrorNote message={error.message} />
       </div>
@@ -99,15 +103,15 @@ export default function ProposalDetailScreen() {
   return (
     <div>
       <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
-        ← Ovozlar
+        {s.backToVotes}
       </Button>
 
       <Card className="p-4 mb-3">
         <div className="flex items-center justify-between gap-2 mb-2">
           {p.kind === 'punitive' ? (
-            <Badge color="red">⚠️ Chetlatish taklifi</Badge>
+            <Badge color="red">{s.banProposalBadge}</Badge>
           ) : (
-            <Badge color="blue">Taklif</Badge>
+            <Badge color="blue">{s.proposalBadge}</Badge>
           )}
           <StatusBadge p={p} />
         </div>
@@ -129,9 +133,7 @@ export default function ProposalDetailScreen() {
           <div className="min-w-0">
             <div className="font-semibold text-ink truncate">{p.target.full_name}</div>
             <div className="text-xs text-sub">
-              {p.action === 'set_raisi'
-                ? 'Raisi lavozimiga taklif etilmoqda'
-                : "Chetlatish so'ralmoqda — javob berish huquqiga ega"}
+              {p.action === 'set_raisi' ? s.targetRaisi : s.targetBan}
             </div>
           </div>
         </Card>
@@ -140,7 +142,7 @@ export default function ProposalDetailScreen() {
       {p.status === 'seconding' && (
         <Card className="p-4 mb-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-ink">Qo'llab-quvvatlash</span>
+            <span className="text-sm font-semibold text-ink">{s.secondingHeading}</span>
             <span className="text-sm font-bold text-ink">
               {p.seconds_count}/{p.seconds_needed}
             </span>
@@ -148,7 +150,7 @@ export default function ProposalDetailScreen() {
           <div className="bg-gray-100 h-3 rounded-full overflow-hidden">
             <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${secondsPct}%` }} />
           </div>
-          <p className="text-sm text-sub mt-2">Ovozga qo'yilishi uchun qo'llab-quvvatlash kerak</p>
+          <p className="text-sm text-sub mt-2">{s.secondingHint}</p>
 
           {second.error && (
             <div className="mt-3">
@@ -157,14 +159,14 @@ export default function ProposalDetailScreen() {
           )}
 
           {isAuthor ? (
-            <p className="text-sm text-sub mt-3">Bu sizning taklifingiz</p>
+            <p className="text-sm text-sub mt-3">{s.yourProposal}</p>
           ) : p.my_second ? (
             <div className="mt-3">
-              <Badge color="green">✓ Siz qo'llab-quvvatladingiz</Badge>
+              <Badge color="green">{s.youSeconded}</Badge>
             </div>
           ) : (
             <Button full className="mt-3" loading={second.isPending} onClick={() => second.mutate()}>
-              🙌 Qo'llab-quvvatlayman
+              {s.secondButton}
             </Button>
           )}
         </Card>
@@ -174,12 +176,12 @@ export default function ProposalDetailScreen() {
         <Card className="p-4 mb-3">
           {p.voting_closes_at && (
             <p className="text-sm text-sub mb-3">
-              ⏳ Tugaydi: {utcDate(p.voting_closes_at).toLocaleString('uz')}
+              {fmt(s.votingCloses, { date: utcDate(p.voting_closes_at).toLocaleString('uz') })}
             </p>
           )}
 
-          <ResultBar label="Ha" count={p.votes_yes} total={totalVotes} color="bg-good" />
-          <ResultBar label="Yo'q" count={p.votes_no} total={totalVotes} color="bg-danger" />
+          <ResultBar label={s.yes} count={p.votes_yes} total={totalVotes} color="bg-good" />
+          <ResultBar label={s.no} count={p.votes_no} total={totalVotes} color="bg-danger" />
 
           {vote.error && (
             <div className="mt-3">
@@ -196,7 +198,7 @@ export default function ProposalDetailScreen() {
                 disabled={vote.isPending}
                 onClick={() => castVote(true)}
               >
-                Ha ✅
+                {s.voteYes}
               </Button>
               <Button
                 size="lg"
@@ -205,42 +207,40 @@ export default function ProposalDetailScreen() {
                 disabled={vote.isPending}
                 onClick={() => castVote(false)}
               >
-                Yo'q ❌
+                {s.voteNo}
               </Button>
             </div>
           ) : (
             <div className="mt-3">
-              <Badge color="green">✓ Ovoz berdingiz: {p.my_vote ? 'Ha' : "Yo'q"}</Badge>
+              <Badge color="green">{fmt(s.youVoted, { choice: p.my_vote ? s.yes : s.no })}</Badge>
             </div>
           )}
 
-          <p className="text-xs text-sub mt-3">
-            Kamida {p.quorum} kishi ovoz berishi kerak, aks holda kuchga kirmaydi.
-          </p>
+          <p className="text-xs text-sub mt-3">{fmt(s.quorumNote, { n: p.quorum })}</p>
         </Card>
       )}
 
       {p.status === 'passed' && (
         <Card className="p-4 mb-3 bg-good-soft border-green-200">
           <p className="font-semibold text-ink">
-            ✅ Qabul qilindi — Ha {p.votes_yes}, Yo'q {p.votes_no}
+            {fmt(s.passedBanner, { yes: p.votes_yes, no: p.votes_no })}
           </p>
-          {p.action === 'set_raisi' && <p className="text-sm text-sub mt-1">Yangi raisi tayinlandi 👑</p>}
-          {p.action === 'ban_user' && <p className="text-sm text-sub mt-1">30 kunga chetlatildi</p>}
+          {p.action === 'set_raisi' && <p className="text-sm text-sub mt-1">{s.newRaisi}</p>}
+          {p.action === 'ban_user' && <p className="text-sm text-sub mt-1">{s.banned30}</p>}
         </Card>
       )}
 
       {p.status === 'rejected' && (
         <Card className="p-4 mb-3 bg-red-50 border-red-200">
           <p className="font-semibold text-danger">
-            Rad etildi — Ha {p.votes_yes}, Yo'q {p.votes_no}
+            {fmt(s.rejectedBanner, { yes: p.votes_yes, no: p.votes_no })}
           </p>
         </Card>
       )}
 
       {p.status === 'expired' && (
         <Card className="p-4 mb-3 bg-gray-50">
-          <p className="font-semibold text-sub">Kvorum yetmadi — ovoz kuchga kirmadi</p>
+          <p className="font-semibold text-sub">{s.expiredBanner}</p>
         </Card>
       )}
     </div>

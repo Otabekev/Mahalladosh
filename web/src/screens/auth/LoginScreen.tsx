@@ -9,12 +9,10 @@ import { api, ApiError } from '@/core/api/client'
 import type { AuthConfig, User } from '@/core/api/types'
 import { useAuth } from '@/core/stores/auth'
 import { Button, Card, ErrorNote, FullScreenSpinner, Input } from '@/components/ui'
-
-const FEATURES = [
-  { icon: '👨‍👩‍👧', title: 'Oila sahifalari', text: 'avlodlar tarixi' },
-  { icon: '🤝', title: "Qo'shnilar yordami", text: "so'rang va yordam bering" },
-  { icon: '⭐', title: "Obro'", text: "faol qo'shnilar e'zozlanadi" },
-]
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { pick, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { onboardingStrings } from '@/core/i18n/onboarding'
 
 interface TelegramAuthPayload {
   id: number
@@ -44,7 +42,7 @@ function TelegramLoginButton({ bot, onError }: { bot: string; onError: (msg: str
         await useAuth.getState().refresh()
         navigate('/')
       } catch (err) {
-        onError(err instanceof ApiError ? err.message : 'Telegram kirish xatosi')
+        onError(err instanceof ApiError ? err.message : pick(onboardingStrings.tgLoginError))
       }
     }
     const script = document.createElement('script')
@@ -74,6 +72,9 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const s = useStrings(onboardingStrings)
+  const sc = useStrings(common)
+
   const { data: config } = useQuery({
     queryKey: ['auth-config'],
     queryFn: () => api<AuthConfig>('/auth/config'),
@@ -83,11 +84,17 @@ export default function LoginScreen() {
   if (status === 'loading') return <FullScreenSpinner />
   if (me) return <Navigate to="/" replace />
 
+  const features = [
+    { icon: '👨‍👩‍👧', title: s.featFamilyTitle, text: s.featFamilyText },
+    { icon: '🤝', title: s.featHelpTitle, text: s.featHelpText },
+    { icon: '⭐', title: s.featHonorTitle, text: s.featHonorText },
+  ]
+
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const name = fullName.trim()
     if (name.length < 2) {
-      setError('Ismingizni yozing')
+      setError(s.nameRequired)
       return
     }
     setLoading(true)
@@ -97,7 +104,7 @@ export default function LoginScreen() {
       await useAuth.getState().refresh()
       navigate('/')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Xatolik yuz berdi')
+      setError(err instanceof ApiError ? err.message : sc.error)
     } finally {
       setLoading(false)
     }
@@ -106,16 +113,21 @@ export default function LoginScreen() {
   return (
     <div className="min-h-dvh bg-bg flex flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm flex flex-col items-center">
+        {/* language first — elders pick theirs before anything else */}
+        <div className="mb-6">
+          <LanguageSwitcher />
+        </div>
+
         {/* brand */}
         <div className="w-16 h-16 rounded-2xl bg-brand text-white font-black flex items-center justify-center text-3xl shadow-card">
           M
         </div>
         <h1 className="text-[26px] font-extrabold text-ink mt-4">Mahalladosh</h1>
-        <p className="text-sm text-sub mt-1 text-center">Mahallangiz bilan bog'laning</p>
+        <p className="text-sm text-sub mt-1 text-center">{s.tagline}</p>
 
         {/* features */}
         <div className="w-full space-y-2.5 mt-8 mb-8">
-          {FEATURES.map((f) => (
+          {features.map((f) => (
             <div key={f.title} className="flex items-center gap-3">
               <span className="text-xl w-8 text-center shrink-0">{f.icon}</span>
               <p className="text-sm leading-snug">
@@ -127,7 +139,7 @@ export default function LoginScreen() {
         </div>
 
         <Card className="w-full p-5">
-          <h2 className="text-[15px] font-bold text-ink mb-4">Kirish</h2>
+          <h2 className="text-[15px] font-bold text-ink mb-4">{sc.login}</h2>
           {error && <ErrorNote message={error} />}
 
           {config?.telegram_bot && (
@@ -140,7 +152,7 @@ export default function LoginScreen() {
             <form onSubmit={submit}>
               <div className="mb-3">
                 <Input
-                  placeholder="Ismingiz"
+                  placeholder={s.namePlaceholder}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   autoFocus
@@ -153,23 +165,21 @@ export default function LoginScreen() {
                   onChange={(e) => setIsAdmin(e.target.checked)}
                   className="w-4 h-4 accent-black"
                 />
-                Admin sifatida kirish
+                {s.adminCheckbox}
               </label>
               <Button type="submit" size="lg" full loading={loading}>
-                Kirish
+                {sc.login}
               </Button>
             </form>
           )}
 
           {config && !config.dev && !config.telegram_bot && (
-            <p className="text-sm text-sub">Kirish hozircha sozlanmoqda — keyinroq urinib ko'ring.</p>
+            <p className="text-sm text-sub">{s.loginUnavailable}</p>
           )}
         </Card>
 
         <p className="text-xs text-sub mt-4 text-center">
-          {config?.telegram_bot
-            ? 'Telegram hisobingiz bilan xavfsiz kirasiz'
-            : 'Telegram orqali kirish deploy bilan yoqiladi — hozircha dev rejim'}
+          {config?.telegram_bot ? s.footerTelegram : s.footerDev}
         </p>
       </div>
     </div>

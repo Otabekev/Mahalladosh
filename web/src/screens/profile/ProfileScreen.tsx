@@ -1,16 +1,13 @@
-/** Profile screen: identity card, points, menu (household, admin, points info, logout). */
+/** Profile screen: identity card, points, menu (household, admin, points info), language, logout. */
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
+import { fmt, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
+import { mahallaStrings } from '@/core/i18n/mahalla'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { Avatar, Badge, Card, PointsBadge, Spinner } from '@/components/ui'
-
-const POINT_RULES = [
-  { icon: '🤝', label: 'Yordam berish', points: '+10' },
-  { icon: '📖', label: 'Oila tarixini yozish', points: '+15' },
-  { icon: '👋', label: "Yangi qo'shnini kutib olish", points: '+5' },
-  { icon: '🏗', label: "Asoschi bo'lish", points: '+20' },
-]
 
 function MenuRow({ onClick, danger, children }: { onClick: () => void; danger?: boolean; children: React.ReactNode }) {
   return (
@@ -24,7 +21,9 @@ function MenuRow({ onClick, danger, children }: { onClick: () => void; danger?: 
 }
 
 export default function ProfileScreen() {
-  const me = useAuth((s) => s.me)
+  const s = useStrings(mahallaStrings)
+  const c = useStrings(common)
+  const me = useAuth((state) => state.me)
   const navigate = useNavigate()
   const [showPoints, setShowPoints] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
@@ -38,6 +37,13 @@ export default function ProfileScreen() {
   }
 
   const u = me.user
+
+  const pointRules = [
+    { icon: '🤝', label: s.pointHelp, points: '+10' },
+    { icon: '📖', label: s.pointHistory, points: '+15' },
+    { icon: '👋', label: s.pointWelcome, points: '+5' },
+    { icon: '🏗', label: s.pointFounder, points: '+20' },
+  ]
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -57,60 +63,68 @@ export default function ProfileScreen() {
         </div>
         <h1 className="text-lg font-bold text-ink mt-3">{u.full_name}</h1>
         {u.username && <p className="text-sm text-sub">@{u.username}</p>}
-        {me.mahalla && <p className="text-sm text-sub">{me.mahalla.name} mahallasi</p>}
+        {me.mahalla && <p className="text-sm text-sub">{fmt(c.mahallaSuffix, { name: me.mahalla.name })}</p>}
         <div className="flex justify-center gap-3 mt-3">
           <span className="inline-flex items-center gap-1.5">
             <PointsBadge points={u.rep_month} />
-            <span className="text-xs text-sub">bu oy</span>
+            <span className="text-xs text-sub">{s.statThisMonth}</span>
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="font-bold text-ink">{u.rep_alltime}</span>
-            <span className="text-xs text-sub">umumiy</span>
+            <span className="text-xs text-sub">{s.statAllTime}</span>
           </span>
         </div>
         {(u.is_raisi || u.is_admin) && (
           <div className="flex justify-center gap-2 mt-3">
-            {u.is_raisi && <Badge color="gold">Raisi</Badge>}
-            {u.is_admin && <Badge color="blue">Admin</Badge>}
+            {u.is_raisi && <Badge color="gold">{s.raisi}</Badge>}
+            {u.is_admin && <Badge color="blue">{s.adminBadge}</Badge>}
           </div>
         )}
       </Card>
 
       <Card className="p-0 divide-y divide-line">
         <MenuRow onClick={() => navigate('/app/household')}>
-          <span>🏠</span> Mening xonadonim
+          <span>🏠</span> {s.myHousehold}
           <span className="ml-auto text-sub">›</span>
         </MenuRow>
         {u.is_admin && (
           <MenuRow onClick={() => navigate('/app/admin')}>
-            <span>🛠</span> Admin panel
+            <span>🛠</span> {s.adminPanel}
             <span className="ml-auto text-sub">›</span>
           </MenuRow>
         )}
         <div>
           <MenuRow onClick={() => setShowPoints((v) => !v)}>
-            <span>ℹ️</span> Ball qanday yig'iladi?
+            <span>ℹ️</span> {s.howPointsTitle}
             <span className="ml-auto text-sub">{showPoints ? '▴' : '▾'}</span>
           </MenuRow>
           {showPoints && (
             <div className="px-4 pb-4">
               <ul className="space-y-1.5">
-                {POINT_RULES.map((r) => (
-                  <li key={r.label} className="flex items-center gap-2 text-sm text-ink">
+                {pointRules.map((r) => (
+                  <li key={r.icon} className="flex items-center gap-2 text-sm text-ink">
                     <span>{r.icon}</span>
                     <span>{r.label}</span>
                     <span className="ml-auto font-bold text-gold">{r.points}</span>
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-sub mt-3">
-                Ball — bu obro' belgisi. Oy oxirida eng faol qo'shni e'zozlanadi.
-              </p>
+              <p className="text-xs text-sub mt-3">{s.pointsExplainer}</p>
             </div>
           )}
         </div>
+      </Card>
+
+      <Card className="p-0">
+        <div className="flex items-center gap-3 px-4 pt-3.5 pb-1 text-sm font-semibold text-ink">
+          <span>🌐</span> {c.language}
+        </div>
+        <LanguageSwitcher variant="list" />
+      </Card>
+
+      <Card className="p-0">
         <MenuRow danger onClick={handleLogout}>
-          {loggingOut ? <Spinner size={16} /> : <span>🚪</span>} Chiqish
+          {loggingOut ? <Spinner size={16} /> : <span>🚪</span>} {c.logout}
         </MenuRow>
       </Card>
     </div>

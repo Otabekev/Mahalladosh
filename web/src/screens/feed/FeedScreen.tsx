@@ -14,17 +14,14 @@ import {
   Spinner,
   TypePill,
   timeAgo,
+  usePostTypeLabel,
 } from '@/components/ui'
+import { useStrings } from '@/core/i18n'
+import { feedStrings } from '@/core/i18n/feed'
 import { useDiscover, usePosts } from '@/core/queries/posts'
 import type { DiscoverScope, Post } from '@/core/api/types'
 
 type FeedTab = 'mahalla' | DiscoverScope
-
-const FEED_TABS: { value: FeedTab; label: string }[] = [
-  { value: 'mahalla', label: 'Mahallam' },
-  { value: 'region', label: 'Viloyatim' },
-  { value: 'country', label: "O'zbekiston" },
-]
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
@@ -41,6 +38,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 
 /** Structured mahalla post — type pill first, task-like. */
 function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
+  const s = useStrings(feedStrings)
   const helpOpen = post.type === 'help' && post.status === 'open'
   return (
     <Card className={`p-4 mb-3 ${helpOpen ? 'border-l-4 border-l-amber-400' : ''}`} onClick={onOpen}>
@@ -57,8 +55,8 @@ function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-sub">💬 {post.response_count}</span>
-          {post.status === 'resolved' && <Badge color="green">✓ Bajarildi</Badge>}
-          {post.status === 'closed' && <Badge color="gray">Yopilgan</Badge>}
+          {post.status === 'resolved' && <Badge color="green">✓ {s.doneBadge}</Badge>}
+          {post.status === 'closed' && <Badge color="gray">{s.closedBadge}</Badge>}
         </div>
       </div>
     </Card>
@@ -89,6 +87,8 @@ function ShareCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
 /** Mahallam lens — my mahalla's feed with type-filter chips. */
 function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
   const navigate = useNavigate()
+  const s = useStrings(feedStrings)
+  const typeLabel = usePostTypeLabel()
   const [type, setType] = useState<string | undefined>(undefined)
   const { data: posts, isLoading, error } = usePosts(type)
 
@@ -96,11 +96,11 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
     <div>
       <div className="no-scrollbar overflow-x-auto flex gap-2 mb-4 -mx-4 px-4">
         <Chip active={type === undefined} onClick={() => setType(undefined)}>
-          Hammasi
+          {s.allTypes}
         </Chip>
         {Object.entries(POST_TYPE_META).map(([key, meta]) => (
           <Chip key={key} active={type === key} onClick={() => setType(key)}>
-            {meta.icon} {meta.label}
+            {meta.icon} {typeLabel(key)}
           </Chip>
         ))}
       </div>
@@ -115,8 +115,8 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
       {posts && posts.length === 0 && (
         <EmptyState
           icon="📭"
-          title="Hozircha e'lonlar yo'q"
-          action={<Button onClick={() => navigate('/app/new')}>Birinchi bo'lib yozing</Button>}
+          title={s.emptyFeedTitle}
+          action={<Button onClick={() => navigate('/app/new')}>{s.emptyFeedAction}</Button>}
         />
       )}
 
@@ -133,6 +133,7 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
 
 /** Viloyatim / O'zbekiston lens — people's share posts only. */
 function DiscoverFeed({ scope, onOpen }: { scope: DiscoverScope; onOpen: (id: number) => void }) {
+  const s = useStrings(feedStrings)
   const { data: posts, isLoading, error } = useDiscover(scope)
 
   return (
@@ -145,7 +146,7 @@ function DiscoverFeed({ scope, onOpen }: { scope: DiscoverScope; onOpen: (id: nu
       {error && <ErrorNote message={error.message} />}
 
       {posts && posts.length === 0 && (
-        <EmptyState icon="🌅" title="Bu yerda hali post yo'q" text="Birinchi bo'lib ulashing!" />
+        <EmptyState icon="🌅" title={s.emptyDiscoverTitle} text={s.emptyDiscoverText} />
       )}
 
       {posts?.map((post) => (
@@ -157,20 +158,27 @@ function DiscoverFeed({ scope, onOpen }: { scope: DiscoverScope; onOpen: (id: nu
 
 export default function FeedScreen() {
   const navigate = useNavigate()
+  const s = useStrings(feedStrings)
   const [tab, setTab] = useState<FeedTab>('mahalla')
   const openPost = (id: number) => navigate(`/app/posts/${id}`)
+
+  const feedTabs: { value: FeedTab; label: string }[] = [
+    { value: 'mahalla', label: s.tabMahalla },
+    { value: 'region', label: s.tabRegion },
+    { value: 'country', label: s.tabCountry },
+  ]
 
   return (
     <div>
       <div className="mb-4">
-        <SegmentedTabs tabs={FEED_TABS} value={tab} onChange={setTab} />
+        <SegmentedTabs tabs={feedTabs} value={tab} onChange={setTab} />
       </div>
 
       {tab === 'mahalla' ? <MahallaFeed onOpen={openPost} /> : <DiscoverFeed scope={tab} onOpen={openPost} />}
 
       <button
         onClick={() => navigate('/app/new')}
-        aria-label="Yangi e'lon"
+        aria-label={s.newPost}
         className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-brand text-white text-2xl shadow-pop flex items-center justify-center active:scale-95 transition"
       >
         +
