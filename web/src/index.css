@@ -1,28 +1,49 @@
+@import "@fontsource-variable/rubik";
+@import "@fontsource/cormorant-garamond/500.css";
+@import "@fontsource/cormorant-garamond/600.css";
+@import "@fontsource/cormorant-garamond/700.css";
+@import "@fontsource/cormorant-garamond/500-italic.css";
 @import "@fontsource-variable/inter";
 @import "tailwindcss";
 
 @theme {
-  /* Skool-inspired: light gray canvas, white cards, near-black actions,
-     gold for points/honor, green for verified/help */
-  --color-bg: #f7f7f8;
-  --color-card: #ffffff;
-  --color-ink: #18181b;
-  --color-sub: #6b7280;
-  --color-line: #e5e7eb;
-  --color-brand: #111827;
-  --color-gold: #d97706;
-  --color-gold-soft: #fef3c7;
-  --color-accent: #2563eb;
-  --color-good: #16a34a;
-  --color-good-soft: #dcfce7;
-  --color-danger: #dc2626;
+  /* Uzbek design system — warm "paper" over cold white, terracotta + teal
+     drawn from suzani textiles and Samarkand tilework, gold reserved for honor.
+     (from the Uzbek Design System handoff) */
+  --color-bg: #f4e9d3;         /* warm sand — app background */
+  --color-paper: #fbf3e2;      /* cream — headers / hero surfaces */
+  --color-card: #fffbf0;       /* near-white warm cream — cards */
+  --color-ink: #2a1d14;        /* warm dark brown — primary text */
+  --color-sub: #927e64;        /* warm taupe — secondary text */
+  --color-line: #e7d4b0;       /* warm sand — borders */
 
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
-  --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.10);
+  --color-brand: #b23a28;      /* terracotta (suzani red) */
+  --color-brand-deep: #8e2a1e;
+  --color-brand-soft: #fbede4;
+
+  --color-accent: #157c84;     /* teal (tilework turquoise) */
+  --color-accent-deep: #0e5e66;
+  --color-accent-soft: #e3f0f0;
+
+  --color-cobalt: #1b4b8a;
+
+  --color-gold: #d4a94a;
+  --color-honor: #d89a2a;      /* honor — leaderboard / obro' */
+  --color-honor-deep: #b07310;
+  --color-gold-soft: #fbf0d6;
+
+  --color-good: #5e7f3d;
+  --color-good-soft: #eaf2ee;
+  --color-danger: #c6402f;
+
+  --shadow-card: 0 1px 2px rgb(42 29 20 / 0.04), 0 2px 8px -2px rgb(42 29 20 / 0.08);
+  --shadow-pop: 0 14px 36px -14px rgb(20 12 6 / 0.30);
 
   --radius-card: 1rem;
 
-  --font-sans: "Inter Variable", "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  /* Rubik = readable UI/body; Cormorant Garamond = display headings only */
+  --font-sans: "Rubik Variable", "Rubik", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
 }
 
 html {
@@ -33,10 +54,29 @@ body {
   background-color: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 15px;
+  /* elder-first floor: 16px body (was 15) */
+  font-size: 16px;
   line-height: 1.5;
+}
+
+/* Optional larger-text mode (Profile → "Katta shrift") scales the whole app. */
+:root[data-textsize="large"] body {
+  font-size: 18px;
 }
 
 /* Scrollbar-free horizontal scroll areas (chips, tabs) */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Girih tilework wash — a faint repeating geometric motif for hero/honor cards.
+   Use: className="tilework" on a positioned container's overlay. */
+.tilework {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='42'%3E%3Cg fill='none' stroke='%23F4DFA8' stroke-width='1.1' opacity='0.26'%3E%3Crect x='11' y='11' width='20' height='20'/%3E%3Crect x='11' y='11' width='20' height='20' transform='rotate(45 21 21)'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Suzani ikat top border — a thin band of the palette, for hero edges. */
+.ikat-border {
+  background: repeating-linear-gradient(90deg,
+    #b23a28 0 4%, #fbf3e2 5.5% 7.5%, #157c84 9% 13%, #fbf3e2 14.5% 16.5%,
+    #d89a2a 18% 22%, #fbf3e2 23.5% 25.5%, #1b4b8a 27% 31%, #fbf3e2 32.5% 34.5%);
+}

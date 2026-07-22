@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from .. import models, notify, presenters, reputation, schemas
+from .. import models, notify, presenters, reputation, schemas, track
 from ..config import settings
 from ..deps import get_current_user, get_db, require_member
 
@@ -51,22 +51,48 @@ def create_petition(
     if m.status not in ("forming", "pending"):
         raise HTTPException(status_code=400, detail="Bu mahallaga ariza berib bo'lmaydi")
 
-    # One petition per user: switching mahalla moves the request.
-    db.query(models.Petition).filter_by(user_id=user.id).delete()
+    # One petition per user: switching mahalla moves the request. Rows are
+    # never deleted (the activation funnel needs them) — mark them withdrawn.
+    old_actives = (
+        db.query(models.Petition)
+        .filter(
+            models.Petition.user_id == user.id,
+            models.Petition.status == "active",
+            models.Petition.mahalla_id != m.id,
+        )
+        .all()
+    )
+    for old in old_actives:
+        old.status = "withdrawn"
 
-    db.add(
-        models.Petition(
+    # (mahalla_id, user_id) is unique — re-petitioning the same mahalla
+    # reactivates the historical row instead of inserting a duplicate.
+    petition = (
+        db.query(models.Petition).filter_by(mahalla_id=m.id, user_id=user.id).first()
+    )
+    if petition is not None:
+        petition.status = "active"
+        petition.estimated_households = data.estimated_households
+        petition.created_at = models.utcnow()  # it's a fresh request
+    else:
+        petition = models.Petition(
             mahalla_id=m.id,
             user_id=user.id,
             estimated_households=data.estimated_households,
         )
-    )
+        db.add(petition)
     if data.estimated_households:
         m.estimated_households = data.estimated_households  # latest wins
 
     db.flush()  # session has autoflush=False — make the new petition countable
+    track.log_event(
+        db, user.id, "petition",
+        entity_type="petition", entity_id=petition.id, mahalla_id=m.id,
+    )
     threshold = m.petition_threshold or settings.petition_threshold
-    petition_count = db.query(models.Petition).filter_by(mahalla_id=m.id).count()
+    petition_count = (
+        db.query(models.Petition).filter_by(mahalla_id=m.id, status="active").count()
+    )
     if petition_count >= threshold and m.status == "forming":
         m.status = "pending"  # threshold reached — waits for admin approval
 
@@ -80,7 +106,13 @@ def delete_petition(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    db.query(models.Petition).filter_by(mahalla_id=mahalla_id, user_id=user.id).delete()
+    rows = (
+        db.query(models.Petition)
+        .filter_by(mahalla_id=mahalla_id, user_id=user.id, status="active")
+        .all()
+    )
+    for p in rows:
+        p.status = "withdrawn"
     db.commit()
 
 
@@ -97,8 +129,11 @@ def join(
         raise HTTPException(status_code=400, detail="Bu mahalla hali ochilmagan")
 
     user.mahalla_id = m.id
-    # The request is fulfilled — clear any leftover petition by this user.
-    db.query(models.Petition).filter_by(user_id=user.id).delete()
+    # The request is fulfilled — close any leftover petition by this user
+    # (rows are kept: the activation funnel reads them later).
+    for p in db.query(models.Petition).filter_by(user_id=user.id, status="active").all():
+        p.status = "fulfilled"
+    track.log_event(db, user.id, "join", entity_type="mahalla", entity_id=m.id, mahalla_id=m.id)
     db.commit()
     return presenters.mahalla_detail(db, m)
 

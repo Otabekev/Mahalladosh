@@ -10,6 +10,31 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        runtimeCaching: [
+          {
+            // Uploaded images: immutable content, serve from cache when we have it.
+            urlPattern: ({ url, request, sameOrigin }) =>
+              sameOrigin && request.method === 'GET' && url.pathname.startsWith('/api/uploads/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'md-images',
+              expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 3600 },
+            },
+          },
+          {
+            // Other API GETs: fresh when the network answers, last-known data offline.
+            urlPattern: ({ url, request, sameOrigin }) =>
+              sameOrigin && request.method === 'GET' && url.pathname.startsWith('/api/'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'md-api',
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 100, maxAgeSeconds: 24 * 3600 },
+            },
+          },
+        ],
+      },
       manifest: {
         name: 'Mahalladosh',
         short_name: 'Mahalladosh',

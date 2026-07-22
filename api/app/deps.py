@@ -4,7 +4,7 @@ from typing import Generator
 from fastapi import Cookie, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from . import models
+from . import models, track
 from .db import SessionLocal
 from .security import decode_session_token
 
@@ -29,6 +29,10 @@ def get_current_user(
     user = db.get(models.User, user_id)
     if user is None:
         raise HTTPException(status_code=401, detail="Foydalanuvchi topilmadi")
+    try:
+        track.touch(db, user)  # analytics presence mark — must never break auth
+    except Exception:
+        db.rollback()
     return user
 
 

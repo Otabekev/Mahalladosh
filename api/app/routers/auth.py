@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
-from .. import models, presenters, schemas
+from .. import models, presenters, schemas, track
 from ..config import settings
 from ..deps import get_current_user, get_db
 from ..security import COOKIE_NAME, create_session_token, verify_telegram_auth
@@ -37,15 +37,24 @@ def dev_login(data: schemas.DevLoginIn, response: Response, db: Session = Depend
     """Local-development login. Disabled outside dev."""
     if not settings.is_dev:
         raise HTTPException(status_code=404)
-    user = db.query(models.User).filter_by(full_name=data.full_name, tg_id=None).first()
+    # dev convenience: reuse any existing user with this exact name (so demo
+    # accounts like "Otabek Ergashaliyev" log into their seeded rich profile),
+    # preferring one that's already a mahalla member
+    user = (
+        db.query(models.User)
+        .filter_by(full_name=data.full_name)
+        .order_by(models.User.mahalla_id.is_(None))
+        .first()
+    )
     if user is None:
         user = models.User(full_name=data.full_name, is_admin=data.is_admin)
         db.add(user)
-        db.commit()
-        db.refresh(user)
+        db.flush()  # autoflush=False — the login event below needs user.id
     elif data.is_admin and not user.is_admin:
         user.is_admin = True
-        db.commit()
+    track.log_event(db, user.id, "login")
+    db.commit()
+    db.refresh(user)
     _set_session(response, user.id)
     return presenters.user_out(db, user)
 
@@ -63,10 +72,12 @@ def telegram_login(data: schemas.TelegramLoginIn, response: Response, db: Sessio
             username=data.username, photo_url=data.photo_url,
         )
         db.add(user)
+        db.flush()  # autoflush=False — the login event below needs user.id
     else:
         user.full_name = full_name
         user.username = data.username
         user.photo_url = data.photo_url
+    track.log_event(db, user.id, "login")
     db.commit()
     db.refresh(user)
     _set_session(response, user.id)
@@ -84,7 +95,7 @@ def me(user: models.User = Depends(get_current_user), db: Session = Depends(get_
         if m:
             mahalla = presenters.mahalla_detail(db, m)
     else:
-        p = db.query(models.Petition).filter_by(user_id=user.id).first()
+        p = db.query(models.Petition).filter_by(user_id=user.id, status="active").first()
         if p:
             m = db.get(models.Mahalla, p.mahalla_id)
             if m:

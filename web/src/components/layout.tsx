@@ -7,6 +7,8 @@ import { useNotifications } from '@/core/queries/notifications'
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { Avatar } from './ui'
+import { Logo } from './Logo'
+import OfflineBanner from './OfflineBanner'
 
 /** Two-tone "ding-dong" via WebAudio — no asset file needed. */
 function playDingDong() {
@@ -127,23 +129,25 @@ export default function AppLayout() {
     <div className="min-h-dvh bg-bg">
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur border-b border-line">
         <div className="max-w-xl mx-auto flex items-center justify-between px-4 h-14">
-          <Link to="/app" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-brand text-white font-black flex items-center justify-center text-base">M</div>
+          <Link to="/app" className="flex items-center gap-2.5">
+            <Logo variant="icon" size={34} />
             <div className="leading-tight">
-              <div className="font-extrabold text-[15px] text-ink">Mahalladosh</div>
-              {me?.mahalla && <div className="text-[11px] text-sub -mt-0.5">{fmt(s.mahallaSuffix, { name: me.mahalla.name })}</div>}
+              <div className="font-extrabold text-[16px] text-ink">Mahalladosh</div>
+              {me?.mahalla && <div className="text-[12px] text-sub -mt-0.5">{fmt(s.mahallaSuffix, { name: me.mahalla.name })}</div>}
             </div>
           </Link>
           {me && (
             <div className="flex items-center gap-2">
               <NotificationBell />
               <Link to="/app/profile">
-                <Avatar name={me.user.full_name} src={me.user.photo_url} size={34} />
+                <Avatar name={me.user.full_name} src={me.user.photo_url} size={38} honor />
               </Link>
             </div>
           )}
         </div>
       </header>
+
+      <OfflineBanner />
 
       <main className="max-w-xl mx-auto px-4 pt-4 pb-28">
         <Outlet />
@@ -157,7 +161,7 @@ export default function AppLayout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition ${isActive ? 'text-ink' : 'text-gray-400'}`
+                `flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition ${isActive ? 'text-brand' : 'text-sub/60'}`
               }
             >
               {({ isActive }) => (

@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, notify, presenters, reputation, schemas
+from .. import models, notify, presenters, reputation, schemas, track
 from ..deps import get_db, require_admin
 from ..seed import normalize_name
 
@@ -47,7 +47,7 @@ def list_petitions(
         region = db.get(models.Region, district.region_id) if district else None
         petitions = (
             db.query(models.Petition)
-            .filter_by(mahalla_id=m.id)
+            .filter_by(mahalla_id=m.id, status="active")
             .order_by(models.Petition.created_at)
             .all()
         )
@@ -74,14 +74,14 @@ def approve_mahalla(
     _: models.User = Depends(require_admin),
 ):
     """Activate a pending mahalla: enroll petitioners as founding members
-    (+20 ball each), post the opening announcement, clear the petitions."""
+    (+20 ball each), post the opening announcement, close the petitions."""
     m = _pending_mahalla(db, mahalla_id)
     m.status = "active"
     m.activated_at = datetime.utcnow()
 
     petitions = (
         db.query(models.Petition)
-        .filter_by(mahalla_id=m.id)
+        .filter_by(mahalla_id=m.id, status="active")
         .order_by(models.Petition.created_at)
         .all()
     )
@@ -96,6 +96,10 @@ def approve_mahalla(
         if user.mahalla_id is None:
             user.mahalla_id = m.id
             enrolled_ids.append(user.id)
+            track.log_event(
+                db, user.id, "join",
+                entity_type="mahalla", entity_id=m.id, mahalla_id=m.id,
+            )
             if not reputation.already_awarded(
                 db, user.id, "founding_member", "mahalla", m.id
             ):
@@ -124,7 +128,8 @@ def approve_mahalla(
             )
         )
 
-    db.query(models.Petition).filter_by(mahalla_id=m.id).delete()
+    for p in petitions:
+        p.status = "fulfilled"  # kept for the activation funnel
     db.commit()
     db.refresh(m)
     return presenters.mahalla_detail(db, m)
@@ -139,7 +144,8 @@ def reject_mahalla(
     """Reject a pending mahalla and free its petitioners to petition elsewhere."""
     m = _pending_mahalla(db, mahalla_id)
     m.status = "rejected"
-    db.query(models.Petition).filter_by(mahalla_id=m.id).delete()
+    for p in db.query(models.Petition).filter_by(mahalla_id=m.id, status="active").all():
+        p.status = "rejected"
     db.commit()
 
 

@@ -1,10 +1,14 @@
 /** My household (xonadon) page — the family page, core differentiator (plan §9-B).
  * CASE A: no household yet → warm 20-second create form.
- * CASE B: manage members, family history (the moat) and privacy. */
+ * CASE B: a calm READ mode that feels like a family album, with all the editing
+ * forms tucked behind a "Tahrirlash" toggle. The read-mode pieces (hero, stat,
+ * album strip, history prose, member rows) are exported and reused by the
+ * neighbour-facing HouseholdDetailScreen. */
 
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
-import { fmt, useStrings } from '@/core/i18n'
+import { fmt, useLang, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { householdStrings } from '@/core/i18n/household'
 import {
@@ -39,6 +43,179 @@ export default function MyHouseholdScreen() {
   return <MyHouseholdView id={me.user.household_id} />
 }
 
+// ---------- small line icons ----------
+
+function IconChevronLeft() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 18l-6-6 6-6" />
+    </svg>
+  )
+}
+
+function IconBell() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+    </svg>
+  )
+}
+
+function IconPencil() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+    </svg>
+  )
+}
+
+function IconCheck() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  )
+}
+
+// ---------- shared READ-mode pieces (reused by HouseholdDetailScreen) ----------
+
+/** Terracotta ikat hero band — bleeds edge-to-edge out of the page padding. */
+export function HouseholdHero({
+  familyName,
+  mahalla,
+  street,
+  actions,
+}: {
+  familyName: string
+  mahalla?: string | null
+  street?: string | null
+  actions?: ReactNode
+}) {
+  const s = useStrings(householdStrings)
+  const navigate = useNavigate()
+  const location = [mahalla, street].filter(Boolean).join(' · ')
+
+  return (
+    <div
+      className="relative -mx-4 -mt-4 overflow-hidden px-5 pt-5 pb-7 text-[#FBF3E2]"
+      style={{ background: 'repeating-linear-gradient(90deg,#B23A28 0 3%,#c25a3f 4.5% 6%,#B23A28 7.5% 10%,#9c3020 11.5% 14%)' }}
+    >
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(120,40,28,.25),rgba(120,40,28,.62))' }} />
+
+      <div className="relative flex items-center justify-between">
+        <button onClick={() => navigate(-1)} className="-ml-1 flex items-center gap-1.5 py-1 text-[14px] font-semibold opacity-95">
+          <IconChevronLeft />
+          {s.heroBack}
+        </button>
+        {actions && <div className="flex gap-2">{actions}</div>}
+      </div>
+
+      <h1 className="relative mt-3 font-display text-[29px] font-bold leading-[1.05] tracking-tight">
+        {fmt(s.householdOf, { name: familyName })}
+      </h1>
+      {location && <p className="relative mt-1 text-[15px] opacity-90">{location}</p>}
+    </div>
+  )
+}
+
+/** Big "{n} avloddan beri shu ko'chada" card that overlaps up into the hero. */
+export function GenerationsStat({ generations }: { generations: number }) {
+  const s = useStrings(householdStrings)
+  const lang = useLang((st) => st.lang)
+  return (
+    <div className="relative z-10 -mt-5 flex items-center gap-4 rounded-2xl border border-line bg-card px-5 py-4 shadow-pop">
+      <div className="text-[46px] font-black leading-none text-brand tabular-nums">{generations}</div>
+      <div className="text-[17px] font-semibold leading-[1.3] text-ink">
+        {s.genStatLine}
+        {lang !== 'en' && (
+          <span className="mt-0.5 block text-[14px] font-normal text-sub">{fmt(s.genStatGloss, { n: generations })}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Oila albomi — a warm 4-tile strip. Real photo upload is a future task; for now
+ * these are gentle cream placeholders so the album still feels present. */
+export function AlbumStrip() {
+  const s = useStrings(householdStrings)
+  return (
+    <div>
+      <div className="mb-2.5 flex items-center justify-between">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.08em] text-brand">{s.albumTitle}</div>
+        <span className="text-[13px] text-sub">{s.albumSoon}</span>
+      </div>
+      <div className="flex gap-2.5">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="aspect-[3/4] flex-1 rounded-xl border border-line"
+            style={{ background: 'repeating-linear-gradient(135deg,#E7D6B4,#E7D6B4 8px,#EEE1C4 8px,#EEE1C4 16px)' }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Bizning tariximiz — the moat, shown as large warm prose (never a textarea here). */
+export function HistoryProse({
+  history,
+  verified,
+  own,
+}: {
+  history: string | null
+  verified: boolean
+  own: boolean
+}) {
+  const s = useStrings(householdStrings)
+  return (
+    <div>
+      <div className="mb-2.5 flex flex-wrap items-center gap-2">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.08em] text-brand">{s.ourHistory}</div>
+        {verified && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#CFE3D6] bg-good-soft px-2.5 py-1 text-[12px] font-semibold text-good">
+            <IconCheck />
+            {s.vouchedPill}
+          </span>
+        )}
+      </div>
+      {history ? (
+        <p className="whitespace-pre-wrap text-[18px] leading-relaxed text-ink" style={{ textWrap: 'pretty' }}>
+          {history}
+        </p>
+      ) : (
+        <p className="text-[16px] leading-relaxed text-sub">{own ? s.historyReadEmpty : s.emptyFamily}</p>
+      )}
+    </div>
+  )
+}
+
+/** Xonadon a'zolari — member rows on cream cards; elders get the honour ring. */
+export function MembersRead({ members }: { members: HouseholdMember[] }) {
+  const s = useStrings(householdStrings)
+  if (members.length === 0) return null
+  return (
+    <div>
+      <h2 className="mb-3 font-display text-[21px] font-bold text-ink">{s.membersTitle}</h2>
+      <div className="space-y-2.5">
+        {members.map((m) => (
+          <div key={m.id} className="flex items-center gap-3.5 rounded-2xl border border-line bg-card px-3.5 py-3">
+            <Avatar name={m.full_name} size={m.is_elder ? 58 : 52} honor={m.is_elder} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-bold text-ink" style={{ fontSize: m.is_elder ? 19 : 18 }}>
+                {m.full_name}
+              </div>
+              {m.is_elder && <div className="text-[15px] font-semibold text-honor-deep">{s.elderBadge}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ---------- CASE A: create ----------
 
 function CreateHouseholdView() {
@@ -62,12 +239,11 @@ function CreateHouseholdView() {
 
   return (
     <div>
-      <PageTitle title={s.title} />
-
-      <Card className="p-5 mb-4 text-center">
-        <div className="text-4xl mb-2">🏠</div>
-        <p className="text-sm text-ink">{s.createIntro}</p>
-      </Card>
+      <div className="mb-5 pt-2 text-center">
+        <div className="mb-3 text-5xl">🏡</div>
+        <h1 className="font-display text-[26px] font-bold leading-tight text-ink">{s.title}</h1>
+        <p className="mx-auto mt-2 max-w-xs text-sm text-sub">{s.createIntro}</p>
+      </div>
 
       <Card className="p-5">
         {create.error && <ErrorNote message={create.error.message} />}
@@ -94,7 +270,7 @@ function CreateHouseholdView() {
           <Button type="submit" full loading={create.isPending} disabled={!canSubmit}>
             {s.create}
           </Button>
-          <p className="text-xs text-sub mt-3 text-center">{s.createAnnounceNote}</p>
+          <p className="mt-3 text-center text-xs text-sub">{s.createAnnounceNote}</p>
         </form>
       </Card>
     </div>
@@ -106,6 +282,7 @@ function CreateHouseholdView() {
 function MyHouseholdView({ id }: { id: number }) {
   const s = useStrings(householdStrings)
   const query = useHousehold(id)
+  const [edit, setEdit] = useState(false)
 
   if (query.isPending) {
     return (
@@ -124,33 +301,126 @@ function MyHouseholdView({ id }: { id: number }) {
   }
   if (!query.data) return null
   const household = query.data
+
+  return edit ? (
+    <EditMode household={household} onDone={() => setEdit(false)} />
+  ) : (
+    <ReadMode household={household} onEdit={() => setEdit(true)} />
+  )
+}
+
+// ---------- READ mode (own family album) ----------
+
+function ReadMode({ household, onEdit }: { household: Household; onEdit: () => void }) {
+  const s = useStrings(householdStrings)
+  const c = useStrings(common)
+  const mahalla = useAuth((st) => st.me?.mahalla?.name ?? null)
   const verified = household.verification_status === 'verified'
+
+  const iconBtn = 'flex h-9 w-9 items-center justify-center rounded-[10px]'
+  const iconBg = { background: 'rgba(251,243,226,0.18)' }
 
   return (
     <div>
-      <PageTitle title={s.title} />
+      <HouseholdHero
+        familyName={household.family_name}
+        mahalla={mahalla ? fmt(c.mahallaSuffix, { name: mahalla }) : null}
+        street={household.street}
+        actions={
+          <>
+            <Link to="/app/notifications" aria-label={s.notificationsAria} className={`${iconBtn} text-[#FBF3E2]`} style={iconBg}>
+              <IconBell />
+            </Link>
+            <button onClick={onEdit} aria-label={s.editButton} className={`${iconBtn} text-[#FBF3E2]`} style={iconBg}>
+              <IconPencil />
+            </button>
+          </>
+        }
+      />
 
-      <Card className="p-5 mb-4">
-        <h2 className="text-lg font-extrabold text-ink">{fmt(s.householdOf, { name: household.family_name })}</h2>
-        <p className="text-sm text-sub">
-          {fmt(s.nPeople, { n: household.resident_count })}
-          {household.street ? ` · ${household.street}` : ''}
-        </p>
-        <div className="mt-2">
-          {verified ? (
-            <Badge color="green">{s.verifiedBadge}</Badge>
-          ) : (
+      {household.generations_here != null && <GenerationsStat generations={household.generations_here} />}
+
+      <div className="mt-6 space-y-7">
+        <AlbumStrip />
+        <HistoryProse history={household.family_history} verified={verified} own />
+        <MembersRead members={household.members} />
+
+        {!verified && (
+          <Card className="p-4">
             <Badge color="gray">{fmt(s.awaitingVouch, { n: household.vouch_count })}</Badge>
-          )}
-        </div>
-        {!verified && <p className="text-xs text-sub mt-2">{s.vouchHint}</p>}
-      </Card>
+            <p className="mt-2 text-xs text-sub">{s.vouchHint}</p>
+          </Card>
+        )}
 
-      <DingDongCard household={household} />
-      <MembersCard household={household} />
-      <HistoryCard household={household} />
-      <PrivacyCard household={household} />
+        <Button variant="secondary" full onClick={onEdit}>
+          ✎ {s.editButton}
+        </Button>
+      </div>
     </div>
+  )
+}
+
+// ---------- EDIT mode (all the forms, tucked away) ----------
+
+function EditMode({ household, onDone }: { household: Household; onDone: () => void }) {
+  const s = useStrings(householdStrings)
+  const c = useStrings(common)
+
+  return (
+    <div>
+      <button onClick={onDone} className="-ml-1 mb-3 flex items-center gap-1.5 py-1 text-sm font-semibold text-brand">
+        <IconChevronLeft />
+        {c.back}
+      </button>
+      <PageTitle title={s.editTitle} />
+
+      <BasicsCard household={household} />
+      <HistoryCard household={household} />
+      <MembersCard household={household} />
+      <DingDongCard household={household} />
+      <PrivacyCard household={household} />
+
+      <Button full onClick={onDone}>
+        {s.doneEditing}
+      </Button>
+    </div>
+  )
+}
+
+// ---------- basics (family name + street) ----------
+
+function BasicsCard({ household }: { household: Household }) {
+  const s = useStrings(householdStrings)
+  const c = useStrings(common)
+  const update = useUpdateHousehold(household.id)
+  const [familyName, setFamilyName] = useState(household.family_name)
+  const [street, setStreet] = useState(household.street ?? '')
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    if (update.isPending || familyName.trim().length < 2) return
+    update.mutate({ family_name: familyName.trim(), street: street.trim() || null })
+  }
+
+  return (
+    <Card className="mb-4 p-5">
+      <h3 className="mb-3 font-bold text-ink">{s.basicsTitle}</h3>
+      {update.error && <ErrorNote message={update.error.message} />}
+      <form onSubmit={submit}>
+        <Field label={s.familyNameLabel}>
+          <Input value={familyName} onChange={(e) => setFamilyName(e.target.value)} placeholder={s.familyNamePlaceholder} />
+        </Field>
+        <Field label={s.streetLabel}>
+          <Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder={s.streetPlaceholder} />
+        </Field>
+        <div className="flex items-center gap-3">
+          <Button type="submit" loading={update.isPending} disabled={familyName.trim().length < 2}>
+            {c.save}
+          </Button>
+          {update.isSuccess && !update.isPending && <Badge color="green">{s.saved}</Badge>}
+        </div>
+      </form>
+    </Card>
   )
 }
 
@@ -177,13 +447,13 @@ function DingDongCard({ household }: { household: Household }) {
   }
 
   return (
-    <Card className="p-5 mb-4">
-      <h3 className="font-bold text-ink mb-3">{s.dingdongTitle}</h3>
+    <Card className="mb-4 p-5">
+      <h3 className="mb-3 font-bold text-ink">{s.dingdongTitle}</h3>
 
       {error && <ErrorNote message={error} />}
 
       {household.has_location ? (
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Badge color="green">{s.locationSet}</Badge>
           <Button variant="secondary" size="sm" loading={busy} onClick={mark}>
             {s.setAgain}
@@ -191,14 +461,14 @@ function DingDongCard({ household }: { household: Household }) {
         </div>
       ) : (
         <>
-          <p className="text-sm text-sub mb-3">{s.setLocationExplain}</p>
+          <p className="mb-3 text-sm text-sub">{s.setLocationExplain}</p>
           <Button full loading={busy} onClick={mark}>
             {s.markHere}
           </Button>
         </>
       )}
 
-      <p className="text-xs text-sub mt-3">{s.locationPrivacyNote}</p>
+      <p className="mt-3 text-xs text-sub">{s.locationPrivacyNote}</p>
     </Card>
   )
 }
@@ -234,8 +504,8 @@ function MembersCard({ household }: { household: Household }) {
   }
 
   return (
-    <Card className="p-5 mb-4">
-      <div className="flex items-center justify-between mb-3">
+    <Card className="mb-4 p-5">
+      <div className="mb-3 flex items-center justify-between">
         <h3 className="font-bold text-ink">{s.membersTitle}</h3>
         <span className="text-sm text-sub">{household.members.length}</span>
       </div>
@@ -243,16 +513,12 @@ function MembersCard({ household }: { household: Household }) {
       {addMember.error && <ErrorNote message={addMember.error.message} />}
       {removeMember.error && <ErrorNote message={removeMember.error.message} />}
 
-      {household.members.length === 0 && (
-        <p className="text-sm text-sub mb-2">{s.noMembers}</p>
-      )}
+      {household.members.length === 0 && <p className="mb-2 text-sm text-sub">{s.noMembers}</p>}
       <div className="space-y-2">
         {household.members.map((m) => (
           <div key={m.id} className="flex items-center gap-3">
             <Avatar name={m.full_name} size={32} />
-            <span className="text-sm font-semibold text-ink flex-1 min-w-0 truncate">
-              {m.full_name}
-            </span>
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{m.full_name}</span>
             {m.is_elder && <Badge color="gold">{s.elderBadge}</Badge>}
             <Button
               variant="ghost"
@@ -268,20 +534,16 @@ function MembersCard({ household }: { household: Household }) {
       </div>
 
       {open ? (
-        <form onSubmit={submit} className="mt-4 pt-4 border-t border-line">
+        <form onSubmit={submit} className="mt-4 border-t border-line pt-4">
           <div className="mb-3">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={s.memberNamePlaceholder}
-            />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={s.memberNamePlaceholder} />
           </div>
-          <label className="flex items-center gap-2 mb-3 text-sm text-ink">
+          <label className="mb-3 flex items-center gap-2 text-sm text-ink">
             <input
               type="checkbox"
               checked={elder}
               onChange={(e) => setElder(e.target.checked)}
-              className="w-4 h-4 accent-black"
+              className="h-4 w-4 accent-black"
             />
             {s.elderCheckbox}
           </label>
@@ -302,7 +564,7 @@ function MembersCard({ household }: { household: Household }) {
         </div>
       )}
 
-      <p className="text-xs text-sub mt-3">{s.membersHint}</p>
+      <p className="mt-3 text-xs text-sub">{s.membersHint}</p>
     </Card>
   )
 }
@@ -329,13 +591,13 @@ function HistoryCard({ household }: { household: Household }) {
   }
 
   return (
-    <div className="bg-amber-50/50 border border-amber-200 rounded-2xl shadow-card p-5 mb-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/50 p-5 shadow-card">
+      <div className="mb-3 flex items-center justify-between">
         <h3 className="font-bold text-ink">{s.historyTitle}</h3>
         {!hasHistory && <PointsBadge points={15} size="sm" />}
       </div>
 
-      {!hasHistory && <p className="text-sm text-sub mb-3">{s.historyEncourage}</p>}
+      {!hasHistory && <p className="mb-3 text-sm text-sub">{s.historyEncourage}</p>}
 
       {update.error && <ErrorNote message={update.error.message} />}
 
@@ -375,7 +637,7 @@ function PrivacyCard({ household }: { household: Household }) {
   const update = useUpdateHousehold(household.id)
 
   return (
-    <Card className="p-5 mb-4">
+    <Card className="mb-4 p-5">
       {update.error && <ErrorNote message={update.error.message} />}
       <Field label={s.privacyLabel}>
         <Select
@@ -387,7 +649,7 @@ function PrivacyCard({ household }: { household: Household }) {
           <option value="family_only">{s.visFamily}</option>
         </Select>
       </Field>
-      <p className="text-xs text-sub -mt-1">{s.privacyFooter}</p>
+      <p className="-mt-1 text-xs text-sub">{s.privacyFooter}</p>
     </Card>
   )
 }

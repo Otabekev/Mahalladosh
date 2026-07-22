@@ -21,7 +21,7 @@ def user_out(db: Session, user: models.User) -> schemas.UserOut:
 
 
 def mahalla_out(db: Session, m: models.Mahalla) -> schemas.MahallaOut:
-    petition_count = db.query(models.Petition).filter_by(mahalla_id=m.id).count()
+    petition_count = db.query(models.Petition).filter_by(mahalla_id=m.id, status="active").count()
     member_count = db.query(models.User).filter_by(mahalla_id=m.id).count()
     return schemas.MahallaOut(
         id=m.id,
@@ -82,7 +82,11 @@ def author_place(db: Session, mahalla_id: int) -> str:
 
 
 def petition_status(db: Session, m: models.Mahalla, user: models.User) -> schemas.PetitionStatus:
-    mine = db.query(models.Petition).filter_by(mahalla_id=m.id, user_id=user.id).first()
+    mine = (
+        db.query(models.Petition)
+        .filter_by(mahalla_id=m.id, user_id=user.id, status="active")
+        .first()
+    )
     return schemas.PetitionStatus(mahalla=mahalla_out(db, m), my_petition=mine is not None)
 
 

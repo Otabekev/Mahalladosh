@@ -1,5 +1,5 @@
-/** Design system — Skool-inspired: white cards on light gray, near-black
- * actions, gold for points/honor. All screens build from these. */
+/** Design system — Uzbek: warm cream "paper" surfaces, terracotta actions,
+ * teal accents, gold reserved for honor. All screens build from these. */
 
 import { useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { fmt, pick, useLang } from '@/core/i18n'
@@ -8,14 +8,15 @@ import { translateBackend } from '@/core/i18n/backend'
 
 // ---------- buttons ----------
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold' | 'accent'
 
 const buttonStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-brand text-white hover:bg-black active:scale-[0.98]',
-  secondary: 'bg-white text-ink border border-line hover:bg-gray-50 active:scale-[0.98]',
-  ghost: 'bg-transparent text-sub hover:bg-gray-100',
-  danger: 'bg-danger text-white hover:bg-red-700 active:scale-[0.98]',
-  gold: 'bg-gold-soft text-gold border border-amber-200 hover:bg-amber-100',
+  primary: 'bg-brand text-[#FBF3E2] hover:bg-brand-deep active:scale-[0.98]',
+  secondary: 'bg-card text-ink border border-line hover:bg-paper active:scale-[0.98]',
+  ghost: 'bg-transparent text-sub hover:bg-black/5',
+  danger: 'bg-danger text-white hover:opacity-90 active:scale-[0.98]',
+  gold: 'bg-gold-soft text-honor-deep border border-amber-200 hover:brightness-95',
+  accent: 'bg-accent text-white hover:bg-accent-deep active:scale-[0.98]',
 }
 
 export function Button({
@@ -85,7 +86,7 @@ export function Field({ label, hint, error, children }: { label: string; hint?: 
 }
 
 const inputBase =
-  'w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-gray-400 transition'
+  'w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-[16px] text-ink placeholder:text-sub/60 focus:outline-none focus:ring-2 focus:ring-brand/25 focus:border-brand/40 transition'
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputBase} ${props.className ?? ''}`} />
@@ -101,12 +102,23 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
 
 // ---------- identity ----------
 
+// warm palette drawn from the design system (terracotta / teal / honor / cobalt / clay)
 const AVATAR_COLORS = [
-  'bg-amber-500', 'bg-emerald-500', 'bg-blue-500', 'bg-violet-500',
-  'bg-rose-500', 'bg-teal-500', 'bg-orange-500', 'bg-indigo-500',
+  '#B23A28', '#157C84', '#D89A2A', '#1B4B8A', '#9A5A34', '#5E7F3D', '#8E2A1E', '#0E5E66',
 ]
 
-export function Avatar({ name, src, size = 40 }: { name: string; src?: string | null; size?: number }) {
+/** Avatar. `honor` wraps it in the gold obro' ring (elders, the header, top ranks). */
+export function Avatar({
+  name,
+  src,
+  size = 40,
+  honor = false,
+}: {
+  name: string
+  src?: string | null
+  size?: number
+  honor?: boolean
+}) {
   const initials = name
     .split(' ')
     .map((p) => p[0])
@@ -114,15 +126,31 @@ export function Avatar({ name, src, size = 40 }: { name: string; src?: string | 
     .join('')
     .toUpperCase()
   const color = AVATAR_COLORS[name.length % AVATAR_COLORS.length]
-  if (src) {
-    return <img src={src} alt={name} className="rounded-full object-cover shrink-0" style={{ width: size, height: size }} />
-  }
-  return (
+  const inner = src ? (
+    <img src={src} alt={name} className="rounded-full object-cover w-full h-full" />
+  ) : (
     <div
-      className={`rounded-full ${color} text-white font-bold flex items-center justify-center shrink-0`}
-      style={{ width: size, height: size, fontSize: size * 0.38 }}
+      className="rounded-full text-white font-bold flex items-center justify-center w-full h-full"
+      style={{ backgroundColor: color, fontSize: size * 0.38 }}
     >
       {initials}
+    </div>
+  )
+  if (honor) {
+    return (
+      <div
+        className="rounded-full shrink-0"
+        style={{ width: size, height: size, padding: Math.max(2, size * 0.06), background: 'var(--color-honor)' }}
+      >
+        <div className="rounded-full w-full h-full" style={{ boxShadow: '0 0 0 2px var(--color-card) inset' }}>
+          {inner}
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="rounded-full overflow-hidden shrink-0" style={{ width: size, height: size }}>
+      {inner}
     </div>
   )
 }

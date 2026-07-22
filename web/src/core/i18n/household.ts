@@ -201,9 +201,56 @@ export const householdStrings = {
 
   // detail screen
   emptyFamily: {
-    uz: "Bu oila hali ma'lumot kiritmagan",
-    uzc: 'Бу оила ҳали маълумот киритмаган',
-    ru: 'Эта семья ещё не добавила информацию',
-    en: "This family hasn't added any details yet",
+    uz: "Bu oila hali o'z hikoyasini yozmagan",
+    uzc: 'Бу оила ҳали ўз ҳикоясини ёзмаган',
+    ru: 'Эта семья ещё не рассказала свою историю',
+    en: "This family hasn't shared their story yet",
+  },
+
+  // ---- read-mode redesign (family album) ----
+  heroBack: { uz: 'Orqaga', uzc: 'Орқага', ru: 'Назад', en: 'Back' },
+  notificationsAria: { uz: 'Bildirishnomalar', uzc: 'Билдиришномалар', ru: 'Уведомления', en: 'Notifications' },
+  editButton: { uz: 'Tahrirlash', uzc: 'Таҳрирлаш', ru: 'Редактировать', en: 'Edit' },
+  doneEditing: { uz: 'Tayyor', uzc: 'Тайёр', ru: 'Готово', en: 'Done' },
+  editTitle: {
+    uz: 'Xonadonni tahrirlash',
+    uzc: 'Хонадонни таҳрирлаш',
+    ru: 'Редактирование дома',
+    en: 'Edit household',
+  },
+  basicsTitle: { uz: "Oila ma'lumotlari", uzc: 'Оила маълумотлари', ru: 'Данные семьи', en: 'Family details' },
+
+  // "N avloddan beri shu ko'chada" stat card
+  genStatLine: {
+    uz: "avloddan beri shu ko'chada",
+    uzc: 'авлоддан бери шу кўчада',
+    ru: 'поколения на этой улице',
+    en: 'generations on this street',
+  },
+  // subtle English gloss under the localized line (shown only for non-English)
+  genStatGloss: {
+    uz: '{n} generations on this street',
+    uzc: '{n} generations on this street',
+    ru: '{n} generations on this street',
+    en: '{n} generations on this street',
+  },
+
+  // family album strip
+  albumTitle: { uz: 'Oila albomi', uzc: 'Оила альбоми', ru: 'Семейный альбом', en: 'Family album' },
+  albumSoon: { uz: 'Tez orada', uzc: 'Тез орада', ru: 'Скоро', en: 'Coming soon' },
+
+  // "Bizning tariximiz" read-mode prose
+  ourHistory: { uz: 'Bizning tariximiz', uzc: 'Бизнинг тарихимиз', ru: 'Наша история', en: 'Our story' },
+  vouchedPill: {
+    uz: "Qo'shnilar tasdiqlagan",
+    uzc: 'Қўшнилар тасдиқлаган',
+    ru: 'Подтверждено соседями',
+    en: 'Verified by neighbors',
+  },
+  historyReadEmpty: {
+    uz: "Oilangiz hikoyasi hali yozilmagan. Yuqoridagi qalam belgisini bosib, uni yozib qoldiring.",
+    uzc: 'Оилангиз ҳикояси ҳали ёзилмаган. Юқоридаги қалам белгисини босиб, уни ёзиб қолдиринг.',
+    ru: 'История вашей семьи ещё не записана. Нажмите на карандаш вверху и расскажите её.',
+    en: "Your family story isn't written yet. Tap the pencil above to share it.",
   },
 } satisfies Dict

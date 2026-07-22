@@ -9,6 +9,25 @@ export const feedStrings = {
   tabCountry: { uz: "O'zbekiston", uzc: 'Ўзбекистон', ru: 'Узбекистан', en: 'Uzbekistan' },
   allTypes: { uz: 'Hammasi', uzc: 'Ҳаммаси', ru: 'Все', en: 'All' },
 
+  // ---------- "Bugun" digest / composer / help card ----------
+  bugunHeading: { uz: 'Bugun', uzc: 'Бугун', ru: 'Сегодня', en: 'Today' },
+  bugunHelp: {
+    uz: "{n} qo'shni yordam so'rayapti",
+    uzc: '{n} қўшни ёрдам сўраяпти',
+    ru: '{n} соседей просят помощи',
+    en: '{n} neighbors asking for help',
+  },
+  todayLabel: { uz: 'Bugun', uzc: 'Бугун', ru: 'Сегодня', en: 'Today' },
+  tomorrowLabel: { uz: 'Ertaga', uzc: 'Эртага', ru: 'Завтра', en: 'Tomorrow' },
+  composerPrompt: {
+    uz: "Nima bo'ldi, {name}?",
+    uzc: 'Нима бўлди, {name}?',
+    ru: 'Что нового, {name}?',
+    en: "What's new, {name}?",
+  },
+  helpRequesting: { uz: "Yordam so'rayapti", uzc: 'Ёрдам сўраяпти', ru: 'Просит помощи', en: 'Asking for help' },
+  iWillHelp: { uz: 'Men yordam beraman', uzc: 'Мен ёрдам бераман', ru: 'Я помогу', en: "I'll help" },
+
   // ---------- status badges ----------
   doneBadge: { uz: 'Bajarildi', uzc: 'Бажарилди', ru: 'Выполнено', en: 'Done' },
   closedBadge: { uz: 'Yopilgan', uzc: 'Ёпилган', ru: 'Закрыто', en: 'Closed' },

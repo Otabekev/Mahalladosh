@@ -75,7 +75,35 @@ class User(Base):
     rep_alltime: Mapped[int] = mapped_column(Integer, default=0)
     rep_month_key: Mapped[Optional[str]] = mapped_column(String(7))  # "2026-07"
     banned_until: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    last_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime)  # throttled, see track.touch
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class UserActivity(Base):
+    """One row per user per UTC day — the raw material for DAU/WAU/retention.
+    Upserted by track.touch; the unique constraint is the idempotency guard."""
+
+    __tablename__ = "user_activity"
+    __table_args__ = (UniqueConstraint("user_id", "day"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    day: Mapped[str] = mapped_column(String(10))  # "YYYY-MM-DD" (UTC)
+
+
+class EventLog(Base):
+    """Append-only product-analytics events (login, petition, join, ...).
+    Written via track.log_event inside the caller's commit."""
+
+    __tablename__ = "event_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    event: Mapped[str] = mapped_column(String(40), index=True)
+    entity_type: Mapped[Optional[str]] = mapped_column(String(30))
+    entity_id: Mapped[Optional[int]] = mapped_column(Integer)
+    mahalla_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mahallas.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
 
 class Petition(Base):
@@ -88,6 +116,9 @@ class Petition(Base):
     mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     estimated_households: Mapped[Optional[int]] = mapped_column(Integer)
+    # Petitions are never hard-deleted (the activation funnel needs them):
+    # only "active" rows count toward thresholds; the rest are history.
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active|fulfilled|withdrawn|rejected
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 

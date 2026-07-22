@@ -21,6 +21,55 @@ export const mahallaStrings = {
     en: "Last month's most active neighbor",
   },
 
+  // ---------- honor redesign: header stats ----------
+  unitMembers: { uz: "a'zo", uzc: 'аъзо', ru: 'участников', en: 'members' },
+  unitHouseholds: { uz: 'xonadon', uzc: 'хонадон', ru: 'домов', en: 'households' },
+  noRaisiShort: {
+    uz: 'Raisi saylanmagan',
+    uzc: 'Раиси сайланмаган',
+    ru: 'Раис не избран',
+    en: 'No raisi yet',
+  },
+
+  // ---------- honor redesign: faol qo'shni medallion ----------
+  faolQoshniPill: {
+    uz: "Oyning faol qo'shnisi",
+    uzc: 'Ойнинг фаол қўшниси',
+    ru: 'Активный сосед месяца',
+    en: 'Neighbor of the month',
+  },
+  obroPoints: { uz: "{n} obro'", uzc: '{n} обрў', ru: "{n} обро'", en: "{n} obro'" },
+  awardedByRaisi: {
+    uz: 'Raisi tomonidan taqdirlangan',
+    uzc: 'Раиси томонидан тақдирланган',
+    ru: 'Отмечен раисом',
+    en: 'Awarded by the raisi',
+  },
+
+  // ---------- honor redesign: verify strip ----------
+  verifyPending: {
+    uz: '{n} xonadon tasdiqlashni kutmoqda',
+    uzc: '{n} хонадон тасдиқлашни кутмоқда',
+    ru: '{n} домов ждут подтверждения',
+    en: '{n} households awaiting verification',
+  },
+  seeAction: { uz: "Ko'rish", uzc: 'Кўриш', ru: 'Смотреть', en: 'View' },
+
+  // ---------- honor redesign: your rank ----------
+  youLabel: { uz: 'Siz', uzc: 'Сиз', ru: 'Вы', en: 'You' },
+  yourRankHint: {
+    uz: "Yana {n} obro' — {rank}-o'ringa",
+    uzc: 'Яна {n} обрў — {rank}-ўринга',
+    ru: "Ещё {n} обро' — до {rank}-го места",
+    en: '{n} more obro’ to reach #{rank}',
+  },
+  yourRankLeader: {
+    uz: 'Siz yetakchisiz!',
+    uzc: 'Сиз етакчисиз!',
+    ru: 'Вы лидер!',
+    en: "You're in the lead!",
+  },
+
   // ---------- tabs ----------
   tabRating: { uz: 'Reyting', uzc: 'Рейтинг', ru: 'Рейтинг', en: 'Leaderboard' },
   tabNeighbors: { uz: "Qo'shnilar", uzc: 'Қўшнилар', ru: 'Соседи', en: 'Neighbors' },

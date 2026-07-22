@@ -28,6 +28,12 @@ export const common = {
   logout: { uz: 'Chiqish', uzc: 'Чиқиш', ru: 'Выйти', en: 'Log out' },
   login: { uz: 'Kirish', uzc: 'Кириш', ru: 'Войти', en: 'Log in' },
   error: { uz: 'Xatolik yuz berdi', uzc: 'Хатолик юз берди', ru: 'Произошла ошибка', en: 'Something went wrong' },
+  offline: {
+    uz: "Internet aloqasi yo'q — oxirgi ma'lumotlar ko'rsatilmoqda",
+    uzc: 'Интернет алоқаси йўқ — охирги маълумотлар кўрсатилмоқда',
+    ru: 'Нет соединения — показаны последние данные',
+    en: "You're offline — showing recent data",
+  },
   language: { uz: 'Til', uzc: 'Тил', ru: 'Язык', en: 'Language' },
   // image picker
   addPhoto: { uz: "Rasm qo'shish", uzc: 'Расм қўшиш', ru: 'Добавить фото', en: 'Add photo' },

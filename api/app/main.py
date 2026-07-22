@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -19,6 +21,7 @@ from .routers import (
     uploads,
 )
 from .routers.uploads import UPLOAD_DIR
+from .scheduler import run_sweep, scheduler_loop
 from .seed import seed
 
 
@@ -27,7 +30,14 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         seed(db)
+    # catch up on overdue time-based work (votes past deadline, missed honors)
+    # before serving, then keep sweeping every 5 minutes in the background
+    await asyncio.to_thread(run_sweep)
+    task = asyncio.create_task(scheduler_loop())
     yield
+    task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await task
 
 
 app = FastAPI(title="Mahalladosh API", lifespan=lifespan)

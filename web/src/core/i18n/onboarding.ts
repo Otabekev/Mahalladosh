@@ -10,6 +10,43 @@ export const onboardingStrings = {
     ru: 'Оставайтесь на связи со своей махаллёй',
     en: 'Stay connected with your mahalla',
   },
+  // ---------- login: hero + welcome (redesign) ----------
+  heroCaption: {
+    uz: "mahalla ko'chasi · oltin soat",
+    uzc: 'маҳалла кўчаси · олтин соат',
+    ru: 'махаллинская улица · золотой час',
+    en: 'mahalla street · golden hour',
+  },
+  welcomeLine1: {
+    uz: 'Mahallangizga xush kelibsiz.',
+    uzc: 'Маҳаллангизга хуш келибсиз.',
+    ru: 'Добро пожаловать в вашу махаллю.',
+    en: 'Welcome to your mahalla.',
+  },
+  welcomeLine2: {
+    uz: 'Bu yerda hamma bir-birini taniydi.',
+    uzc: 'Бу ерда ҳамма бир-бирини танийди.',
+    ru: 'Здесь все знают друг друга.',
+    en: 'Here, everyone knows one another.',
+  },
+  telegramLogin: {
+    uz: 'Telegram orqali kirish',
+    uzc: 'Телеграм орқали кириш',
+    ru: 'Войти через Telegram',
+    en: 'Log in with Telegram',
+  },
+  trustLine1: {
+    uz: "Faqat qo'shnilaringiz ko'radi.",
+    uzc: 'Фақат қўшниларингиз кўради.',
+    ru: 'Видят только ваши соседи.',
+    en: 'Only your neighbors can see.',
+  },
+  trustLine2: {
+    uz: 'Davlat tizimlariga ulanmagan.',
+    uzc: 'Давлат тизимларига уланмаган.',
+    ru: 'Не подключено к государственным системам.',
+    en: 'Not connected to government systems.',
+  },
   // ---------- login: feature rows ----------
   featFamilyTitle: { uz: 'Oila sahifalari', uzc: 'Оила саҳифалари', ru: 'Семейные страницы', en: 'Family pages' },
   featFamilyText: { uz: 'avlodlar tarixi', uzc: 'авлодлар тарихи', ru: 'история поколений', en: 'history of generations' },

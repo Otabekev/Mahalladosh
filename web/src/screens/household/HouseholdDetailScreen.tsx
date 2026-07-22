@@ -1,25 +1,20 @@
-/** Another family's household page (plan §9-B) — read-only view, neighbor
- * vouching and the DingDong virtual doorbell. */
+/** Another family's household page (plan §9-B) — the same warm read-mode album a
+ * family sees of itself, plus neighbour vouching and the DingDong virtual doorbell. */
 
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
 import { fmt, useStrings } from '@/core/i18n'
+import { common } from '@/core/i18n/common'
 import { householdStrings } from '@/core/i18n/household'
-import {
-  Avatar,
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  ErrorNote,
-  Spinner,
-} from '@/components/ui'
+import { Badge, Button, Card, ErrorNote, Spinner } from '@/components/ui'
 import { getPosition, useDingDong, useHousehold, useVouch } from '@/core/queries/households'
 import type { Household } from '@/core/api/types'
+import { AlbumStrip, GenerationsStat, HistoryProse, HouseholdHero, MembersRead } from './MyHouseholdScreen'
 
 export default function HouseholdDetailScreen() {
   const s = useStrings(householdStrings)
+  const c = useStrings(common)
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const me = useAuth((st) => st.me)
@@ -55,84 +50,37 @@ export default function HouseholdDetailScreen() {
   const household = query.data
   const verified = household.verification_status === 'verified'
   const isMine = me != null && household.id === me.user.household_id
-  const isEmpty = household.members.length === 0 && !household.family_history
+  const mahalla = me?.mahalla ? fmt(c.mahallaSuffix, { name: me.mahalla.name }) : null
 
   return (
     <div>
-      {back}
+      <HouseholdHero familyName={household.family_name} mahalla={mahalla} street={household.street} />
 
-      <Card className="p-5 mb-4">
-        <h2 className="text-lg font-extrabold text-ink">{fmt(s.householdOf, { name: household.family_name })}</h2>
-        <p className="text-sm text-sub">
-          {fmt(s.nPeople, { n: household.resident_count })}
-          {household.street ? ` · ${household.street}` : ''}
-        </p>
-        <div className="mt-2">
-          {verified ? (
-            <Badge color="green">{s.verifiedBadge}</Badge>
-          ) : (
-            <Badge color="gray">{fmt(s.awaitingVouch, { n: household.vouch_count })}</Badge>
-          )}
-        </div>
-      </Card>
+      {household.generations_here != null && <GenerationsStat generations={household.generations_here} />}
 
-      {!isMine && <DingDongRingCard household={household} />}
+      <div className="mt-6 space-y-7">
+        <AlbumStrip />
+        <HistoryProse history={household.family_history} verified={verified} own={false} />
+        <MembersRead members={household.members} />
 
-      {isEmpty ? (
-        <Card className="mb-4">
-          <EmptyState icon="🌱" title={s.emptyFamily} />
-        </Card>
-      ) : (
-        <>
-          {household.members.length > 0 && (
-            <Card className="p-5 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-ink">{s.membersTitle}</h3>
-                <span className="text-sm text-sub">{household.members.length}</span>
-              </div>
-              <div className="space-y-2">
-                {household.members.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3">
-                    <Avatar name={m.full_name} size={32} />
-                    <span className="text-sm font-semibold text-ink flex-1 min-w-0 truncate">
-                      {m.full_name}
-                    </span>
-                    {m.is_elder && <Badge color="gold">{s.elderBadge}</Badge>}
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
+        {!isMine && <DingDongRingCard household={household} />}
 
-          {household.family_history && (
-            <div className="bg-amber-50/50 border border-amber-200 rounded-2xl shadow-card p-5 mb-4">
-              <h3 className="font-bold text-ink mb-2">{s.historyTitle}</h3>
-              {household.generations_here != null && (
-                <p className="text-sm font-semibold text-ink mb-2">
-                  {fmt(s.generationsHere, { n: household.generations_here })}
-                </p>
-              )}
-              <p className="text-sm text-ink whitespace-pre-wrap">{household.family_history}</p>
+        {!isMine &&
+          (household.my_vouch ? (
+            <div>
+              <Badge color="green">{s.youVouched}</Badge>
             </div>
-          )}
-        </>
-      )}
-
-      {!isMine &&
-        (household.my_vouch ? (
-          <div className="mb-4">
-            <Badge color="green">{s.youVouched}</Badge>
-          </div>
-        ) : (
-          <Card className="p-4 mb-4">
-            {vouch.error && <ErrorNote message={vouch.error.message} />}
-            <p className="text-sm text-ink mb-3">{s.vouchQuestion}</p>
-            <Button full variant="secondary" loading={vouch.isPending} onClick={() => vouch.mutate()}>
-              {s.vouchButton}
-            </Button>
-            <p className="text-xs text-sub mt-2">{fmt(s.vouchExplain, { n: household.vouch_count })}</p>
-          </Card>
-        ))}
+          ) : (
+            <Card className="p-4">
+              {vouch.error && <ErrorNote message={vouch.error.message} />}
+              <p className="mb-3 text-sm text-ink">{s.vouchQuestion}</p>
+              <Button full variant="secondary" loading={vouch.isPending} onClick={() => vouch.mutate()}>
+                {s.vouchButton}
+              </Button>
+              <p className="mt-2 text-xs text-sub">{fmt(s.vouchExplain, { n: household.vouch_count })}</p>
+            </Card>
+          ))}
+      </div>
     </div>
   )
 }
@@ -156,7 +104,7 @@ function DingDongRingCard({ household }: { household: Household }) {
 
   if (!household.has_location) {
     return (
-      <Card className="p-4 mb-4">
+      <Card className="p-4">
         <p className="text-sm text-sub">{s.noBell}</p>
       </Card>
     )
@@ -181,17 +129,15 @@ function DingDongRingCard({ household }: { household: Household }) {
   }
 
   return (
-    <Card className="p-5 mb-4">
+    <Card className="p-5">
       {error && <ErrorNote message={error} />}
       {success && (
-        <div className="rounded-xl bg-good-soft text-good text-sm font-semibold px-4 py-3 mb-4">
-          {success}
-        </div>
+        <div className="mb-4 rounded-xl bg-good-soft px-4 py-3 text-sm font-semibold text-good">{success}</div>
       )}
       <Button full size="lg" loading={busy} onClick={ring}>
         {s.ringButton}
       </Button>
-      <p className="text-xs text-sub mt-2">{s.ringExplain}</p>
+      <p className="mt-2 text-xs text-sub">{s.ringExplain}</p>
     </Card>
   )
 }
