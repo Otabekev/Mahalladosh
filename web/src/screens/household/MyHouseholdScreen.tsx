@@ -240,7 +240,11 @@ function JoinRequestsSection({ id }: { id: number }) {
             <Avatar name={r.user.full_name} size={46} />
             <div className="min-w-0 flex-1">
               <div className="truncate font-bold text-ink">{r.user.full_name}</div>
-              <div className="text-[13px] text-sub">{s.wantsToJoin}</div>
+              <div className="truncate text-[13px] text-sub">
+                {r.claim_member_name
+                  ? `«${r.claim_member_name}» ${s.claimsToBe}`
+                  : s.wantsToJoin}
+              </div>
             </div>
             <div className="flex shrink-0 gap-2">
               <Button

@@ -18,10 +18,13 @@ export interface HouseholdDetail extends Household {
   has_pending_join: boolean
 }
 
-/** A pending join request shown to stewards (backend JoinRequestOut). */
+/** A pending join request shown to stewards (backend JoinRequestOut).
+ * claim_member_name is set when the requester is claiming a named row the family
+ * listed (e.g. 'Alisher'), so the steward knows who they say they are. */
 export interface JoinRequest {
   id: number
   user: User
+  claim_member_name?: string | null
   created_at: string
 }
 

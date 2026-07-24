@@ -267,6 +267,13 @@ export const householdStrings = {
     ru: 'хочет вступить в вашу семью',
     en: 'wants to join your family',
   },
+  claimsToBe: {
+    // rendered after the quoted name: «Alisher» {claimsToBe}
+    uz: 'ekanini aytmoqda',
+    uzc: 'эканини айтмоқда',
+    ru: '— так они представились',
+    en: 'or so they claim',
+  },
   approve: { uz: 'Tasdiqlash', uzc: 'Тасдиқлаш', ru: 'Принять', en: 'Approve' },
   decline: { uz: 'Rad etish', uzc: 'Рад этиш', ru: 'Отклонить', en: 'Decline' },
   joinIntro: {
