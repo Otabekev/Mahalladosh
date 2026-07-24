@@ -11,6 +11,7 @@ import { fmt, LANGS, useLang, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { mahallaStrings } from '@/core/i18n/mahalla'
 import { profileStrings } from '@/core/i18n/profile'
+import { settingsStrings } from '@/core/i18n/settings'
 import { computeLevel, levelName } from '@/core/levels'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { Avatar, Card, Spinner } from '@/components/ui'
@@ -59,6 +60,7 @@ const ICON_FONT = 'M4 7V5h16v2M9 20h6M12 5v15'
 const ICON_SHIELD = 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z'
 const ICON_SLIDERS = 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'
 const ICON_LOGOUT = 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9'
+const ICON_GEAR = 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z'
 
 const ROW = 'w-full flex items-center gap-3.5 px-4 py-[15px] min-h-[52px] text-left'
 
@@ -66,6 +68,7 @@ export default function ProfileScreen() {
   const s = useStrings(mahallaStrings)
   const c = useStrings(common)
   const p = useStrings(profileStrings)
+  const st = useStrings(settingsStrings)
   const lang = useLang((state) => state.lang)
   const me = useAuth((state) => state.me)
   const largeText = usePrefs((state) => state.largeText)
@@ -186,6 +189,12 @@ export default function ProfileScreen() {
 
         {/* Settings list */}
         <Card className="p-0 divide-y divide-line overflow-hidden">
+          <button onClick={() => navigate('/app/settings')} className={`${ROW} hover:bg-black/[0.03] transition`}>
+            <RowIcon path={ICON_GEAR} />
+            <span className="flex-1 text-[17px] font-semibold text-ink">{st.navSettings}</span>
+            <Chevron />
+          </button>
+
           <button onClick={() => navigate('/app/household')} className={`${ROW} hover:bg-black/[0.03] transition`}>
             <RowIcon path={ICON_HOME} />
             <span className="flex-1 text-[17px] font-semibold text-ink">{s.myHousehold}</span>

@@ -28,8 +28,11 @@ import {
 import {
   getPosition,
   useAddMember,
+  useApproveJoin,
   useCreateHousehold,
+  useDeclineJoin,
   useHousehold,
+  useJoinRequests,
   useRemoveMember,
   useSetLocation,
   useUpdateHousehold,
@@ -216,6 +219,53 @@ export function MembersRead({ members }: { members: HouseholdMember[] }) {
   )
 }
 
+/** Qo'shilish so'rovlari — pending join requests, shown to any steward on their
+ * own household page. Renders nothing when there are none. */
+function JoinRequestsSection({ id }: { id: number }) {
+  const s = useStrings(householdStrings)
+  const query = useJoinRequests(id)
+  const approve = useApproveJoin(id)
+  const decline = useDeclineJoin(id)
+  const requests = query.data ?? []
+  if (requests.length === 0) return null
+
+  return (
+    <div>
+      <h2 className="mb-3 font-display text-[21px] font-bold text-ink">{s.joinRequestsTitle}</h2>
+      {approve.error && <ErrorNote message={approve.error.message} />}
+      {decline.error && <ErrorNote message={decline.error.message} />}
+      <div className="space-y-2.5">
+        {requests.map((r) => (
+          <Card key={r.id} className="flex items-center gap-3 p-3.5">
+            <Avatar name={r.user.full_name} size={46} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-bold text-ink">{r.user.full_name}</div>
+              <div className="text-[13px] text-sub">{s.wantsToJoin}</div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                size="sm"
+                loading={approve.isPending && approve.variables === r.id}
+                onClick={() => approve.mutate(r.id)}
+              >
+                {s.approve}
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={decline.isPending && decline.variables === r.id}
+                onClick={() => decline.mutate(r.id)}
+              >
+                {s.decline}
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ---------- CASE A: create ----------
 
 function CreateHouseholdView() {
@@ -344,6 +394,7 @@ function ReadMode({ household, onEdit }: { household: Household; onEdit: () => v
         <AlbumStrip />
         <HistoryProse history={household.family_history} verified={verified} own />
         <MembersRead members={household.members} />
+        <JoinRequestsSection id={household.id} />
 
         {!verified && (
           <Card className="p-4">

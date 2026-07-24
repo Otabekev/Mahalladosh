@@ -3,13 +3,26 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/core/api/client'
-import type { DingDongResult, Household, HouseholdIn, HouseholdMember, HouseholdUpdate } from '@/core/api/types'
+import type { DingDongResult, Household, HouseholdIn, HouseholdMember, HouseholdUpdate, User } from '@/core/api/types'
 import { useAuth } from '@/core/stores/auth'
 
 /** Body for POST /households/{id}/members — mirrors backend MemberIn. */
 export interface MemberIn {
   full_name: string
   is_elder: boolean
+}
+
+/** A single household read (GET /households/{id}) carries the viewer's own
+ * pending-join flag on top of the shared Household shape (backend HouseholdOut). */
+export interface HouseholdDetail extends Household {
+  has_pending_join: boolean
+}
+
+/** A pending join request shown to stewards (backend JoinRequestOut). */
+export interface JoinRequest {
+  id: number
+  user: User
+  created_at: string
 }
 
 export function useHouseholds(mahallaId?: number) {
@@ -23,7 +36,7 @@ export function useHouseholds(mahallaId?: number) {
 export function useHousehold(id?: number) {
   return useQuery({
     queryKey: ['households', 'detail', id ?? null],
-    queryFn: () => api<Household>(`/households/${id}`),
+    queryFn: () => api<HouseholdDetail>(`/households/${id}`),
     enabled: typeof id === 'number' && Number.isFinite(id),
   })
 }
@@ -79,6 +92,76 @@ export function useVouch(id: number) {
     mutationFn: () => api<Household>(`/households/${id}/vouch`, { method: 'POST' }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['households'] })
+    },
+  })
+}
+
+// ---------- join / claim / stewardship ----------
+
+/** POST /households/{id}/join-request — ask a family's stewards to let you in. */
+export function useJoinRequest(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (note?: string) =>
+      api<HouseholdDetail>(`/households/${id}/join-request`, {
+        method: 'POST',
+        body: { note: note ?? null },
+      }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['households'] })
+      await useAuth.getState().refresh()
+    },
+  })
+}
+
+/** GET /households/{id}/join-requests — pending requests, for stewards only. */
+export function useJoinRequests(id: number, enabled = true) {
+  return useQuery({
+    queryKey: ['households', 'join-requests', id],
+    queryFn: () => api<JoinRequest[]>(`/households/${id}/join-requests`),
+    enabled: enabled && Number.isFinite(id),
+  })
+}
+
+/** POST /households/{id}/join-requests/{reqId}/approve — steward accepts. */
+export function useApproveJoin(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (reqId: number) =>
+      api<Household>(`/households/${id}/join-requests/${reqId}/approve`, { method: 'POST' }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['households'] })
+      await useAuth.getState().refresh()
+    },
+  })
+}
+
+/** POST /households/{id}/join-requests/{reqId}/decline — steward declines. */
+export function useDeclineJoin(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (reqId: number) =>
+      api<Household>(`/households/${id}/join-requests/${reqId}/decline`, { method: 'POST' }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['households'] })
+      await useAuth.getState().refresh()
+    },
+  })
+}
+
+/** POST /households/{id}/claim — link yourself to a named member row the family
+ * already added (no steward approval needed). */
+export function useClaimMember(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (memberId: number) =>
+      api<HouseholdDetail>(`/households/${id}/claim`, {
+        method: 'POST',
+        body: { member_id: memberId },
+      }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['households'] })
+      await useAuth.getState().refresh()
     },
   })
 }

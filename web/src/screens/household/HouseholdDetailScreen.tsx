@@ -8,7 +8,15 @@ import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { householdStrings } from '@/core/i18n/household'
 import { Badge, Button, Card, ErrorNote, Spinner } from '@/components/ui'
-import { getPosition, useDingDong, useHousehold, useVouch } from '@/core/queries/households'
+import {
+  getPosition,
+  useClaimMember,
+  useDingDong,
+  useHousehold,
+  useJoinRequest,
+  useVouch,
+  type HouseholdDetail,
+} from '@/core/queries/households'
 import type { Household } from '@/core/api/types'
 import { AlbumStrip, GenerationsStat, HistoryProse, HouseholdHero, MembersRead } from './MyHouseholdScreen'
 
@@ -62,6 +70,10 @@ export default function HouseholdDetailScreen() {
         <AlbumStrip />
         <HistoryProse history={household.family_history} verified={verified} own={false} />
         <MembersRead members={household.members} />
+
+        {!isMine && me != null && me.user.household_id == null && (
+          <JoinClaimCard household={household} />
+        )}
 
         {!isMine && <DingDongRingCard household={household} />}
 
@@ -138,6 +150,72 @@ function DingDongRingCard({ household }: { household: Household }) {
         {s.ringButton}
       </Button>
       <p className="mt-2 text-xs text-sub">{s.ringExplain}</p>
+    </Card>
+  )
+}
+
+// ---------- join this family / claim your member row ----------
+
+/** Shown to a neighbour who has no household of their own: ask to join, or (if
+ * the family already listed you as a named member) claim that row directly. */
+function JoinClaimCard({ household }: { household: HouseholdDetail }) {
+  const s = useStrings(householdStrings)
+  const c = useStrings(common)
+  const join = useJoinRequest(household.id)
+  const claim = useClaimMember(household.id)
+  const [claiming, setClaiming] = useState(false)
+  const unclaimed = household.members.filter((m) => m.user_id == null)
+
+  if (household.has_pending_join) {
+    return (
+      <Card className="p-4">
+        <Badge color="gold">{s.joinPending}</Badge>
+        <p className="mt-2 text-xs text-sub">{s.joinPendingHint}</p>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="p-5">
+      {join.error && <ErrorNote message={join.error.message} />}
+      {claim.error && <ErrorNote message={claim.error.message} />}
+      <p className="mb-3 text-sm text-ink">{s.joinIntro}</p>
+      <Button full loading={join.isPending} onClick={() => join.mutate(undefined)}>
+        {s.joinButton}
+      </Button>
+
+      {unclaimed.length > 0 && (
+        <div className="mt-4 border-t border-line pt-4">
+          {claiming ? (
+            <div>
+              <p className="mb-2 text-sm font-semibold text-ink">{s.claimPick}</p>
+              <div className="space-y-2">
+                {unclaimed.map((m) => (
+                  <Button
+                    key={m.id}
+                    full
+                    variant="secondary"
+                    loading={claim.isPending && claim.variables === m.id}
+                    onClick={() => claim.mutate(m.id)}
+                  >
+                    {m.full_name}
+                  </Button>
+                ))}
+              </div>
+              <button
+                onClick={() => setClaiming(false)}
+                className="mt-3 text-sm font-semibold text-sub"
+              >
+                {c.cancel}
+              </button>
+            </div>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => setClaiming(true)}>
+              {s.claimButton}
+            </Button>
+          )}
+        </div>
+      )}
     </Card>
   )
 }

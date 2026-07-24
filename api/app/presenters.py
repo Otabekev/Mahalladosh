@@ -100,6 +100,16 @@ def household_out(db: Session, h: models.Household, viewer: models.User) -> sche
     # family_only households hide details from non-members (plan §6.4)
     is_mine = viewer.household_id == h.id
     hide = h.visibility == "family_only" and not is_mine
+    # only a viewer WITHOUT a household of their own can have a pending join
+    # request — skip the query entirely for everyone else
+    has_pending_join = False
+    if viewer.household_id is None:
+        has_pending_join = (
+            db.query(models.HouseholdJoinRequest)
+            .filter_by(household_id=h.id, user_id=viewer.id, status="pending")
+            .first()
+            is not None
+        )
     return schemas.HouseholdOut(
         id=h.id,
         mahalla_id=h.mahalla_id,
@@ -107,6 +117,7 @@ def household_out(db: Session, h: models.Household, viewer: models.User) -> sche
         resident_count=h.resident_count,
         street=h.street,
         has_location=h.lat is not None and h.lng is not None,
+        has_pending_join=has_pending_join,
         family_history=None if hide else h.family_history,
         generations_here=None if hide else h.generations_here,
         visibility=h.visibility,

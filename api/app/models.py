@@ -162,6 +162,21 @@ class HouseholdMember(Base):
     household: Mapped[Household] = relationship(back_populates="members")
 
 
+class HouseholdJoinRequest(Base):
+    """A person asking to join an existing household (the steward confirms).
+    Distinct from the claim mechanic (HouseholdMember.user_id): this is for a
+    user with no existing member row who wants in."""
+
+    __tablename__ = "household_join_requests"
+    __table_args__ = (UniqueConstraint("household_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("households.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending|approved|declined
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class Vouch(Base):
     __tablename__ = "vouches"
     __table_args__ = (UniqueConstraint("household_id", "voucher_user_id"),)

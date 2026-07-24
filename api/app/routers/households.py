@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, notify, presenters, reputation, schemas
+from .. import models, notify, presenters, reputation, schemas, track
 from ..config import settings
 from ..deps import get_db, require_member
 
@@ -41,6 +41,9 @@ def _get_household_in_mahalla(
 
 
 def _get_own_household(db: Session, household_id: int, user: models.User) -> models.Household:
+    """Stewardship guard: ANY account-holding member of a household (a User
+    whose household_id points at it) may edit it — not only the creator. Once
+    join/claim links a second family member, they become a full steward too."""
     if user.household_id != household_id:
         raise HTTPException(status_code=403, detail="Faqat o'z xonadoningizni tahrirlaysiz")
     household = db.get(models.Household, household_id)
@@ -80,6 +83,15 @@ def create_household(
     db.commit()
     db.refresh(household)
     return presenters.household_out(db, household, user)
+
+
+def _get_join_request(
+    db: Session, household: models.Household, req_id: int
+) -> models.HouseholdJoinRequest:
+    jr = db.get(models.HouseholdJoinRequest, req_id)
+    if jr is None or jr.household_id != household.id:
+        raise HTTPException(status_code=404, detail="So'rov topilmadi")
+    return jr
 
 
 @router.get("", response_model=list[schemas.HouseholdOut])
@@ -169,6 +181,12 @@ def remove_member(
         raise HTTPException(status_code=404, detail="A'zo topilmadi")
     if user.household_id is None or member.household_id != user.household_id:
         raise HTTPException(status_code=403, detail="Faqat o'z xonadoningizni tahrirlaysiz")
+    # if this member is a linked account, removing it also releases that user
+    # from the household (they can join/claim again later)
+    if member.user_id is not None:
+        linked = db.get(models.User, member.user_id)
+        if linked is not None:
+            linked.household_id = None
     db.delete(member)
     db.commit()
 
@@ -303,6 +321,167 @@ def vouch_household(
             mahalla_id=household.mahalla_id,
         )
 
+    db.commit()
+    db.refresh(household)
+    return presenters.household_out(db, household, user)
+
+
+# ---------- join / claim / stewardship (plan §6: a family is not one person) ----------
+
+
+@router.post("/{household_id}/join-request", response_model=schemas.HouseholdOut)
+def request_join(
+    household_id: int,
+    data: schemas.JoinRequestIn,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Ask a household's stewards to let you in. You must not already have a
+    household of your own. Idempotent — a second request just stays pending, and
+    a previously declined one re-opens."""
+    household = _get_household_in_mahalla(db, household_id, user)
+    if user.household_id is not None:
+        raise HTTPException(status_code=400, detail="Sizda allaqachon xonadon bor")
+    existing = (
+        db.query(models.HouseholdJoinRequest)
+        .filter_by(household_id=household.id, user_id=user.id)
+        .first()
+    )
+    if existing is None:
+        db.add(
+            models.HouseholdJoinRequest(
+                household_id=household.id, user_id=user.id, status="pending"
+            )
+        )
+    elif existing.status != "pending":
+        existing.status = "pending"
+    db.commit()
+    db.refresh(household)
+    return presenters.household_out(db, household, user)
+
+
+@router.get("/{household_id}/join-requests", response_model=list[schemas.JoinRequestOut])
+def list_join_requests(
+    household_id: int,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Stewards (any linked member of the household) see who wants to join."""
+    household = _get_own_household(db, household_id, user)
+    reqs = (
+        db.query(models.HouseholdJoinRequest)
+        .filter_by(household_id=household.id, status="pending")
+        .order_by(models.HouseholdJoinRequest.created_at)
+        .all()
+    )
+    out: list[schemas.JoinRequestOut] = []
+    for r in reqs:
+        requester = db.get(models.User, r.user_id)
+        if requester is None:
+            continue
+        out.append(
+            schemas.JoinRequestOut(
+                id=r.id,
+                user=presenters.user_out(db, requester),
+                created_at=r.created_at,
+            )
+        )
+    return out
+
+
+@router.post(
+    "/{household_id}/join-requests/{req_id}/approve",
+    response_model=schemas.HouseholdOut,
+)
+def approve_join(
+    household_id: int,
+    req_id: int,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """A steward accepts a request: the requester becomes a household member."""
+    household = _get_own_household(db, household_id, user)
+    jr = _get_join_request(db, household, req_id)
+    if jr.status == "pending":
+        jr.status = "approved"
+        requester = db.get(models.User, jr.user_id)
+        if requester is not None and requester.household_id is None:
+            requester.household_id = household.id
+            track.log_event(
+                db,
+                requester.id,
+                "household_join",
+                "household",
+                household.id,
+                mahalla_id=household.mahalla_id,
+            )
+            notify.notify(
+                db,
+                [requester.id],
+                "household",
+                f"✅ {household.family_name} oilasiga qabul qilindingiz",
+                link=f"/app/households/{household.id}",
+                mahalla_id=household.mahalla_id,
+            )
+        db.commit()
+        db.refresh(household)
+    return presenters.household_out(db, household, user)
+
+
+@router.post(
+    "/{household_id}/join-requests/{req_id}/decline",
+    response_model=schemas.HouseholdOut,
+)
+def decline_join(
+    household_id: int,
+    req_id: int,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """A steward declines a request."""
+    household = _get_own_household(db, household_id, user)
+    jr = _get_join_request(db, household, req_id)
+    if jr.status == "pending":
+        jr.status = "declined"
+        notify.notify(
+            db,
+            [jr.user_id],
+            "household",
+            f"{household.family_name} oilasiga qo'shilish so'rovingiz rad etildi",
+            link="/app/mahalla",
+            mahalla_id=household.mahalla_id,
+        )
+        db.commit()
+        db.refresh(household)
+    return presenters.household_out(db, household, user)
+
+
+@router.post("/{household_id}/claim", response_model=schemas.HouseholdOut)
+def claim_member(
+    household_id: int,
+    data: schemas.ClaimMemberIn,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Link yourself to a named member row the family added before you had an
+    account (e.g. a son the parents listed). No steward approval needed — the
+    family already put your name in. You must not already have a household."""
+    household = _get_household_in_mahalla(db, household_id, user)
+    if user.household_id is not None:
+        raise HTTPException(status_code=400, detail="Sizda allaqachon xonadon bor")
+    member = db.get(models.HouseholdMember, data.member_id)
+    if member is None or member.household_id != household.id or member.user_id is not None:
+        raise HTTPException(status_code=400, detail="Bu a'zoni biriktirib bo'lmadi")
+    member.user_id = user.id
+    user.household_id = household.id
+    track.log_event(
+        db,
+        user.id,
+        "household_join",
+        "household",
+        household.id,
+        mahalla_id=household.mahalla_id,
+    )
     db.commit()
     db.refresh(household)
     return presenters.household_out(db, household, user)

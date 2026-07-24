@@ -22,6 +22,10 @@ const MAP: Record<string, { uzc: string; ru: string; en: string }> = {
   'Bu xonadon uy joylashuvini hali belgilamagan': { uzc: 'Бу хонадон уй жойлашувини ҳали белгиламаган', ru: 'Этот дом ещё не отметил расположение', en: "This household hasn't set its location yet" },
   "Bu xonadonda hisob egasi yo'q": { uzc: 'Бу хонадонда ҳисоб эгаси йўқ', ru: 'В этом доме нет владельца аккаунта', en: 'No account holder in this household' },
   "E'lon topilmadi": { uzc: 'Эълон топилмади', ru: 'Запись не найдена', en: 'Post not found' },
+  // --- account basics (task #27, me.py) ---
+  'Ism kiriting': { uzc: 'Исм киритинг', ru: 'Введите имя', en: 'Enter a name' },
+  "Siz mahalla a'zosi emassiz": { uzc: 'Сиз маҳалла аъзоси эмассиз', ru: 'Вы не состоите в махалле', en: "You're not in a mahalla" },
+  "Sizda xonadon yo'q": { uzc: 'Сизда хонадон йўқ', ru: 'У вас нет дома', en: "You don't have a household" },
   "Faqat e'lon egasi": { uzc: 'Фақат эълон эгаси', ru: 'Только автор записи', en: 'Only the post author' },
   "Faqat o'z mahallangizni ko'ra olasiz": { uzc: 'Фақат ўз маҳаллангизни кўра оласиз', ru: 'Можно смотреть только свою махаллю', en: 'You can only view your own mahalla' },
   "Faqat o'z xonadoningizni tahrirlaysiz": { uzc: 'Фақат ўз хонадонингизни таҳрирлайсиз', ru: 'Можно изменять только свой дом', en: 'You can only edit your own household' },

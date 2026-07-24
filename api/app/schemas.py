@@ -31,6 +31,12 @@ class DevLoginIn(BaseModel):
     is_admin: bool = False
 
 
+class MeUpdate(BaseModel):
+    """A user editing their own profile."""
+
+    full_name: Optional[str] = Field(default=None, min_length=2, max_length=150)
+
+
 class TelegramLoginIn(BaseModel):
     """Raw payload from the Telegram Login Widget."""
 
@@ -185,9 +191,30 @@ class HouseholdOut(BaseModel):
     vouch_count: int = 0
     my_vouch: bool = False
     has_location: bool = False  # coordinates themselves are never exposed
+    has_pending_join: bool = False  # viewer has an outstanding join request
     members: list[MemberOut] = []
     created_by: int
     created_at: datetime
+
+
+class JoinRequestIn(BaseModel):
+    """A user asking a household's steward to let them in."""
+
+    note: Optional[str] = Field(default=None, max_length=200)
+
+
+class JoinRequestOut(BaseModel):
+    """A pending join request, shown to the steward."""
+
+    id: int
+    user: UserOut
+    created_at: datetime
+
+
+class ClaimMemberIn(BaseModel):
+    """A user claiming an existing named HouseholdMember row as themselves."""
+
+    member_id: int
 
 
 class LocationIn(BaseModel):

@@ -253,4 +253,51 @@ export const householdStrings = {
     ru: 'История вашей семьи ещё не записана. Нажмите на карандаш вверху и расскажите её.',
     en: "Your family story isn't written yet. Tap the pencil above to share it.",
   },
+
+  // ---- join / claim / stewardship ----
+  joinRequestsTitle: {
+    uz: "Qo'shilish so'rovlari",
+    uzc: 'Қўшилиш сўровлари',
+    ru: 'Заявки на вступление',
+    en: 'Join requests',
+  },
+  wantsToJoin: {
+    uz: "oilangizga qo'shilmoqchi",
+    uzc: 'оилангизга қўшилмоқчи',
+    ru: 'хочет вступить в вашу семью',
+    en: 'wants to join your family',
+  },
+  approve: { uz: 'Tasdiqlash', uzc: 'Тасдиқлаш', ru: 'Принять', en: 'Approve' },
+  decline: { uz: 'Rad etish', uzc: 'Рад этиш', ru: 'Отклонить', en: 'Decline' },
+  joinIntro: {
+    uz: "Bu oilaning a'zosimisiz? Ular sizni tasdiqlashi uchun so'rov yuboring.",
+    uzc: 'Бу оиланинг аъзосимисиз? Улар сизни тасдиқлаши учун сўров юборинг.',
+    ru: 'Вы член этой семьи? Отправьте запрос, чтобы они вас подтвердили.',
+    en: 'Are you part of this family? Send a request for them to confirm you.',
+  },
+  joinButton: {
+    uz: "Bu oilaga qo'shilish",
+    uzc: 'Бу оилага қўшилиш',
+    ru: 'Вступить в эту семью',
+    en: 'Join this family',
+  },
+  joinPending: { uz: "So'rov yuborildi", uzc: 'Сўров юборилди', ru: 'Запрос отправлен', en: 'Request sent' },
+  joinPendingHint: {
+    uz: "Oila a'zolari tasdiqlashini kuting.",
+    uzc: 'Оила аъзолари тасдиқлашини кутинг.',
+    ru: 'Подождите, пока члены семьи подтвердят.',
+    en: 'Wait for the family to confirm.',
+  },
+  claimButton: {
+    uz: "Men shu oila a'zosiman",
+    uzc: 'Мен шу оила аъзосиман',
+    ru: 'Я член этой семьи',
+    en: "I'm a member of this family",
+  },
+  claimPick: {
+    uz: "Ro'yxatdan o'zingizni tanlang",
+    uzc: 'Рўйхатдан ўзингизни танланг',
+    ru: 'Выберите себя из списка',
+    en: 'Pick yourself from the list',
+  },
 } satisfies Dict
