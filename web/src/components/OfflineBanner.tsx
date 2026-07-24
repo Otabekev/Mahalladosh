@@ -12,8 +12,9 @@ export default function OfflineBanner() {
 
   if (!offline) return null
 
+  // In-flow (sticky, not fixed) so it never covers the top of the scroll content.
   return (
-    <div className="fixed top-14 inset-x-0 z-40 bg-[#FBF0D6] border-b border-[#EDD8A6] text-[#B07310]">
+    <div className="sticky top-14 z-30 bg-[#FBF0D6] border-b border-[#EDD8A6] text-[#B07310]">
       <div className="max-w-xl mx-auto flex items-center gap-2 px-4 py-1.5 text-[12px] font-semibold">
         <svg
           width="15"

@@ -208,6 +208,7 @@ export default function LoginScreen() {
                 <form onSubmit={submit}>
                   <Input
                     placeholder={s.namePlaceholder}
+                    aria-label={s.namePlaceholder}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     autoFocus
@@ -226,8 +227,8 @@ export default function LoginScreen() {
                     disabled={loading}
                     className="w-full h-[58px] mt-2 rounded-2xl bg-brand text-[#FBF3E2] font-bold text-[19px] flex items-center justify-center gap-3 shadow-[0_12px_26px_-10px_rgba(142,42,30,0.6)] transition-transform active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none"
                   >
-                    {loading ? <Spinner size={20} light /> : <PaperPlane />}
-                    {s.telegramLogin}
+                    {loading && <Spinner size={20} light />}
+                    {sc.login}
                   </button>
                 </form>
               )}

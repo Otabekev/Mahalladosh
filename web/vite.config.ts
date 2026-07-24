@@ -39,8 +39,8 @@ export default defineConfig({
         name: 'Mahalladosh',
         short_name: 'Mahalladosh',
         description: "Mahallangiz bilan bog'laning — qo'shnilar, oilalar, yordam",
-        theme_color: '#111827',
-        background_color: '#f7f7f8',
+        theme_color: '#B23A28',
+        background_color: '#F4E9D3',
         display: 'standalone',
         start_url: '/',
         icons: [

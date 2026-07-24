@@ -21,10 +21,16 @@ def touch(db: Session, user: models.User) -> None:
     today's UserActivity row exists. Cheap path (seen within the last
     10 minutes) does nothing at all."""
     now = datetime.utcnow()
-    if user.last_seen_at is not None and now - user.last_seen_at < TOUCH_INTERVAL:
+    day = now.strftime("%Y-%m-%d")
+    # Cheap path only within the window AND same UTC day — otherwise a request
+    # early in a new day would skip writing that day's UserActivity row.
+    if (
+        user.last_seen_at is not None
+        and now - user.last_seen_at < TOUCH_INTERVAL
+        and user.last_seen_at.strftime("%Y-%m-%d") == day
+    ):
         return
 
-    day = now.strftime("%Y-%m-%d")
     user.last_seen_at = now
     have_row = (
         db.query(models.UserActivity.id).filter_by(user_id=user.id, day=day).first()

@@ -65,8 +65,24 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
   },
   logout: async () => {
-    await api('/auth/logout', { method: 'POST' })
-    clearCachedMe()
-    set({ me: null, offline: false })
+    // Log out locally no matter what — a dead network must not trap the user.
+    try {
+      await api('/auth/logout', { method: 'POST' })
+    } catch {
+      /* server unreachable — still clear the local session below */
+    } finally {
+      clearCachedMe()
+      set({ me: null, offline: false })
+    }
   },
 }))
+
+// Reflect real connectivity: the browser knows before a fetch fails. Going
+// offline shows the banner immediately; coming back re-validates the session
+// (which clears the flag on success).
+if (typeof window !== 'undefined') {
+  window.addEventListener('offline', () => useAuth.setState({ offline: true }))
+  window.addEventListener('online', () => {
+    useAuth.getState().refresh().catch(() => undefined)
+  })
+}
