@@ -19,6 +19,7 @@ import { useDiscover, usePosts } from '@/core/queries/posts'
 import { useAuth } from '@/core/stores/auth'
 import type { DiscoverScope, Post } from '@/core/api/types'
 import { BugunCard } from './BugunCard'
+import { OnboardingChecklistCard } from './OnboardingChecklistCard'
 
 type FeedTab = 'mahalla' | DiscoverScope
 
@@ -205,6 +206,7 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
 
   return (
     <div className="space-y-3.5">
+      <OnboardingChecklistCard />
       <BugunCard posts={posts ?? []} />
       <Composer />
 

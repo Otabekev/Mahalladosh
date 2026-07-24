@@ -6,7 +6,7 @@
  * "/" re-routes through RootRedirect to the right stage (onboarding after leaving
  * a mahalla; login after a deleted account, whose session cookie the server drops). */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '@/core/api/client'
 import type { User } from '@/core/api/types'
@@ -15,6 +15,26 @@ import { useAuth } from '@/core/stores/auth'
 /** Body for PATCH /me — mirrors backend MeUpdate. */
 export interface MeUpdate {
   full_name?: string
+}
+
+/** The activation checklist (backend OnboardingOut). Each step key maps to a
+ * client-side label + deep link; done is derived server-side from real state. */
+export interface OnboardingStep {
+  key: 'household' | 'history' | 'location' | 'post' | 'help'
+  done: boolean
+}
+export interface Onboarding {
+  steps: OnboardingStep[]
+  done_count: number
+  total: number
+  complete: boolean
+}
+
+export function useOnboarding() {
+  return useQuery({
+    queryKey: ['me', 'onboarding'],
+    queryFn: () => api<Onboarding>('/me/onboarding'),
+  })
 }
 
 export function useUpdateMe() {
