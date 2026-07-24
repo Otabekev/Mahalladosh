@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -24,10 +23,10 @@ class Region(Base):
     __tablename__ = "regions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    soato_id: Mapped[Optional[int]] = mapped_column(Integer)
+    soato_id: Mapped[int | None] = mapped_column(Integer)
     name_uz: Mapped[str] = mapped_column(String(120))
-    name_oz: Mapped[Optional[str]] = mapped_column(String(120))
-    name_ru: Mapped[Optional[str]] = mapped_column(String(120))
+    name_oz: Mapped[str | None] = mapped_column(String(120))
+    name_ru: Mapped[str | None] = mapped_column(String(120))
 
 
 class District(Base):
@@ -35,10 +34,10 @@ class District(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     region_id: Mapped[int] = mapped_column(ForeignKey("regions.id"), index=True)
-    soato_id: Mapped[Optional[int]] = mapped_column(Integer)
+    soato_id: Mapped[int | None] = mapped_column(Integer)
     name_uz: Mapped[str] = mapped_column(String(120))
-    name_oz: Mapped[Optional[str]] = mapped_column(String(120))
-    name_ru: Mapped[Optional[str]] = mapped_column(String(120))
+    name_oz: Mapped[str | None] = mapped_column(String(120))
+    name_ru: Mapped[str | None] = mapped_column(String(120))
 
 
 class Mahalla(Base):
@@ -53,10 +52,10 @@ class Mahalla(Base):
     name: Mapped[str] = mapped_column(String(150))
     name_normalized: Mapped[str] = mapped_column(String(150), index=True)
     status: Mapped[str] = mapped_column(String(20), default="forming")  # forming|pending|active|rejected
-    estimated_households: Mapped[Optional[int]] = mapped_column(Integer)
-    petition_threshold: Mapped[Optional[int]] = mapped_column(Integer)  # None -> settings default
-    raisi_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
-    activated_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    estimated_households: Mapped[int | None] = mapped_column(Integer)
+    petition_threshold: Mapped[int | None] = mapped_column(Integer)  # None -> settings default
+    raisi_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -64,18 +63,18 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    tg_id: Mapped[Optional[int]] = mapped_column(Integer, unique=True, index=True)
-    username: Mapped[Optional[str]] = mapped_column(String(80))
+    tg_id: Mapped[int | None] = mapped_column(Integer, unique=True, index=True)
+    username: Mapped[str | None] = mapped_column(String(80))
     full_name: Mapped[str] = mapped_column(String(150))
-    photo_url: Mapped[Optional[str]] = mapped_column(String(400))
+    photo_url: Mapped[str | None] = mapped_column(String(400))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    mahalla_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mahallas.id"), index=True)
-    household_id: Mapped[Optional[int]] = mapped_column(ForeignKey("households.id"))
+    mahalla_id: Mapped[int | None] = mapped_column(ForeignKey("mahallas.id"), index=True)
+    household_id: Mapped[int | None] = mapped_column(ForeignKey("households.id"))
     rep_month: Mapped[int] = mapped_column(Integer, default=0)
     rep_alltime: Mapped[int] = mapped_column(Integer, default=0)
-    rep_month_key: Mapped[Optional[str]] = mapped_column(String(7))  # "2026-07"
-    banned_until: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    last_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime)  # throttled, see track.touch
+    rep_month_key: Mapped[str | None] = mapped_column(String(7))  # "2026-07"
+    banned_until: Mapped[datetime | None] = mapped_column(DateTime)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime)  # throttled, see track.touch
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -100,9 +99,9 @@ class EventLog(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     event: Mapped[str] = mapped_column(String(40), index=True)
-    entity_type: Mapped[Optional[str]] = mapped_column(String(30))
-    entity_id: Mapped[Optional[int]] = mapped_column(Integer)
-    mahalla_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mahallas.id"))
+    entity_type: Mapped[str | None] = mapped_column(String(30))
+    entity_id: Mapped[int | None] = mapped_column(Integer)
+    mahalla_id: Mapped[int | None] = mapped_column(ForeignKey("mahallas.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
 
@@ -115,7 +114,7 @@ class Petition(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    estimated_households: Mapped[Optional[int]] = mapped_column(Integer)
+    estimated_households: Mapped[int | None] = mapped_column(Integer)
     # Petitions are never hard-deleted (the activation funnel needs them):
     # only "active" rows count toward thresholds; the rest are history.
     status: Mapped[str] = mapped_column(String(20), default="active")  # active|fulfilled|withdrawn|rejected
@@ -129,15 +128,15 @@ class Household(Base):
     mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
     family_name: Mapped[str] = mapped_column(String(150))
     resident_count: Mapped[int] = mapped_column(Integer, default=1)
-    street: Mapped[Optional[str]] = mapped_column(String(200))
-    family_history: Mapped[Optional[str]] = mapped_column(Text)
-    generations_here: Mapped[Optional[int]] = mapped_column(Integer)
+    street: Mapped[str | None] = mapped_column(String(200))
+    family_history: Mapped[str | None] = mapped_column(Text)
+    generations_here: Mapped[int | None] = mapped_column(Integer)
     visibility: Mapped[str] = mapped_column(String(20), default="neighbors")  # neighbors|family_only
     verification_status: Mapped[str] = mapped_column(String(20), default="pending")  # pending|verified
     # house coordinates for the DingDong doorbell — set by the household while
     # standing at home; NEVER exposed via the API (server-side proximity only)
-    lat: Mapped[Optional[float]] = mapped_column(Float)
-    lng: Mapped[Optional[float]] = mapped_column(Float)
+    lat: Mapped[float | None] = mapped_column(Float)
+    lng: Mapped[float | None] = mapped_column(Float)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
@@ -156,7 +155,7 @@ class HouseholdMember(Base):
     household_id: Mapped[int] = mapped_column(ForeignKey("households.id"), index=True)
     full_name: Mapped[str] = mapped_column(String(150))
     is_elder: Mapped[bool] = mapped_column(Boolean, default=False)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     household: Mapped[Household] = relationship(back_populates="members")
@@ -175,7 +174,7 @@ class HouseholdJoinRequest(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     household_id: Mapped[int] = mapped_column(ForeignKey("households.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    member_id: Mapped[Optional[int]] = mapped_column(ForeignKey("household_members.id"))
+    member_id: Mapped[int | None] = mapped_column(ForeignKey("household_members.id"))
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending|approved|declined
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
@@ -203,15 +202,15 @@ class Post(Base):
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     type: Mapped[str] = mapped_column(String(20), index=True)
     title: Mapped[str] = mapped_column(String(200))
-    body: Mapped[Optional[str]] = mapped_column(Text)
-    image_path: Mapped[Optional[str]] = mapped_column(String(300))  # /api/uploads/<file>
+    body: Mapped[str | None] = mapped_column(Text)
+    image_path: Mapped[str | None] = mapped_column(String(300))  # /api/uploads/<file>
 
-    category: Mapped[Optional[str]] = mapped_column(String(30))  # help: tool|ride|labor|childcare|other
-    event_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    goal: Mapped[Optional[str]] = mapped_column(String(200))  # charity
+    category: Mapped[str | None] = mapped_column(String(30))  # help: tool|ride|labor|childcare|other
+    event_date: Mapped[datetime | None] = mapped_column(DateTime)
+    goal: Mapped[str | None] = mapped_column(String(200))  # charity
     status: Mapped[str] = mapped_column(String(20), default="open")  # open|resolved|closed
-    resolved_helper_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
-    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    resolved_helper_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
 
@@ -224,7 +223,7 @@ class PostResponse(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    message: Mapped[Optional[str]] = mapped_column(String(300))
+    message: Mapped[str | None] = mapped_column(String(300))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -238,8 +237,8 @@ class ReputationEntry(Base):
     mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
     amount: Mapped[int] = mapped_column(Integer)
     reason: Mapped[str] = mapped_column(String(40))
-    source_type: Mapped[Optional[str]] = mapped_column(String(30))  # post|household|mahalla
-    source_id: Mapped[Optional[int]] = mapped_column(Integer)
+    source_type: Mapped[str | None] = mapped_column(String(30))  # post|household|mahalla
+    source_id: Mapped[int | None] = mapped_column(Integer)
     month: Mapped[str] = mapped_column(String(7), index=True)  # "2026-07"
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
@@ -254,13 +253,13 @@ class Proposal(Base):
     mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     action: Mapped[str] = mapped_column(String(20), default="none")
-    target_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    target_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     title: Mapped[str] = mapped_column(String(200))
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="seconding")
     seconds_needed: Mapped[int] = mapped_column(Integer, default=3)
-    voting_opens_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    voting_closes_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    voting_opens_at: Mapped[datetime | None] = mapped_column(DateTime)
+    voting_closes_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -295,7 +294,7 @@ class MonthHonor(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
     month: Mapped[str] = mapped_column(String(7))  # honored-for month, "2026-06"
-    winner_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    winner_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -307,10 +306,10 @@ class Notification(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    mahalla_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mahallas.id"))
+    mahalla_id: Mapped[int | None] = mapped_column(ForeignKey("mahallas.id"))
     type: Mapped[str] = mapped_column(String(30))  # post|response|thanks|vote|result|vouch|verified|honor|warning
     text: Mapped[str] = mapped_column(String(300))
-    link: Mapped[Optional[str]] = mapped_column(String(200))  # in-app path, e.g. /app/posts/5
+    link: Mapped[str | None] = mapped_column(String(200))  # in-app path, e.g. /app/posts/5
     read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
@@ -325,9 +324,9 @@ class ServiceOffering(Base):
     mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
     title: Mapped[str] = mapped_column(String(150))
     category: Mapped[str] = mapped_column(String(20))  # food|goods|rental|service|skill
-    description: Mapped[Optional[str]] = mapped_column(String(500))
-    price: Mapped[Optional[str]] = mapped_column(String(80))
-    contact: Mapped[Optional[str]] = mapped_column(String(120))
+    description: Mapped[str | None] = mapped_column(String(500))
+    price: Mapped[str | None] = mapped_column(String(80))
+    contact: Mapped[str | None] = mapped_column(String(120))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
@@ -345,12 +344,12 @@ class Report(Base):
     target_type: Mapped[str] = mapped_column(String(20), index=True)  # post|service|household|user
     target_id: Mapped[int] = mapped_column(Integer, index=True)
     reason: Mapped[str] = mapped_column(String(40))  # spam|abuse|fake|other
-    note: Mapped[Optional[str]] = mapped_column(String(300))
-    mahalla_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mahallas.id"), index=True)
+    note: Mapped[str | None] = mapped_column(String(300))
+    mahalla_id: Mapped[int | None] = mapped_column(ForeignKey("mahallas.id"), index=True)
     status: Mapped[str] = mapped_column(String(20), default="open", index=True)  # open|resolved|dismissed
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
-    resolved_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
-    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    resolved_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 
 class BanRecord(Base):
@@ -362,10 +361,10 @@ class BanRecord(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    mahalla_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mahallas.id"))
-    reason: Mapped[Optional[str]] = mapped_column(String(200))
+    mahalla_id: Mapped[int | None] = mapped_column(ForeignKey("mahallas.id"))
+    reason: Mapped[str | None] = mapped_column(String(200))
     source: Mapped[str] = mapped_column(String(20))  # vote|admin
-    until: Mapped[Optional[datetime]] = mapped_column(DateTime)  # None = permanent
+    until: Mapped[datetime | None] = mapped_column(DateTime)  # None = permanent
     permanent: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

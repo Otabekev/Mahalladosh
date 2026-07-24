@@ -39,7 +39,7 @@ def upload_image(
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=400, detail="Fayl rasm emas")
+        raise HTTPException(status_code=400, detail="Fayl rasm emas") from None
 
     # re-encode: strips metadata, normalizes format, bounds size
     img = img.convert("RGB")

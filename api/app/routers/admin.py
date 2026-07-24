@@ -3,7 +3,6 @@ platform stats, and moderation (report queue + takedown/ban). Every route
 requires admin."""
 
 from datetime import datetime, timedelta
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -22,8 +21,8 @@ DEFAULT_BAN_DAYS = 30
 
 
 class BanIn(BaseModel):
-    days: Optional[int] = None
-    reason: Optional[str] = None
+    days: int | None = None
+    reason: str | None = None
 
 
 OPENING_TITLE = "Mahallamiz ochildi! \U0001f389"

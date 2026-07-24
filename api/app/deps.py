@@ -1,5 +1,5 @@
+from collections.abc import Generator
 from datetime import datetime
-from typing import Generator
 
 from fastapi import Cookie, Depends, HTTPException
 from sqlalchemy.orm import Session

@@ -6,9 +6,9 @@ elder, real posts). Run once against a fresh DB:
 
 from datetime import datetime, timedelta
 
-from app.db import Base, SessionLocal, engine
 from app import models
-from app.seed import seed, normalize_name
+from app.db import Base, SessionLocal, engine
+from app.seed import seed
 
 NOW = datetime(2026, 7, 20, 9, 0, 0)
 THIS_MONTH = "2026-07"
@@ -59,7 +59,7 @@ def run():
     yoshlik.raisi_user_id = users["toshpolat"].id
 
     # reputation ledger — this month (drives podium) + last month (Faol qo'shni)
-    for un, u in users.items():
+    for u in users.values():
         if u.rep_month:
             db.add(models.ReputationEntry(user_id=u.id, mahalla_id=yoshlik.id,
                    amount=u.rep_month, reason="help_fulfilled", month=THIS_MONTH,

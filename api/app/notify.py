@@ -2,8 +2,8 @@
 driver). Synchronous inserts — fine at pilot scale. Callers commit unless
 noted otherwise."""
 
+from collections.abc import Iterable
 from datetime import datetime, timedelta
-from typing import Iterable
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
