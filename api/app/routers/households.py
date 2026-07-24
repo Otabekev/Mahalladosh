@@ -94,6 +94,26 @@ def _get_join_request(
     return jr
 
 
+def _notify_stewards(db: Session, household: models.Household, text: str) -> None:
+    """Ping every account-holding member of a household — so a join/claim request
+    isn't left sitting unseen with no one to approve it."""
+    steward_ids = [
+        uid
+        for (uid,) in db.query(models.User.id).filter(
+            models.User.household_id == household.id
+        )
+    ]
+    if steward_ids:
+        notify.notify(
+            db,
+            steward_ids,
+            "household",
+            text,
+            link=f"/app/households/{household.id}",
+            mahalla_id=household.mahalla_id,
+        )
+
+
 @router.get("", response_model=list[schemas.HouseholdOut])
 def list_households(
     mahalla_id: int,
@@ -370,6 +390,8 @@ def request_join(
         )
     elif existing.status != "pending":
         existing.status = "pending"
+        existing.member_id = None  # a plain re-request drops any earlier claim
+    _notify_stewards(db, household, f"👋 {user.full_name} xonadoningizga qo'shilmoqchi")
     db.commit()
     db.refresh(household)
     return presenters.household_out(db, household, user)
@@ -394,10 +416,15 @@ def list_join_requests(
         requester = db.get(models.User, r.user_id)
         if requester is None:
             continue
+        claim_name = None
+        if r.member_id is not None:
+            m = db.get(models.HouseholdMember, r.member_id)
+            claim_name = m.full_name if m is not None else None
         out.append(
             schemas.JoinRequestOut(
                 id=r.id,
                 user=presenters.user_out(db, requester),
+                claim_member_name=claim_name,
                 created_at=r.created_at,
             )
         )
@@ -422,6 +449,16 @@ def approve_join(
         requester = db.get(models.User, jr.user_id)
         if requester is not None and requester.household_id is None:
             requester.household_id = household.id
+            # a claim request links the requester to the exact named row the family
+            # listed (preserving the roster); a plain join just makes them a member
+            if jr.member_id is not None:
+                member = db.get(models.HouseholdMember, jr.member_id)
+                if (
+                    member is not None
+                    and member.household_id == household.id
+                    and member.user_id is None
+                ):
+                    member.user_id = requester.id
             track.log_event(
                 db,
                 requester.id,
@@ -478,24 +515,40 @@ def claim_member(
     user: models.User = Depends(require_member),
     db: Session = Depends(get_db),
 ):
-    """Link yourself to a named member row the family added before you had an
-    account (e.g. a son the parents listed). No steward approval needed — the
-    family already put your name in. You must not already have a household."""
+    """Ask to be linked to a named member row the family listed before you had an
+    account (e.g. a son the parents added). This is NOT instant: a name alone is no
+    proof of identity, so a steward must approve — otherwise anyone could attach
+    themselves to any family and inherit full stewardship (edit history, evict the
+    founder, satisfy the verified-member trust gate). We raise a pending join
+    request carrying the claimed row; approve_join links it. You must not already
+    have a household."""
     household = _get_household_in_mahalla(db, household_id, user)
     if user.household_id is not None:
         raise HTTPException(status_code=400, detail="Sizda allaqachon xonadon bor")
     member = db.get(models.HouseholdMember, data.member_id)
     if member is None or member.household_id != household.id or member.user_id is not None:
         raise HTTPException(status_code=400, detail="Bu a'zoni biriktirib bo'lmadi")
-    member.user_id = user.id
-    user.household_id = household.id
-    track.log_event(
-        db,
-        user.id,
-        "household_join",
-        "household",
-        household.id,
-        mahalla_id=household.mahalla_id,
+    # one request row per (household, user) — a claim reuses/updates a prior plain
+    # request rather than colliding with the unique constraint
+    existing = (
+        db.query(models.HouseholdJoinRequest)
+        .filter_by(household_id=household.id, user_id=user.id)
+        .first()
+    )
+    if existing is None:
+        db.add(
+            models.HouseholdJoinRequest(
+                household_id=household.id,
+                user_id=user.id,
+                member_id=member.id,
+                status="pending",
+            )
+        )
+    else:
+        existing.member_id = member.id
+        existing.status = "pending"
+    _notify_stewards(
+        db, household, f"👋 {user.full_name} o'zini «{member.full_name}» deb xonadoningizga qo'shilmoqchi"
     )
     db.commit()
     db.refresh(household)

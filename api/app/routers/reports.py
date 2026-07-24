@@ -66,7 +66,10 @@ def _validate_target(
             raise HTTPException(status_code=403, detail="Bu xonadon sizning mahallangizda emas")
     elif target_type == "user":
         u = db.get(models.User, target_id)
-        if u is None:
+        # only someone in your OWN mahalla — otherwise any member could probe
+        # arbitrary user ids platform-wide and read names off the report label.
+        # 404 (not 403) so a foreign id is indistinguishable from a missing one.
+        if u is None or u.mahalla_id != user.mahalla_id:
             raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
         if u.id == user.id:
             raise HTTPException(status_code=400, detail="O'zingizni shikoyat qila olmaysiz")

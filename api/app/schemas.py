@@ -204,10 +204,13 @@ class JoinRequestIn(BaseModel):
 
 
 class JoinRequestOut(BaseModel):
-    """A pending join request, shown to the steward."""
+    """A pending join request, shown to the steward. claim_member_name is set when
+    the requester is claiming a named row the family listed (e.g. 'Alisher'), so
+    the steward knows who they say they are before approving."""
 
     id: int
     user: UserOut
+    claim_member_name: Optional[str] = None
     created_at: datetime
 
 

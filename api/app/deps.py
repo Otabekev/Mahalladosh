@@ -29,6 +29,13 @@ def get_current_user(
     user = db.get(models.User, user_id)
     if user is None:
         raise HTTPException(status_code=401, detail="Foydalanuvchi topilmadi")
+    # A banned or deleted (anonymized → banned_until far-future) account is locked
+    # out of EVERY authenticated route, not just member-scoped ones. Sessions are
+    # stateless JWTs, so clearing the cookie can't revoke a token the client kept —
+    # this server-side check is what actually enforces the ban / account deletion
+    # on /me, delete-post, delete-service, etc.
+    if user.banned_until and user.banned_until > datetime.utcnow():
+        raise HTTPException(status_code=403, detail="Hisobingiz chetlatilgan")
     try:
         track.touch(db, user)  # analytics presence mark — must never break auth
     except Exception:
@@ -37,11 +44,10 @@ def get_current_user(
 
 
 def require_member(user: models.User = Depends(get_current_user)) -> models.User:
-    """User must belong to an active mahalla and not be banned."""
+    """User must belong to an active mahalla. (The ban/lockout check lives in
+    get_current_user, so it already ran and covers every authenticated route.)"""
     if user.mahalla_id is None:
         raise HTTPException(status_code=403, detail="Avval mahallaga qo'shiling")
-    if user.banned_until and user.banned_until > datetime.utcnow():
-        raise HTTPException(status_code=403, detail="Siz vaqtincha chetlatilgansiz")
     return user
 
 

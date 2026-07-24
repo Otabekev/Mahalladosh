@@ -163,9 +163,11 @@ class HouseholdMember(Base):
 
 
 class HouseholdJoinRequest(Base):
-    """A person asking to join an existing household (the steward confirms).
-    Distinct from the claim mechanic (HouseholdMember.user_id): this is for a
-    user with no existing member row who wants in."""
+    """A person asking a household's stewards to let them in — always confirmed
+    by a steward, so nobody attaches themselves to a family unilaterally.
+    member_id is None for a plain join (added as a new member on approval); it is
+    set for a CLAIM ('I am this named row the family already listed'), and approval
+    links that row to the requester's account."""
 
     __tablename__ = "household_join_requests"
     __table_args__ = (UniqueConstraint("household_id", "user_id"),)
@@ -173,6 +175,7 @@ class HouseholdJoinRequest(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     household_id: Mapped[int] = mapped_column(ForeignKey("households.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    member_id: Mapped[Optional[int]] = mapped_column(ForeignKey("household_members.id"))
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending|approved|declined
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 

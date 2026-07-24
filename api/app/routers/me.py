@@ -58,6 +58,20 @@ def _maybe_delete_orphan_household(db: Session, household_id: int, leaving_user_
     db.delete(household)  # cascades HouseholdMember rows (relationship cascade)
 
 
+def _release_member_row(db: Session, household_id: int, user_id: int) -> None:
+    """Unlink this user from any named HouseholdMember row they had claimed, so a
+    departed (or anonymized) account is no longer shown as a live member of the
+    family it left. The named row itself stays — it's part of the family roster and
+    can be re-claimed later; only the account link is cleared."""
+    row = (
+        db.query(models.HouseholdMember)
+        .filter_by(household_id=household_id, user_id=user_id)
+        .first()
+    )
+    if row is not None:
+        row.user_id = None
+
+
 def _clear_raisi(db: Session, mahalla_id: int | None, user_id: int) -> None:
     """If this user is the mahalla's raisi, vacate the seat."""
     if mahalla_id is None:
@@ -108,6 +122,8 @@ def leave_mahalla(
 
     _clear_raisi(db, mahalla_id, user.id)
     _withdraw_active_petitions(db, user.id)
+    if household_id is not None:
+        _release_member_row(db, household_id, user.id)
 
     user.mahalla_id = None
     user.household_id = None
@@ -131,6 +147,7 @@ def leave_household(
         raise HTTPException(status_code=400, detail="Sizda xonadon yo'q")
 
     household_id = user.household_id
+    _release_member_row(db, household_id, user.id)
     user.household_id = None
     db.flush()  # autoflush=False — orphan check must see the cleared household_id
 
@@ -164,6 +181,8 @@ def delete_account(
 
     _clear_raisi(db, mahalla_id, user.id)
     _withdraw_active_petitions(db, user.id)
+    if household_id is not None:
+        _release_member_row(db, household_id, user.id)
 
     user.full_name = _ANON_NAME
     user.username = None

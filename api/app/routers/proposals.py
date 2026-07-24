@@ -80,6 +80,12 @@ def _apply_action(db: Session, p: models.Proposal) -> None:
             db.query(models.Post).filter_by(
                 author_id=target.id, mahalla_id=p.mahalla_id, status="open"
             ).update({"status": "closed"}, synchronize_session=False)
+            # ...and pull their live service listings in this mahalla (parity with
+            # the admin ban, which deactivates services too — a vote-ban shouldn't
+            # leave the person's goods/services discoverable in the directory).
+            db.query(models.ServiceOffering).filter_by(
+                created_by=target.id, mahalla_id=p.mahalla_id, active=True
+            ).update({"active": False}, synchronize_session=False)
 
 
 def _refresh(db: Session, p: models.Proposal) -> None:
