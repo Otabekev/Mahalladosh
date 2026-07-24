@@ -97,9 +97,23 @@ def household_out(db: Session, h: models.Household, viewer: models.User) -> sche
         is not None
     )
     members = db.query(models.HouseholdMember).filter_by(household_id=h.id).all()
-    # family_only households hide details from non-members (plan §6.4)
+    # PRIVACY GATE (plan §6.4 — family/lineage data is opt-in and visible only to
+    # VERIFIED neighbors). family_history + members[] are exposed only to a viewer
+    # who is either (a) a member of THIS household, or (b) a trusted resident whose
+    # OWN household is verified. family_only households are stricter still: only
+    # their own members ever see the details. Everyone else — household-less,
+    # unverified-household, or a family_only outsider — gets just the public shell
+    # (family_name, street, verification_status, counts); family_history=None,
+    # members=[]. A one-click joiner can no longer read every family's history.
     is_mine = viewer.household_id == h.id
-    hide = h.visibility == "family_only" and not is_mine
+    viewer_hh = (
+        db.get(models.Household, viewer.household_id) if viewer.household_id else None
+    )
+    viewer_verified = viewer_hh is not None and viewer_hh.verification_status == "verified"
+    if h.visibility == "family_only":
+        hide = not is_mine  # stricter family_only rule kept
+    else:  # neighbors: trusted (own household verified) or a member of this one
+        hide = not (is_mine or viewer_verified)
     # only a viewer WITHOUT a household of their own can have a pending join
     # request — skip the query entirely for everyone else
     has_pending_join = False

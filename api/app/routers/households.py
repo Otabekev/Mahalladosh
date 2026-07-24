@@ -277,6 +277,23 @@ def vouch_household(
     household = _get_household_in_mahalla(db, household_id, user)
     if user.household_id == household.id:
         raise HTTPException(status_code=400, detail="O'z xonadoningizga kafolat bera olmaysiz")
+    # VERIFICATION TEETH (plan §6.4 / §10): only a trusted resident may vouch — a
+    # member of an already-VERIFIED household. The raisi is the bootstrap trust
+    # anchor (community-appointed, not self-verified) and may always vouch; without
+    # that carve-out a fresh mahalla with no verified household could never verify
+    # its first one. This closes the two-fake-accounts loop: two fresh accounts,
+    # neither the raisi nor in a verified household, can no longer verify each other.
+    mahalla = db.get(models.Mahalla, household.mahalla_id)
+    is_raisi = bool(mahalla and mahalla.raisi_user_id == user.id)
+    if not is_raisi:
+        voucher_hh = (
+            db.get(models.Household, user.household_id) if user.household_id else None
+        )
+        if voucher_hh is None or voucher_hh.verification_status != "verified":
+            raise HTTPException(
+                status_code=403,
+                detail="Faqat tasdiqlangan xonadon a'zolari kafolat bera oladi",
+            )
     existing = (
         db.query(models.Vouch)
         .filter_by(household_id=household.id, voucher_user_id=user.id)
@@ -288,8 +305,6 @@ def vouch_household(
     db.flush()
 
     vouch_count = db.query(models.Vouch).filter_by(household_id=household.id).count()
-    mahalla = db.get(models.Mahalla, household.mahalla_id)
-    is_raisi = bool(mahalla and mahalla.raisi_user_id == user.id)
     newly_verified = False
     if vouch_count >= settings.vouch_threshold or is_raisi:
         if household.verification_status != "verified":

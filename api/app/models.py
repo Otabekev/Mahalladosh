@@ -328,3 +328,41 @@ class ServiceOffering(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Report(Base):
+    """A member flagging content or a person (plan §10 moderation, Phase 2b).
+    target_type: post|service|household|user; the moderation agent resolves
+    open rows into resolved|dismissed."""
+
+    __tablename__ = "reports"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    reporter_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    target_type: Mapped[str] = mapped_column(String(20), index=True)  # post|service|household|user
+    target_id: Mapped[int] = mapped_column(Integer, index=True)
+    reason: Mapped[str] = mapped_column(String(40))  # spam|abuse|fake|other
+    note: Mapped[Optional[str]] = mapped_column(String(300))
+    mahalla_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mahallas.id"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)  # open|resolved|dismissed
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    resolved_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+
+class BanRecord(Base):
+    """Ban history (plan §10 'permanent on repeat' needs a count of prior bans).
+    source: vote (passed punitive proposal) | admin. until=None + permanent=True
+    is a forever ban."""
+
+    __tablename__ = "ban_records"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    mahalla_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mahallas.id"))
+    reason: Mapped[Optional[str]] = mapped_column(String(200))
+    source: Mapped[str] = mapped_column(String(20))  # vote|admin
+    until: Mapped[Optional[datetime]] = mapped_column(DateTime)  # None = permanent
+    permanent: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

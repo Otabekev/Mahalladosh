@@ -122,4 +122,42 @@ export const feedStrings = {
     en: 'The chosen neighbor gets +10 points',
   },
   confirm: { uz: 'Tasdiqlash', uzc: 'Тасдиқлаш', ru: 'Подтвердить', en: 'Confirm' },
+
+  // ---------- post detail: reporting ----------
+  reportBtn: { uz: 'Shikoyat qilish', uzc: 'Шикоят қилиш', ru: 'Пожаловаться', en: 'Report' },
+  reportTitle: { uz: 'Shikoyat qilish', uzc: 'Шикоят қилиш', ru: 'Пожаловаться', en: 'Report' },
+  reportReasonHeading: { uz: 'Sabab', uzc: 'Сабаб', ru: 'Причина', en: 'Reason' },
+  reasonSpam: {
+    uz: 'Spam yoki reklama',
+    uzc: 'Спам ёки реклама',
+    ru: 'Спам или реклама',
+    en: 'Spam or ads',
+  },
+  reasonAbuse: {
+    uz: 'Haqorat yoki tajovuz',
+    uzc: 'Ҳақорат ёки тажовуз',
+    ru: 'Оскорбление или агрессия',
+    en: 'Abuse or harassment',
+  },
+  reasonFake: {
+    uz: 'Soxta yoki aldov',
+    uzc: 'Сохта ёки алдов',
+    ru: 'Обман или фейк',
+    en: 'Fake or scam',
+  },
+  reasonOther: { uz: 'Boshqa sabab', uzc: 'Бошқа сабаб', ru: 'Другая причина', en: 'Other' },
+  reportNoteLabel: {
+    uz: 'Izoh (shart emas)',
+    uzc: 'Изоҳ (шарт эмас)',
+    ru: 'Комментарий (необязательно)',
+    en: 'Note (optional)',
+  },
+  reportNotePh: { uz: 'Qisqacha yozing...', uzc: 'Қисқача ёзинг...', ru: 'Напишите коротко...', en: 'Write briefly...' },
+  reportSend: { uz: 'Yuborish', uzc: 'Юбориш', ru: 'Отправить', en: 'Send' },
+  reportSent: {
+    uz: 'Shikoyatingiz yuborildi. Rahmat.',
+    uzc: 'Шикоятингиз юборилди. Раҳмат.',
+    ru: 'Жалоба отправлена. Спасибо.',
+    en: 'Your report was sent. Thank you.',
+  },
 } satisfies Dict

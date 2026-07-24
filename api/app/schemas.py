@@ -375,4 +375,41 @@ class AdminStats(BaseModel):
     posts: int = 0
 
 
+# ---------- moderation (reports / bans, Phase 2b) ----------
+
+ReportTargetType = Literal["post", "service", "household", "user"]
+ReportReason = Literal["spam", "abuse", "fake", "other"]
+
+
+class ReportIn(BaseModel):
+    target_type: ReportTargetType
+    target_id: int
+    reason: ReportReason
+    note: Optional[str] = Field(default=None, max_length=300)
+
+
+class ReportOut(BaseModel):
+    id: int
+    reporter: UserOut
+    target_type: str
+    target_id: int
+    reason: str
+    note: Optional[str] = None
+    status: str  # open|resolved|dismissed
+    created_at: datetime
+    target_label: str = ""  # best-effort; filled by the moderation agent
+
+
+class AdminUserRow(BaseModel):
+    """A light user row for the moderation user list."""
+
+    id: int
+    full_name: str
+    banned_until: Optional[datetime] = None
+    is_admin: bool = False
+
+    class Config:
+        from_attributes = True
+
+
 MeOut.model_rebuild()

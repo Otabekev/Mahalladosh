@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
-from ..deps import get_db, require_member
+from ..deps import get_current_user, get_db, require_member
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -109,9 +109,19 @@ def update_service(
 @router.delete("/{service_id}", status_code=204)
 def delete_service(
     service_id: int,
-    user: models.User = Depends(require_member),
+    user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    s = _own_offering(db, user, service_id)
+    """Delete an offering. The owning household may delete its own; an admin may
+    delete any (moderation takedown). get_current_user so an admin who isn't a
+    mahalla member can still act."""
+    s = db.get(models.ServiceOffering, service_id)
+    if s is None:
+        raise HTTPException(status_code=404, detail="Xizmat topilmadi")
+    is_own = user.household_id is not None and s.household_id == user.household_id
+    if not is_own and not user.is_admin:
+        raise HTTPException(
+            status_code=403, detail="Bu xizmat sizning xonadoningizga tegishli emas"
+        )
     db.delete(s)
     db.commit()

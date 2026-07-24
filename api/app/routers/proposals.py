@@ -22,6 +22,23 @@ DONE_STATUSES = ("passed", "rejected", "expired")
 # ---------- local helpers ----------
 
 
+def _is_verified_member(db: Session, user: models.User) -> bool:
+    """True only if the user belongs to a household that is itself VERIFIED — the
+    trust gate for participating in punitive (ban) governance (plan §6.4 / §10).
+    Household-less or unverified-household users are blocked from vote/second/create
+    on a ban, so unvouched fake accounts can't drive a neighbour's removal."""
+    if user.household_id is None:
+        return False
+    hh = db.get(models.Household, user.household_id)
+    return hh is not None and hh.verification_status == "verified"
+
+
+def _has_prior_ban(db: Session, user_id: int) -> bool:
+    """Any earlier BanRecord (vote OR admin) means this is a repeat offence and the
+    next ban escalates to permanent (plan §10 'permanent on repeat')."""
+    return db.query(models.BanRecord).filter_by(user_id=user_id).first() is not None
+
+
 def _apply_action(db: Session, p: models.Proposal) -> None:
     """Apply the proposal's action once it has passed."""
     if p.action == "set_raisi" and p.target_user_id:
@@ -31,8 +48,38 @@ def _apply_action(db: Session, p: models.Proposal) -> None:
     elif p.action == "ban_user" and p.target_user_id:
         target = db.get(models.User, p.target_user_id)
         if target:
-            # temporary-first: 30-day ban (plan §10)
-            target.banned_until = datetime.utcnow() + timedelta(days=30)
+            now = datetime.utcnow()
+            # plan §10: temporary-first, permanent on repeat. Check for a PRIOR
+            # ban before writing this one so the new record isn't self-counted.
+            if _has_prior_ban(db, target.id):
+                target.banned_until = now + timedelta(days=3650)  # effectively forever
+                record = models.BanRecord(
+                    user_id=target.id,
+                    mahalla_id=p.mahalla_id,
+                    reason=p.title,
+                    source="vote",
+                    until=None,  # None + permanent=True = forever (see BanRecord)
+                    permanent=True,
+                    created_by=p.author_id,
+                )
+            else:
+                until = now + timedelta(days=30)  # temporary-first: 30-day ban
+                target.banned_until = until
+                record = models.BanRecord(
+                    user_id=target.id,
+                    mahalla_id=p.mahalla_id,
+                    reason=p.title,
+                    source="vote",
+                    until=until,
+                    permanent=False,
+                    created_by=p.author_id,
+                )
+            db.add(record)
+            # a banned member's live content stays up otherwise — close their
+            # OPEN posts in this mahalla so the removal actually has teeth.
+            db.query(models.Post).filter_by(
+                author_id=target.id, mahalla_id=p.mahalla_id, status="open"
+            ).update({"status": "closed"}, synchronize_session=False)
 
 
 def _refresh(db: Session, p: models.Proposal) -> None:
@@ -191,6 +238,14 @@ def create_proposal(
             raise HTTPException(status_code=400, detail="O'zingizni chetlata olmaysiz")
         target_user_id = target.id
 
+    # punitive governance is verified-residents-only (plan §6.4 / §10); coordination
+    # proposals stay open to every member.
+    if data.action == "ban_user" and not _is_verified_member(db, user):
+        raise HTTPException(
+            status_code=403,
+            detail="Bu amal uchun tasdiqlangan xonadon a'zosi bo'lishingiz kerak",
+        )
+
     # one active proposal per author — refresh stale ones before deciding
     maybe_active = (
         db.query(models.Proposal)
@@ -267,6 +322,11 @@ def second_proposal(
     _refresh(db, p)
     if p.status != "seconding":
         raise HTTPException(status_code=400, detail="Qo'llab-quvvatlash bosqichi tugagan")
+    if p.action == "ban_user" and not _is_verified_member(db, user):
+        raise HTTPException(
+            status_code=403,
+            detail="Bu amal uchun tasdiqlangan xonadon a'zosi bo'lishingiz kerak",
+        )
     if p.author_id == user.id:
         raise HTTPException(status_code=400, detail="O'z taklifingizni qo'llab-quvvatlay olmaysiz")
     existing = (
@@ -291,6 +351,11 @@ def vote_proposal(
     _refresh(db, p)
     if p.status != "voting":
         raise HTTPException(status_code=400, detail="Hozir ovoz berish bosqichi emas")
+    if p.action == "ban_user" and not _is_verified_member(db, user):
+        raise HTTPException(
+            status_code=403,
+            detail="Bu amal uchun tasdiqlangan xonadon a'zosi bo'lishingiz kerak",
+        )
     existing = db.query(models.Vote).filter_by(proposal_id=p.id, user_id=user.id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Siz ovoz bergansiz")

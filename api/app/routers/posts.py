@@ -6,8 +6,8 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, notify, presenters, reputation, schemas
-from ..deps import get_db, require_member
+from .. import models, notify, presenters, reputation, schemas, track
+from ..deps import get_current_user, get_db, require_member
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -320,3 +320,26 @@ def close_post(
     post.status = "closed"
     db.commit()
     return post_detail(db, post, user)
+
+
+@router.delete("/{post_id}", status_code=204)
+def delete_post(
+    post_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Hard-delete a post and its responses. The author may delete their own;
+    an admin may delete any (moderation takedown, plan §10). Uses
+    get_current_user — an operator/admin need not be a mahalla member."""
+    post = db.get(models.Post, post_id)
+    if post is None:
+        raise HTTPException(status_code=404, detail="E'lon topilmadi")
+    if post.author_id != user.id and not user.is_admin:
+        raise HTTPException(status_code=403, detail="Faqat e'lon egasi")
+    db.query(models.PostResponse).filter_by(post_id=post.id).delete()
+    track.log_event(
+        db, user.id, "post_delete", entity_type="post", entity_id=post.id,
+        mahalla_id=post.mahalla_id,
+    )
+    db.delete(post)
+    db.commit()

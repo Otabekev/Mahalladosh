@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   ErrorNote,
+  Field,
   Modal,
   Spinner,
   Textarea,
@@ -18,9 +19,102 @@ import { common } from '@/core/i18n/common'
 import { feedStrings } from '@/core/i18n/feed'
 import { useAuth } from '@/core/stores/auth'
 import { useClosePost, usePost, useResolve, useRespond } from '@/core/queries/posts'
+import { useReport, type ReportReason } from '@/core/queries/reports'
 import type { PostDetail, PostType } from '@/core/api/types'
 
 type FeedKey = keyof typeof feedStrings
+
+const REPORT_REASONS: { value: ReportReason; key: FeedKey }[] = [
+  { value: 'spam', key: 'reasonSpam' },
+  { value: 'abuse', key: 'reasonAbuse' },
+  { value: 'fake', key: 'reasonFake' },
+  { value: 'other', key: 'reasonOther' },
+]
+
+/** Report a post — reason radios + optional note. Shown to non-authors. */
+function ReportModal({
+  open,
+  onClose,
+  postId,
+}: {
+  open: boolean
+  onClose: () => void
+  postId: number
+}) {
+  const s = useStrings(feedStrings)
+  const c = useStrings(common)
+  const report = useReport()
+  const [reason, setReason] = useState<ReportReason>('spam')
+  const [note, setNote] = useState('')
+  const [sent, setSent] = useState(false)
+
+  const close = () => {
+    setSent(false)
+    setReason('spam')
+    setNote('')
+    report.reset()
+    onClose()
+  }
+
+  const submit = () => {
+    report.mutate(
+      { target_type: 'post', target_id: postId, reason, note: note.trim() || null },
+      { onSuccess: () => setSent(true) },
+    )
+  }
+
+  return (
+    <Modal open={open} onClose={close} title={s.reportTitle}>
+      {sent ? (
+        <div>
+          <div className="rounded-xl bg-good-soft text-good text-sm font-semibold px-4 py-3 mb-4">
+            {s.reportSent}
+          </div>
+          <Button full onClick={close}>
+            {c.close}
+          </Button>
+        </div>
+      ) : (
+        <>
+          {report.error && <ErrorNote message={report.error.message} />}
+          <div className="mb-4">
+            <span className="block text-sm font-semibold text-ink mb-2">{s.reportReasonHeading}</span>
+            <div className="flex flex-col gap-2">
+              {REPORT_REASONS.map((r) => (
+                <button
+                  key={r.value}
+                  type="button"
+                  onClick={() => setReason(r.value)}
+                  className={`w-full flex items-center gap-3 p-3 text-left rounded-xl border bg-card ${
+                    reason === r.value ? 'border-brand ring-2 ring-brand/30' : 'border-line'
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full border-2 shrink-0 ${
+                      reason === r.value ? 'border-brand bg-brand' : 'border-line'
+                    }`}
+                  />
+                  <span className="text-sm font-semibold text-ink">{s[r.key]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <Field label={s.reportNoteLabel}>
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={s.reportNotePh}
+              maxLength={300}
+            />
+          </Field>
+          <Button full onClick={submit} loading={report.isPending}>
+            {s.reportSend}
+          </Button>
+        </>
+      )}
+    </Modal>
+  )
+}
 
 function formatEventDate(iso: string): string {
   const d = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z')
@@ -116,6 +210,7 @@ export default function PostDetailScreen() {
 
   const [message, setMessage] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -216,6 +311,15 @@ export default function PostDetailScreen() {
         </div>
       </Card>
 
+      {/* report — neighbors flag bad content; not shown on your own post */}
+      {me !== null && !isAuthor && (
+        <div className="flex justify-end mb-3">
+          <Button variant="ghost" size="sm" onClick={() => setReportOpen(true)}>
+            ⚑ {s.reportBtn}
+          </Button>
+        </div>
+      )}
+
       {/* author controls */}
       {post.status === 'open' && isAuthor && (
         <div className="flex flex-col gap-2 mb-3">
@@ -274,6 +378,7 @@ export default function PostDetailScreen() {
       )}
 
       <ResolveModal post={post} postId={postId} open={modalOpen} onClose={() => setModalOpen(false)} />
+      <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} postId={postId} />
     </div>
   )
 }

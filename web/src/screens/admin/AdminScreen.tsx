@@ -5,24 +5,38 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
 import {
   Avatar,
+  Badge,
   Button,
   Card,
   EmptyState,
   ErrorNote,
   Field,
   Input,
+  Modal,
   PageTitle,
   SegmentedTabs,
   Select,
   Spinner,
+  Textarea,
 } from '@/components/ui'
-import { useAddMfy, useAdminPetitions, useAdminStats, useApprove, useReject } from '@/core/queries/admin'
+import {
+  useAddMfy,
+  useAdminPetitions,
+  useAdminStats,
+  useApprove,
+  useBanUser,
+  useDismissReport,
+  useReject,
+  useReports,
+  useResolveReport,
+} from '@/core/queries/admin'
 import { useDistricts, useRegions } from '@/core/queries/onboarding'
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { servicesStrings } from '@/core/i18n/services'
+import type { Report } from '@/core/queries/reports'
 
-type Tab = 'petitions' | 'mfy' | 'stats'
+type Tab = 'petitions' | 'reports' | 'mfy' | 'stats'
 
 // ---------- So'rovlar: pending mahalla petitions ----------
 
@@ -220,6 +234,117 @@ function StatsTab() {
   )
 }
 
+// ---------- Shikoyatlar: moderation queue (plan §10) ----------
+
+function BanModal({ report, onClose }: { report: Report | null; onClose: () => void }) {
+  const s = useStrings(servicesStrings)
+  const c = useStrings(common)
+  const ban = useBanUser()
+  const [reason, setReason] = useState('')
+
+  const close = () => {
+    setReason('')
+    ban.reset()
+    onClose()
+  }
+
+  const submit = () => {
+    if (!report) return
+    ban.mutate(
+      { userId: report.target_id, reason: reason.trim() || null },
+      { onSuccess: close },
+    )
+  }
+
+  return (
+    <Modal open={report !== null} onClose={close} title={s.banTitle}>
+      {ban.error && <ErrorNote message={ban.error.message} />}
+      <p className="text-[15px] font-bold text-ink mb-1">{report?.target_label}</p>
+      <p className="text-sm text-sub mb-4">{s.banExplain}</p>
+      <Field label={s.banReasonLabel}>
+        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
+      </Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="ghost" onClick={close}>
+          {c.cancel}
+        </Button>
+        <Button variant="danger" loading={ban.isPending} onClick={submit}>
+          {s.banBtn}
+        </Button>
+      </div>
+    </Modal>
+  )
+}
+
+function ReportsTab() {
+  const s = useStrings(servicesStrings)
+  const c = useStrings(common)
+  const reports = useReports()
+  const resolve = useResolveReport()
+  const dismiss = useDismissReport()
+  const [banTarget, setBanTarget] = useState<Report | null>(null)
+
+  if (reports.isPending) {
+    return (
+      <div className="flex justify-center py-12">
+        <Spinner />
+      </div>
+    )
+  }
+  if (reports.error) return <ErrorNote message={reports.error.message} />
+  if (!reports.data || reports.data.length === 0) {
+    return <EmptyState icon="🛡️" title={s.reportsEmptyTitle} text={s.reportsEmptyText} />
+  }
+
+  const typeLabel = (t: string) =>
+    t === 'post' ? s.rtPost : t === 'service' ? s.rtService : t === 'household' ? s.rtHousehold : s.rtUser
+  const reasonLabel = (r: string) =>
+    r === 'spam' ? s.reasonSpam : r === 'abuse' ? s.reasonAbuse : r === 'fake' ? s.reasonFake : s.reasonOther
+
+  return (
+    <div>
+      {(resolve.error ?? dismiss.error) && (
+        <ErrorNote message={(resolve.error ?? dismiss.error)?.message ?? c.error} />
+      )}
+      {reports.data.map((r) => (
+        <Card key={r.id} className="p-4 mb-3">
+          <div className="flex items-center justify-between gap-2">
+            <Badge>{typeLabel(r.target_type)}</Badge>
+            <span className="text-xs font-semibold text-sub">{reasonLabel(r.reason)}</span>
+          </div>
+          <div className="text-[15px] font-bold text-ink mt-1.5 break-words">{r.target_label || '—'}</div>
+          {r.note && <p className="text-sm text-ink mt-1 whitespace-pre-wrap">{r.note}</p>}
+          <div className="text-xs text-sub mt-1">{fmt(s.reportedBy, { name: r.reporter.full_name })}</div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <Button
+              size="sm"
+              className="bg-good! text-white hover:opacity-90"
+              loading={resolve.isPending && resolve.variables === r.id}
+              onClick={() => resolve.mutate(r.id)}
+            >
+              ✓ {s.reportResolve}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={dismiss.isPending && dismiss.variables === r.id}
+              onClick={() => dismiss.mutate(r.id)}
+            >
+              {s.reportDismiss}
+            </Button>
+            {r.target_type === 'user' && (
+              <Button size="sm" variant="danger" onClick={() => setBanTarget(r)}>
+                {s.banBtn}
+              </Button>
+            )}
+          </div>
+        </Card>
+      ))}
+      <BanModal report={banTarget} onClose={() => setBanTarget(null)} />
+    </div>
+  )
+}
+
 // ---------- screen ----------
 
 export default function AdminScreen() {
@@ -236,6 +361,7 @@ export default function AdminScreen() {
         <SegmentedTabs<Tab>
           tabs={[
             { value: 'petitions', label: s.tabPetitions },
+            { value: 'reports', label: s.tabReports },
             { value: 'mfy', label: s.tabMfy },
             { value: 'stats', label: s.tabStats },
           ]}
@@ -244,6 +370,7 @@ export default function AdminScreen() {
         />
       </div>
       {tab === 'petitions' && <PetitionsTab />}
+      {tab === 'reports' && <ReportsTab />}
       {tab === 'mfy' && <MfyTab />}
       {tab === 'stats' && <StatsTab />}
     </div>
