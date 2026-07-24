@@ -1,5 +1,11 @@
 # Mahalladosh
 
+[![CI](https://github.com/Otabekev/Mahalladosh/actions/workflows/ci.yml/badge.svg)](https://github.com/Otabekev/Mahalladosh/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-b23a28.svg)](LICENSE)
+![Python 3.12](https://img.shields.io/badge/Python-3.12-157c84.svg)
+![React 19](https://img.shields.io/badge/React-19-157c84.svg)
+![PWA](https://img.shields.io/badge/PWA-installable-d89a2a.svg)
+
 **A social platform for the Uzbek _mahalla_ — the digital _guzar_ where a whole neighbourhood knows, honours, and helps one another again.**
 
 Uzbekistan crossed a historic line in 2026: for the first time, more people live in cities than in rural mahallas. As neighbourhoods urbanise, the mahalla’s social fabric — knowing whose family is whose, who to ask for help, who has lived on your street for three generations — is quietly disappearing. Mahalladosh rebuilds it, digitally, around the unit Uzbeks already trust.
@@ -59,10 +65,21 @@ npm run dev        # http://localhost:5174  (proxies /api → :8000)
 
 In dev, log in with any name — e.g. **Otabek Ergashaliyev** — to enter the seeded Yoshlik mahalla. Production login uses the Telegram Login Widget.
 
+## Quality
+
+CI runs on every push and PR (see the badge above): backend **lint (ruff)** +
+**tests (pytest)**, and a frontend **typecheck + production build**. The backend
+suite covers auth/membership gating, the household flows, and a pinned regression
+for every security-review finding. Run it locally with `cd api && ruff check . && pytest`.
+
 ## Status
 
 Active development. MVP feature-complete and pilot-safe; the roadmap runs through retention (Telegram DMs, daily anchor), a richer social layer (comments, reactions, albums), and diaspora + monetisation. Launching narrow and deep in a single home district first.
 
+## License
+
+[MIT](LICENSE) © 2026 Otabek Ergashaliyev
+
 ---
 
-_Built with care for Uzbek neighbourhoods. Community-owned, never state-facing._
+_Built with care for Uzbek neighbourhoods._
