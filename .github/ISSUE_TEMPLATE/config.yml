@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📍 Roadmap
+    url: https://github.com/Otabekev/Mahalladosh/blob/main/docs/ROADMAP.md
+    about: See what's shipped and what's planned before opening a request.

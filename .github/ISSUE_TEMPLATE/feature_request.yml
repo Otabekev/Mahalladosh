@@ -1,0 +1,35 @@
+name: ✨ Feature request
+description: Propose a new capability or improvement
+title: "feat: "
+labels: ["type:feat"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / user need
+      description: What can't a neighbour do today? Whose day does this improve?
+      placeholder: An elder can't find the raisi's phone number in fewer than two taps…
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should we build? Keep it to the smallest useful slice.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [backend, frontend, i18n, design, growth, infra]
+    validations:
+      required: true
+  - type: checkboxes
+    id: standards
+    attributes:
+      label: Project standards
+      description: Reminders for anything user-facing.
+      options:
+        - label: Strings go through the four-language i18n dicts (uz / uzc / ru / en)
+        - label: Elder-first — large tap targets, icon + label, ≤2 taps

@@ -1,0 +1,34 @@
+name: 🐛 Bug report
+description: Something isn't working as expected
+title: "fix: "
+labels: ["type:fix"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you see? What did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Log in as …
+        2. Open …
+        3. Tap …
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [backend, frontend, i18n, design, infra]
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "Browser / OS / language (e.g. Chrome on Android, Ўзбекча)"
