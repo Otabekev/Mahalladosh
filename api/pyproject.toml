@@ -1,0 +1,27 @@
+[tool.pytest.ini_options]
+# Run from api/ ; make the app package importable and keep output quiet-but-useful.
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = [
+    # our own code is clean; silence third-party/legacy-API deprecations so CI
+    # output stays readable and a warning bump doesn't fail the build.
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv", "migrations"]
+
+[tool.ruff.lint]
+# A pragmatic, professional rule set: pyflakes (F), pycodestyle (E/W),
+# isort (I), bugbear (B), pyupgrade (UP), comprehensions (C4).
+select = ["E", "W", "F", "I", "B", "UP", "C4"]
+ignore = [
+    "E501",  # line length is handled by the formatter, not enforced hard
+    "B008",  # FastAPI's Depends() in defaults is the framework idiom
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
