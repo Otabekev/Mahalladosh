@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Added
+- **Onboarding checklist** — a feed card that walks a new neighbour through the first
+  high-value actions (family page, history, DingDong location, first post, first help),
+  with a live progress bar; derived from real state and auto-hiding when complete.
 - **Continuous integration** — GitHub Actions runs backend lint (ruff) + tests
   (pytest) and a frontend typecheck + production build on every push and PR.
 - **Backend test suite** — hermetic pytest suite covering auth/membership gating,
