@@ -415,4 +415,22 @@ class AdminUserRow(BaseModel):
         from_attributes = True
 
 
+# ---------- onboarding ----------
+
+
+class OnboardingStep(BaseModel):
+    """One activation step. The key maps to a client-side label + deep link, so
+    all copy stays in the four-language i18n dicts, not the API."""
+
+    key: str  # household | history | location | post | help
+    done: bool = False
+
+
+class OnboardingOut(BaseModel):
+    steps: list[OnboardingStep] = []
+    done_count: int = 0
+    total: int = 0
+    complete: bool = False
+
+
 MeOut.model_rebuild()

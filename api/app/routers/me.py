@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from .. import models, presenters, schemas, track
-from ..deps import get_current_user, get_db
+from ..deps import get_current_user, get_db, require_member
 from ..security import COOKIE_NAME
 
 router = APIRouter(prefix="/me", tags=["me"])
@@ -104,6 +104,35 @@ def update_me(
     db.commit()
     db.refresh(user)
     return presenters.user_out(db, user)
+
+
+@router.get("/onboarding", response_model=schemas.OnboardingOut)
+def onboarding(
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """The activation checklist for a new neighbour — the first high-value actions,
+    each derived from real state (no separate progress table to drift out of sync).
+    The card disappears from the app once every step is done."""
+    hh = db.get(models.Household, user.household_id) if user.household_id else None
+    has_post = db.query(models.Post).filter_by(author_id=user.id).first() is not None
+    has_help = db.query(models.PostResponse).filter_by(user_id=user.id).first() is not None
+
+    steps = [
+        ("household", hh is not None),
+        ("history", bool(hh and hh.family_history)),
+        ("location", bool(hh and hh.lat is not None and hh.lng is not None)),
+        ("post", has_post),
+        # helped a neighbour (responded to a post) or already earned honour
+        ("help", has_help or user.rep_alltime > 0),
+    ]
+    done = sum(1 for _, ok in steps if ok)
+    return schemas.OnboardingOut(
+        steps=[schemas.OnboardingStep(key=k, done=ok) for k, ok in steps],
+        done_count=done,
+        total=len(steps),
+        complete=done == len(steps),
+    )
 
 
 @router.post("/leave-mahalla", status_code=204)
