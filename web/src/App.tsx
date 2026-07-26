@@ -7,6 +7,7 @@ import { ConfirmProvider } from '@/components/confirm'
 import AppLayout from '@/components/layout'
 
 const LoginScreen = lazy(() => import('@/screens/auth/LoginScreen'))
+const JoinScreen = lazy(() => import('@/screens/onboarding/JoinScreen'))
 const OnboardingScreen = lazy(() => import('@/screens/onboarding/OnboardingScreen'))
 const WaitingScreen = lazy(() => import('@/screens/onboarding/WaitingScreen'))
 const FeedScreen = lazy(() => import('@/screens/feed/FeedScreen'))
@@ -36,6 +37,11 @@ function RootRedirect() {
   const { me, status } = useAuth()
   if (status === 'loading') return <FullScreenSpinner />
   if (!me) return <Navigate to="/login" replace />
+  // resume an invite the user followed before logging in
+  if (me.user.mahalla_id == null) {
+    const pending = localStorage.getItem('md_pending_join')
+    if (pending) return <Navigate to={`/join/${pending}`} replace />
+  }
   if (me.mahalla && me.mahalla.status === 'active') return <Navigate to="/app" replace />
   if (me.petition) return <Navigate to="/waiting" replace />
   return <Navigate to="/onboarding" replace />
@@ -71,6 +77,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginScreen />} />
+            <Route path="/join/:id" element={<JoinScreen />} />
             <Route
               path="/onboarding"
               element={

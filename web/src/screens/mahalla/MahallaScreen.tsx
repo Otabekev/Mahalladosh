@@ -9,6 +9,8 @@ import { common } from '@/core/i18n/common'
 import { mahallaStrings } from '@/core/i18n/mahalla'
 import { contactsStrings } from '@/core/i18n/contacts'
 import { raisiStrings } from '@/core/i18n/raisi'
+import { inviteStrings } from '@/core/i18n/invite'
+import { InviteModal } from '@/components/InviteModal'
 import {
   Avatar,
   Badge,
@@ -422,10 +424,12 @@ export default function MahallaScreen() {
   const s = useStrings(mahallaStrings)
   const cs = useStrings(contactsStrings)
   const rs = useStrings(raisiStrings)
+  const inv = useStrings(inviteStrings)
   const navigate = useNavigate()
   const me = useAuth((state) => state.me)
   const mahallaId = me?.mahalla?.id
   const [tab, setTab] = useState<Tab>('reyting')
+  const [inviteOpen, setInviteOpen] = useState(false)
   const { data, isPending, error } = useMahallaDetail(mahallaId)
 
   if (mahallaId === undefined) return <ErrorNote message="Mahalla topilmadi" />
@@ -453,6 +457,20 @@ export default function MahallaScreen() {
         </span>
         <span className="shrink-0 text-sub">›</span>
       </button>
+
+      <button
+        onClick={() => setInviteOpen(true)}
+        className="mt-3 w-full flex items-center gap-3 rounded-2xl border border-line bg-card p-3.5 text-left active:scale-[0.99] transition"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-2xl">➕</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] font-bold text-ink">{inv.button}</span>
+          <span className="block text-[13px] text-sub">{inv.hintCard}</span>
+        </span>
+        <span className="shrink-0 text-sub">›</span>
+      </button>
+
+      <InviteModal mahallaId={mahallaId} open={inviteOpen} onClose={() => setInviteOpen(false)} />
 
       {me?.user.is_raisi && (
         <button
