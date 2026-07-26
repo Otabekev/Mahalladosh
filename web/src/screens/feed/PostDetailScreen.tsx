@@ -1,7 +1,7 @@
 /** Post detail — full post, responses, respond box, author controls. Route: /app/posts/:id. */
 
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   Avatar,
   Button,
@@ -209,6 +209,8 @@ export default function PostDetailScreen() {
   const r = useStrings(raisiStrings)
   const confirm = useConfirm()
   const back = useBack()
+  const navigate = useNavigate()
+  const goProfile = (uid: number) => navigate(`/app/u/${uid}`)
 
   const { data: post, isLoading, error } = usePost(Number.isFinite(postId) ? postId : undefined)
   const respond = useRespond(postId)
@@ -331,9 +333,16 @@ export default function PostDetailScreen() {
         {post.event_date && <p className="text-sm text-sub mt-2">📅 {formatEventDate(post.event_date)}</p>}
         {post.goal && <p className="text-sm text-sub mt-1">🎯 {post.goal}</p>}
         <div className="flex items-center gap-2 mt-4 pt-3 border-t border-line">
-          <Avatar name={post.author.full_name} src={post.author.photo_url} size={28} />
+          <button onClick={() => goProfile(post.author.id)} className="shrink-0 rounded-full">
+            <Avatar name={post.author.full_name} src={post.author.photo_url} size={28} />
+          </button>
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-ink truncate">{post.author.full_name}</div>
+            <button
+              onClick={() => goProfile(post.author.id)}
+              className="text-sm font-semibold text-ink truncate text-left"
+            >
+              {post.author.full_name}
+            </button>
             {isShare && post.author_place && (
               <div className="text-xs text-sub truncate">{post.author_place}</div>
             )}
@@ -382,10 +391,17 @@ export default function PostDetailScreen() {
         <Card className="mb-3 divide-y divide-line">
           {post.responses.map((r) => (
             <div key={r.id} className="flex items-start gap-3 p-3">
-              <Avatar name={r.user.full_name} src={r.user.photo_url} size={32} />
+              <button onClick={() => goProfile(r.user.id)} className="shrink-0 rounded-full">
+                <Avatar name={r.user.full_name} src={r.user.photo_url} size={32} />
+              </button>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-ink truncate">{r.user.full_name}</span>
+                  <button
+                    onClick={() => goProfile(r.user.id)}
+                    className="text-sm font-semibold text-ink truncate text-left"
+                  >
+                    {r.user.full_name}
+                  </button>
                   <span className="text-xs text-sub shrink-0">{timeAgo(r.created_at)}</span>
                 </div>
                 {r.message && <p className="text-sm text-ink mt-0.5">{r.message}</p>}

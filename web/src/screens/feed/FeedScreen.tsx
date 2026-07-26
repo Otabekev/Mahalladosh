@@ -1,7 +1,7 @@
 /** Feed — Mahallam / Viloyatim / O'zbekiston lenses. A "Bugun" digest, a composer strip,
  *  and one warm author-first card style (open help gets the urgent treatment). Route: /app (index). */
 
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Avatar,
@@ -113,6 +113,11 @@ function Composer() {
 function WarmCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   const showTitle = post.type !== 'share' && !!post.title
   const r = useStrings(raisiStrings)
+  const navigate = useNavigate()
+  const openAuthor = (e: MouseEvent) => {
+    e.stopPropagation()
+    navigate(`/app/u/${post.author.id}`)
+  }
 
   return (
     <Card className="p-0 overflow-hidden" onClick={onOpen}>
@@ -122,10 +127,14 @@ function WarmCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         </div>
       )}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-3">
-        <Avatar name={post.author.full_name} src={post.author.photo_url} size={46} />
+        <button onClick={openAuthor} className="shrink-0 rounded-full">
+          <Avatar name={post.author.full_name} src={post.author.photo_url} size={46} />
+        </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-bold text-[16px] text-ink truncate">{post.author.full_name}</span>
+            <button onClick={openAuthor} className="font-bold text-[16px] text-ink truncate text-left">
+              {post.author.full_name}
+            </button>
             <span className="text-xs text-sub shrink-0">{timeAgo(post.created_at)}</span>
           </div>
           {post.author_place && <div className="text-xs text-sub truncate">{post.author_place}</div>}
@@ -162,6 +171,11 @@ function WarmCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
 
 function HelpCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   const s = useStrings(feedStrings)
+  const navigate = useNavigate()
+  const openAuthor = (e: MouseEvent) => {
+    e.stopPropagation()
+    navigate(`/app/u/${post.author.id}`)
+  }
 
   return (
     <div
@@ -174,9 +188,13 @@ function HelpCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
       </span>
 
       <div className="flex items-center gap-3">
-        <Avatar name={post.author.full_name} src={post.author.photo_url} size={46} />
+        <button onClick={openAuthor} className="shrink-0 rounded-full">
+          <Avatar name={post.author.full_name} src={post.author.photo_url} size={46} />
+        </button>
         <div className="min-w-0 flex-1">
-          <div className="font-bold text-[16px] text-ink truncate">{post.author.full_name}</div>
+          <button onClick={openAuthor} className="font-bold text-[16px] text-ink truncate text-left">
+            {post.author.full_name}
+          </button>
           <div className="text-xs text-sub truncate">
             {post.author_place ? `${post.author_place} · ` : ''}
             {timeAgo(post.created_at)}

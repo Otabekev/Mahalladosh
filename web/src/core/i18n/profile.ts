@@ -34,4 +34,16 @@ export const profileStrings = {
     en: 'Ties to homeland',
   },
   homelandHint: { uz: 'Moskva → uy', uzc: 'Москва → уй', ru: 'Москва → дом', en: 'Moscow → home' },
+
+  // ----- public person page -----
+  raisiTag: { uz: 'Raisi', uzc: 'Раиси', ru: 'Раис', en: 'Raisi' },
+  viewFamily: { uz: 'Oila sahifasi', uzc: 'Оила саҳифаси', ru: 'Страница семьи', en: 'Family page' },
+  memberSince: { uz: '{date}dan beri', uzc: '{date}дан бери', ru: 'С {date}', en: 'Since {date}' },
+  postsCount: { uz: '{n} e’lon', uzc: '{n} эълон', ru: '{n} объявл.', en: '{n} posts' },
+  profileNotFound: {
+    uz: 'Foydalanuvchi topilmadi',
+    uzc: 'Фойдаланувчи топилмади',
+    ru: 'Пользователь не найден',
+    en: 'User not found',
+  },
 } satisfies Dict

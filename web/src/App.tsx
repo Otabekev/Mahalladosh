@@ -15,6 +15,7 @@ const PostDetailScreen = lazy(() => import('@/screens/feed/PostDetailScreen'))
 const MahallaScreen = lazy(() => import('@/screens/mahalla/MahallaScreen'))
 const ContactsScreen = lazy(() => import('@/screens/mahalla/ContactsScreen'))
 const RaisiScreen = lazy(() => import('@/screens/mahalla/RaisiScreen'))
+const PublicProfileScreen = lazy(() => import('@/screens/profile/PublicProfileScreen'))
 const ProfileScreen = lazy(() => import('@/screens/profile/ProfileScreen'))
 const SettingsScreen = lazy(() => import('@/screens/profile/SettingsScreen'))
 const MyHouseholdScreen = lazy(() => import('@/screens/household/MyHouseholdScreen'))
@@ -100,6 +101,7 @@ export default function App() {
               <Route path="mahalla" element={<MahallaScreen />} />
               <Route path="contacts" element={<ContactsScreen />} />
               <Route path="raisi" element={<RaisiScreen />} />
+              <Route path="u/:id" element={<PublicProfileScreen />} />
               <Route path="profile" element={<ProfileScreen />} />
               <Route path="settings" element={<SettingsScreen />} />
               <Route path="household" element={<MyHouseholdScreen />} />
