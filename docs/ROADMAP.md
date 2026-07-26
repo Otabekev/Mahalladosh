@@ -55,6 +55,19 @@ The reason to open it every morning.
 - Services commercial surface (views + contact-taps)
 - Free-tier deploy + investor demo kit
 
+### Launch prerequisites
+
+Blocking the first deployment with real users, regardless of feature progress:
+
+- **Alembic migrations.** Development builds the schema from the models
+  (`Base.metadata.create_all`), which is fine while the schema moves weekly and no rows
+  matter. The moment real families have data, schema changes need to be versioned and
+  reversible. See [ARCHITECTURE.md §5](ARCHITECTURE.md#5-data--schema-evolution).
+- **Postgres exercised in CI**, not just configured — the engine reads `DATABASE_URL`,
+  but an untested swap is not a supported swap.
+- **Scheduler extracted or locked** before running more than one instance, since two
+  concurrent sweeps would double-send reminders and digests.
+
 ---
 
 _Have an idea? Open a [feature request](../../issues/new?template=feature_request.yml)._
