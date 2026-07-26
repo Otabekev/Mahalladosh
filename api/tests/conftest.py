@@ -12,6 +12,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 os.environ.setdefault("SECRET_KEY", "test-secret")
 os.environ.setdefault("ENVIRONMENT", "dev")  # keeps /auth/dev-login enabled
 
+from pathlib import Path  # noqa: E402
 from types import SimpleNamespace  # noqa: E402
 
 import pytest  # noqa: E402
@@ -21,14 +22,23 @@ from app import models  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 
+DB_PATH = Path(__file__).resolve().parent.parent / "test.db"
+
 
 @pytest.fixture(autouse=True)
 def _fresh_schema():
-    """Drop + recreate every table around each test for full isolation."""
-    Base.metadata.drop_all(bind=engine)
+    """A brand-new database file per test.
+
+    Not drop_all(): the models contain a genuine foreign-key cycle
+    (users -> households -> mahallas.raisi_user_id -> users), so SQLAlchemy cannot
+    order the DROPs and SQLite has no ALTER to break the cycle with. That made
+    teardown fail intermittently with "no such table" depending on test ordering.
+    Deleting the file is both deterministic and faster.
+    """
+    engine.dispose()  # release pooled handles so Windows lets us unlink
+    DB_PATH.unlink(missing_ok=True)
     Base.metadata.create_all(bind=engine)
     yield
-    Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture
