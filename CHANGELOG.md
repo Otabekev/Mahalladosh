@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Added
+- **Raisi panel** — the mahalla head's daily tools: pin one post to the top of the
+  feed, curate the mahalla's contacts, work a moderation queue scoped to their own
+  mahalla, and a member roster with a scoped ban. The "approvals queue" is moderation
+  rather than join-approval, because joining is open and household joins are
+  steward-approved by the family on purpose.
+- **Important numbers (contacts) page** — every member sees the raisi-curated
+  raisi/clinic/emergency numbers with one-tap Call buttons; the raisi edits them.
+- **Elder-guided PWA install banner**, **skeleton loaders**, and a **branded confirm
+  dialog** replacing every `window.confirm` (app-feel pass).
 - **Telegram DM push channel** — notifications now also arrive as Telegram direct
   messages, in each neighbour's own language, using the `tg_id` captured at login.
   Almost nobody grants browser push, so this is the pilot's real push path. Built to
