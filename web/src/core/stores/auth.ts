@@ -38,6 +38,11 @@ interface AuthState {
   offline: boolean
   refresh: () => Promise<void>
   logout: () => Promise<void>
+  /** Merge fields into the cached user after a confirmed self-update (e.g. the
+   *  language mirror). Keeps the cache honest so a stale copy can't drive a wrong
+   *  decision — the language-sync bug where the server got stranded on the wrong
+   *  language came from exactly this cache going stale. */
+  mergeUser: (patch: Partial<Me['user']>) => void
 }
 
 export const useAuth = create<AuthState>((set, get) => ({
@@ -74,6 +79,13 @@ export const useAuth = create<AuthState>((set, get) => ({
       clearCachedMe()
       set({ me: null, offline: false })
     }
+  },
+  mergeUser: (patch) => {
+    const cur = get().me
+    if (!cur) return
+    const me = { ...cur, user: { ...cur.user, ...patch } }
+    writeCachedMe(me)
+    set({ me })
   },
 }))
 
