@@ -8,6 +8,7 @@ import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { mahallaStrings } from '@/core/i18n/mahalla'
 import { contactsStrings } from '@/core/i18n/contacts'
+import { raisiStrings } from '@/core/i18n/raisi'
 import {
   Avatar,
   Badge,
@@ -420,6 +421,7 @@ function XonadonlarTab({ mahallaId }: { mahallaId: number }) {
 export default function MahallaScreen() {
   const s = useStrings(mahallaStrings)
   const cs = useStrings(contactsStrings)
+  const rs = useStrings(raisiStrings)
   const navigate = useNavigate()
   const me = useAuth((state) => state.me)
   const mahallaId = me?.mahalla?.id
@@ -451,6 +453,20 @@ export default function MahallaScreen() {
         </span>
         <span className="shrink-0 text-sub">›</span>
       </button>
+
+      {me?.user.is_raisi && (
+        <button
+          onClick={() => navigate('/app/raisi')}
+          className="mt-3 w-full flex items-center gap-3 rounded-2xl border border-amber-200 bg-gold-soft p-3.5 text-left active:scale-[0.99] transition"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-honor text-2xl">👑</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[16px] font-bold text-honor-deep">{rs.openPanel}</span>
+            <span className="block text-[13px] text-honor-deep/70">{rs.openPanelHint}</span>
+          </span>
+          <span className="shrink-0 text-honor-deep/60">›</span>
+        </button>
+      )}
 
       {data.faol_qoshni && <FaolQoshniHero entry={data.faol_qoshni} />}
 
