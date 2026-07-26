@@ -259,6 +259,59 @@ export function FullScreenSpinner() {
   )
 }
 
+// ---------- skeleton loaders ----------
+
+/** A shimmering placeholder block. Prefer content-shaped skeletons over a lone
+ *  centred spinner: they hold the layout so the screen fills in instead of
+ *  flashing blank then popping — which reads much calmer on a slow connection. */
+export function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`animate-pulse rounded-md bg-line/70 ${className}`} />
+}
+
+/** The shape of one warm feed card, used while posts load. */
+export function PostCardSkeleton() {
+  return (
+    <div className="bg-card border border-line rounded-2xl p-4">
+      <div className="flex items-center gap-3">
+        <Skeleton className="w-11 h-11 rounded-full shrink-0" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-3.5 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+      </div>
+      <div className="mt-3.5 space-y-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
+    </div>
+  )
+}
+
+/** The shape of one notification / list row. */
+export function RowSkeleton() {
+  return (
+    <div className="flex items-center gap-3 px-1 py-3">
+      <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-3.5 w-2/3" />
+        <Skeleton className="h-3 w-24" />
+      </div>
+    </div>
+  )
+}
+
+/** Repeat a skeleton row/card `count` times — the standard loading body. */
+export function SkeletonList({ count = 4, children }: { count?: number; children: ReactNode }) {
+  return (
+    <div className="space-y-3.5" aria-hidden>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i}>{children}</div>
+      ))}
+    </div>
+  )
+}
+
 export function EmptyState({ icon, title, text, action }: { icon: string; title: string; text?: string; action?: ReactNode }) {
   return (
     <div className="text-center py-12 px-6">

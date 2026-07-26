@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError } from '@/core/api/client'
 import { useMarkAllRead, useNotifications } from '@/core/queries/notifications'
-import { Card, EmptyState, ErrorNote, PageTitle, Spinner, timeAgo } from '@/components/ui'
+import { Card, EmptyState, ErrorNote, PageTitle, RowSkeleton, SkeletonList, timeAgo } from '@/components/ui'
 import { useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { servicesStrings } from '@/core/i18n/services'
@@ -22,8 +22,11 @@ export default function NotificationsScreen() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Spinner />
+      <div>
+        <PageTitle title={s.notifTitle} />
+        <SkeletonList count={5}>
+          <RowSkeleton />
+        </SkeletonList>
       </div>
     )
   }

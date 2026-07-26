@@ -9,7 +9,8 @@ import {
   Card,
   EmptyState,
   ErrorNote,
-  Spinner,
+  PostCardSkeleton,
+  SkeletonList,
   TypePill,
   timeAgo,
 } from '@/components/ui'
@@ -211,9 +212,9 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
       <Composer />
 
       {isLoading && (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <SkeletonList count={3}>
+          <PostCardSkeleton />
+        </SkeletonList>
       )}
       {error && <ErrorNote message={error.message} />}
 
@@ -239,9 +240,9 @@ function DiscoverFeed({ scope, onOpen }: { scope: DiscoverScope; onOpen: (id: nu
   return (
     <div className="space-y-3.5">
       {isLoading && (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <SkeletonList count={3}>
+          <PostCardSkeleton />
+        </SkeletonList>
       )}
       {error && <ErrorNote message={error.message} />}
 
