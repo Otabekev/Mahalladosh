@@ -80,3 +80,16 @@ body {
     #b23a28 0 4%, #fbf3e2 5.5% 7.5%, #157c84 9% 13%, #fbf3e2 14.5% 16.5%,
     #d89a2a 18% 22%, #fbf3e2 23.5% 25.5%, #1b4b8a 27% 31%, #fbf3e2 32.5% 34.5%);
 }
+
+/* Page-enter motion — a gentle fade + rise as each screen mounts. Keyed on the
+   route path in the layout, so every navigation re-triggers it. Kept short and
+   small; disabled entirely for anyone who asked for reduced motion. */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-page-in { animation: page-in 0.18s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in { animation: none; }
+}

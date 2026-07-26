@@ -1,12 +1,12 @@
 /** App shell: sticky header + content column + bottom tab bar (mobile-first PWA). */
 
-import { useEffect, useRef } from 'react'
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { Suspense, useEffect, useRef } from 'react'
+import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
 import { useNotifications } from '@/core/queries/notifications'
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
-import { Avatar } from './ui'
+import { Avatar, Spinner } from './ui'
 import { Logo } from './Logo'
 import OfflineBanner from './OfflineBanner'
 import { InstallPrompt } from './InstallPrompt'
@@ -125,6 +125,7 @@ const NAV_ITEMS: { to: string; labelKey: keyof typeof common; icon: (active: boo
 export default function AppLayout() {
   const me = useAuth((state) => state.me)
   const s = useStrings(common)
+  const { pathname } = useLocation()
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -152,7 +153,21 @@ export default function AppLayout() {
 
       <main className="max-w-xl mx-auto px-4 pt-4 pb-28">
         <InstallPrompt />
-        <Outlet />
+        {/* Suspense sits HERE, not around the whole app, so switching screens keeps
+            the header + bottom nav in place — the content area loads, the shell
+            never flashes away. */}
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-16">
+              <Spinner size={28} />
+            </div>
+          }
+        >
+          {/* keyed on the path so each navigation replays the gentle enter motion */}
+          <div key={pathname} className="animate-page-in">
+            <Outlet />
+          </div>
+        </Suspense>
       </main>
 
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-card border-t border-line pb-[env(safe-area-inset-bottom)]">
