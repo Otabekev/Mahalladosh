@@ -12,7 +12,6 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 os.environ.setdefault("SECRET_KEY", "test-secret")
 os.environ.setdefault("ENVIRONMENT", "dev")  # keeps /auth/dev-login enabled
 
-from pathlib import Path  # noqa: E402
 from types import SimpleNamespace  # noqa: E402
 
 import pytest  # noqa: E402
@@ -22,22 +21,38 @@ from app import models  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 
-DB_PATH = Path(__file__).resolve().parent.parent / "test.db"
+
+@pytest.fixture(scope="session", autouse=True)
+def _schema():
+    """Build the schema ONCE for the whole session.
+
+    Per-test drop_all/create_all was the source of intermittent "table already
+    exists" / "no such table" failures. Two things compounded: the models contain a
+    genuine foreign-key cycle (users -> households -> mahallas.raisi_user_id ->
+    users) that drop_all cannot topologically order, so it left tables behind; and
+    repeatedly issuing DDL against a file-based SQLite through a connection pool lets
+    create_all's existence check run against a connection whose schema view is stale.
+    Doing the DDL exactly once removes the whole class of race — tests isolate
+    themselves by wiping rows, not by rebuilding tables (see _clean).
+
+    DROP first (IF EXISTS, any order — SQLite ignores foreign keys unless the pragma
+    is on) so a schema left over from a previous run cannot collide.
+    """
+    with engine.begin() as conn:
+        for table in Base.metadata.tables:
+            conn.exec_driver_sql(f'DROP TABLE IF EXISTS "{table}"')
+        Base.metadata.create_all(bind=conn)
+    yield
 
 
 @pytest.fixture(autouse=True)
-def _fresh_schema():
-    """A brand-new database file per test.
-
-    Not drop_all(): the models contain a genuine foreign-key cycle
-    (users -> households -> mahallas.raisi_user_id -> users), so SQLAlchemy cannot
-    order the DROPs and SQLite has no ALTER to break the cycle with. That made
-    teardown fail intermittently with "no such table" depending on test ordering.
-    Deleting the file is both deterministic and faster.
-    """
-    engine.dispose()  # release pooled handles so Windows lets us unlink
-    DB_PATH.unlink(missing_ok=True)
-    Base.metadata.create_all(bind=engine)
+def _clean():
+    """Empty every table before each test, so each starts from a known-empty world
+    without any DDL. DELETE, not TRUNCATE/DROP; order does not matter with SQLite's
+    foreign keys off."""
+    with engine.begin() as conn:
+        for table in reversed(list(Base.metadata.tables)):
+            conn.exec_driver_sql(f'DELETE FROM "{table}"')
     yield
 
 
