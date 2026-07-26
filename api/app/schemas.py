@@ -171,6 +171,22 @@ class MemberRow(BaseModel):
     banned: bool = False
 
 
+class PublicProfileOut(BaseModel):
+    """A neighbour's public person page — what anyone in the same mahalla may see.
+    No language, no contact, no private settings; just who they are in the mahalla."""
+
+    id: int
+    full_name: str
+    photo_url: str | None = None
+    is_raisi: bool = False
+    rep_month: int = 0
+    rep_alltime: int = 0
+    created_at: datetime
+    household_id: int | None = None
+    household_name: str | None = None
+    post_count: int = 0
+
+
 class PetitionIn(BaseModel):
     estimated_households: int | None = Field(default=None, ge=1, le=5000)
 
