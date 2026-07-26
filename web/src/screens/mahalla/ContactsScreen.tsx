@@ -3,7 +3,7 @@
  *  big Call buttons that open the dialer, plain labels, one number per card. */
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useBack } from '@/components/useBack'
 import {
   Button,
   Card,
@@ -122,7 +122,7 @@ function ContactForm({ initial, onClose }: { initial: Contact | null; onClose: (
 }
 
 export default function ContactsScreen() {
-  const navigate = useNavigate()
+  const back = useBack()
   const s = useStrings(contactsStrings)
   const c = useStrings(common)
   const me = useAuth((st) => st.me)
@@ -142,7 +142,7 @@ export default function ContactsScreen() {
 
   return (
     <div>
-      <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
+      <Button variant="ghost" size="sm" className="mb-3" onClick={back}>
         ← {c.back}
       </Button>
 

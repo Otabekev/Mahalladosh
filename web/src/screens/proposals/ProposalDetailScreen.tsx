@@ -1,7 +1,8 @@
 /** Proposal detail — seconding progress, live vote, or final result. */
 
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useBack } from '@/components/useBack'
 import {
   Avatar,
   Badge,
@@ -61,7 +62,7 @@ function ResultBar({ label, count, total, color }: { label: string; count: numbe
 }
 
 export default function ProposalDetailScreen() {
-  const navigate = useNavigate()
+  const back = useBack()
   const s = useStrings(proposalsStrings)
   const { id } = useParams()
   const pid = id !== undefined ? Number(id) : undefined
@@ -87,7 +88,7 @@ export default function ProposalDetailScreen() {
   if (error) {
     return (
       <div>
-        <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="sm" className="mb-3" onClick={back}>
           {s.backToVotes}
         </Button>
         <ErrorNote message={error.message} />
@@ -102,7 +103,7 @@ export default function ProposalDetailScreen() {
 
   return (
     <div>
-      <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
+      <Button variant="ghost" size="sm" className="mb-3" onClick={back}>
         {s.backToVotes}
       </Button>
 

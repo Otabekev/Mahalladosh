@@ -7,7 +7,8 @@
  *  security. */
 
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
+import { useBack } from '@/components/useBack'
 import {
   Avatar,
   Button,
@@ -158,7 +159,7 @@ function MembersSection({ onBan }: { onBan: (id: number, name: string) => void }
 export default function RaisiScreen() {
   const s = useStrings(raisiStrings)
   const c = useStrings(common)
-  const navigate = useNavigate()
+  const back = useBack()
   const me = useAuth((st) => st.me)
   const confirm = useConfirm()
   const ban = useBanMember()
@@ -179,7 +180,7 @@ export default function RaisiScreen() {
 
   return (
     <div>
-      <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
+      <Button variant="ghost" size="sm" className="mb-3" onClick={back}>
         ← {c.back}
       </Button>
       <PageTitle title={s.panelTitle} subtitle={s.panelSubtitle} />

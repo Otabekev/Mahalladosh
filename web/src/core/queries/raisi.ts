@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/core/api/client'
 import type { Report } from '@/core/queries/reports'
+import type { PostDetail } from '@/core/api/types'
 
 export interface MemberRow {
   id: number
@@ -23,7 +24,20 @@ export function usePinPost() {
       postId === null
         ? api<void>('/raisi/pinned', { method: 'DELETE' })
         : api<void>(`/raisi/pinned/${postId}`, { method: 'PUT' }),
-    onSuccess: (_data, postId) => {
+    // Optimistically flip the detail so the Pin button reacts on tap. (Only the pin
+    // case — unpin passes null and the feed reorder is left to the refetch.)
+    onMutate: async (postId) => {
+      if (postId === null) return
+      const key = ['post', postId]
+      await qc.cancelQueries({ queryKey: key })
+      const prev = qc.getQueryData<PostDetail>(key)
+      qc.setQueryData<PostDetail>(key, (old) => (old ? { ...old, pinned: true } : old))
+      return { key, prev }
+    },
+    onError: (_err, _postId, ctx) => {
+      if (ctx?.key) qc.setQueryData(ctx.key, ctx.prev)
+    },
+    onSettled: (_data, _err, postId) => {
       void qc.invalidateQueries({ queryKey: ['posts'] })
       if (postId !== null) void qc.invalidateQueries({ queryKey: ['post', postId] })
     },

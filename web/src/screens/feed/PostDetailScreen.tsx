@@ -1,7 +1,7 @@
 /** Post detail — full post, responses, respond box, author controls. Route: /app/posts/:id. */
 
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import {
   Avatar,
   Button,
@@ -19,6 +19,7 @@ import { common } from '@/core/i18n/common'
 import { feedStrings } from '@/core/i18n/feed'
 import { raisiStrings } from '@/core/i18n/raisi'
 import { useConfirm } from '@/components/confirm'
+import { useBack } from '@/components/useBack'
 import { useAuth } from '@/core/stores/auth'
 import { useClosePost, usePost, useResolve, useRespond } from '@/core/queries/posts'
 import { usePinPost } from '@/core/queries/raisi'
@@ -201,12 +202,12 @@ function ResolveModal({
 export default function PostDetailScreen() {
   const { id } = useParams()
   const postId = Number(id)
-  const navigate = useNavigate()
   const me = useAuth((s) => s.me)
   const s = useStrings(feedStrings)
   const c = useStrings(common)
   const r = useStrings(raisiStrings)
   const confirm = useConfirm()
+  const back = useBack()
 
   const { data: post, isLoading, error } = usePost(Number.isFinite(postId) ? postId : undefined)
   const respond = useRespond(postId)
@@ -229,7 +230,7 @@ export default function PostDetailScreen() {
   if (error) {
     return (
       <div>
-        <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="sm" className="mb-3" onClick={back}>
           ← {c.navFeed}
         </Button>
         <ErrorNote message={error.message} />
@@ -276,7 +277,7 @@ export default function PostDetailScreen() {
 
   return (
     <div>
-      <Button variant="ghost" size="sm" className="mb-3" onClick={() => navigate(-1)}>
+      <Button variant="ghost" size="sm" className="mb-3" onClick={back}>
         ← {c.navFeed}
       </Button>
 

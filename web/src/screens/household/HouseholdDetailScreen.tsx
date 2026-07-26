@@ -2,7 +2,8 @@
  * family sees of itself, plus neighbour vouching and the DingDong virtual doorbell. */
 
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useBack } from '@/components/useBack'
 import { useAuth } from '@/core/stores/auth'
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
@@ -24,14 +25,14 @@ export default function HouseholdDetailScreen() {
   const s = useStrings(householdStrings)
   const c = useStrings(common)
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const goBack = useBack()
   const me = useAuth((st) => st.me)
   const householdId = Number(id)
   const query = useHousehold(Number.isFinite(householdId) ? householdId : undefined)
   const vouch = useVouch(householdId)
 
   const back = (
-    <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={() => navigate(-1)}>
+    <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={goBack}>
       {s.backToMahalla}
     </Button>
   )

@@ -5,7 +5,7 @@
  * language, exactly what happens. */
 
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useBack } from '@/components/useBack'
 import { useAuth } from '@/core/stores/auth'
 import { useStrings } from '@/core/i18n'
 import { settingsStrings } from '@/core/i18n/settings'
@@ -114,7 +114,7 @@ function DangerRow({ label, onClick }: { label: string; onClick: () => void }) {
 export default function SettingsScreen() {
   const s = useStrings(settingsStrings)
   const me = useAuth((state) => state.me)
-  const navigate = useNavigate()
+  const back = useBack()
 
   const updateMe = useUpdateMe()
   const updateDm = useUpdateMe() // own instance: the toggle must not disturb the name form
@@ -205,7 +205,7 @@ export default function SettingsScreen() {
   return (
     <div>
       <button
-        onClick={() => navigate(-1)}
+        onClick={back}
         className="-ml-1 mb-3 flex items-center gap-1.5 py-1 text-sm font-semibold text-brand"
       >
         <IconChevronLeft />

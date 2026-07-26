@@ -6,7 +6,8 @@
  * neighbour-facing HouseholdDetailScreen. */
 
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { useBack } from '@/components/useBack'
 import { useAuth } from '@/core/stores/auth'
 import { useConfirm } from '@/components/confirm'
 import { fmt, useLang, useStrings } from '@/core/i18n'
@@ -97,7 +98,7 @@ export function HouseholdHero({
   actions?: ReactNode
 }) {
   const s = useStrings(householdStrings)
-  const navigate = useNavigate()
+  const back = useBack()
   const location = [mahalla, street].filter(Boolean).join(' · ')
 
   return (
@@ -108,7 +109,7 @@ export function HouseholdHero({
       <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(120,40,28,.25),rgba(120,40,28,.62))' }} />
 
       <div className="relative flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="-ml-1 flex items-center gap-1.5 py-1 text-[14px] font-semibold opacity-95">
+        <button onClick={back} className="-ml-1 flex items-center gap-1.5 py-1 text-[14px] font-semibold opacity-95">
           <IconChevronLeft />
           {s.heroBack}
         </button>
