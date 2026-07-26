@@ -89,6 +89,12 @@ CATALOG: dict[str, dict[str, str]] = {
         "ru": "💬 {name} ответил(а): {title}",
         "en": "💬 {name} replied: {title}",
     },
+    "post_comment": {
+        "uz": "💬 {name} izoh qoldirdi: {title}",
+        "uzc": "💬 {name} изоҳ қолдирди: {title}",
+        "ru": "💬 {name} оставил(а) комментарий: {title}",
+        "en": "💬 {name} commented: {title}",
+    },
     "thanks": {
         "uz": "⭐ {name} sizga rahmat aytdi: {title}",
         "uzc": "⭐ {name} сизга раҳмат айтди: {title}",

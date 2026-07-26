@@ -55,6 +55,7 @@ def post_out(
         db.query(models.PostReaction).filter_by(post_id=p.id, user_id=viewer.id).first()
         is not None
     )
+    comment_count = db.query(models.PostComment).filter_by(post_id=p.id).count()
     return schemas.PostOut(
         id=p.id,
         type=p.type,
@@ -72,6 +73,7 @@ def post_out(
         pinned=pinned_post_id is not None and p.id == pinned_post_id,
         rahmat_count=rahmat_count,
         my_rahmat=my_rahmat,
+        comment_count=comment_count,
         created_at=p.created_at,
     )
 
@@ -96,10 +98,30 @@ def post_detail(db: Session, p: models.Post, viewer: models.User) -> schemas.Pos
             )
         )
     helper = db.get(models.User, p.resolved_helper_id) if p.resolved_helper_id else None
+    is_raisi = presenters._is_raisi(db, viewer)
+    comment_rows = (
+        db.query(models.PostComment)
+        .filter_by(post_id=p.id)
+        .order_by(models.PostComment.created_at.asc())
+        .all()
+    )
+    comments = [
+        schemas.CommentOut(
+            id=cm.id,
+            user=presenters.user_out(db, db.get(models.User, cm.user_id)),
+            body=cm.body,
+            created_at=cm.created_at,
+            # you can remove your own comment; the post author and the raisi can
+            # remove any comment on the post (light, local moderation)
+            can_delete=cm.user_id == viewer.id or p.author_id == viewer.id or is_raisi,
+        )
+        for cm in comment_rows
+    ]
     return schemas.PostDetail(
         **base.model_dump(),
         responses=responses,
         resolved_helper=presenters.user_out(db, helper) if helper else None,
+        comments=comments,
     )
 
 
@@ -301,6 +323,59 @@ def toggle_rahmat(
     db.commit()
     count = db.query(models.PostReaction).filter_by(post_id=post.id).count()
     return schemas.RahmatOut(count=count, mine=mine)
+
+
+@router.post("/{post_id}/comments", response_model=schemas.PostDetail)
+def add_comment(
+    post_id: int,
+    data: schemas.CommentIn,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Leave a comment. Unlike a help response, anyone who can see the post may
+    comment, the author included, as many times as they like."""
+    post = _get_post(db, post_id, user)
+    body = data.body.strip()
+    if not body:
+        raise HTTPException(status_code=400, detail="Izoh bo'sh")
+    db.add(models.PostComment(post_id=post.id, user_id=user.id, body=body))
+    if post.author_id != user.id:
+        notify.notify(
+            db,
+            [post.author_id],
+            "comment",
+            link=f"/app/posts/{post.id}",
+            mahalla_id=post.mahalla_id,
+            event="post_comment",
+            params={"name": user.full_name, "title": post.title},
+        )
+    db.commit()
+    return post_detail(db, post, user)
+
+
+@router.delete("/{post_id}/comments/{comment_id}", response_model=schemas.PostDetail)
+def delete_comment(
+    post_id: int,
+    comment_id: int,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Remove a comment. The comment's author, the post's author, or the raisi may
+    delete it — light, local moderation without going through a full report."""
+    post = _get_post(db, post_id, user)
+    comment = db.get(models.PostComment, comment_id)
+    if comment is None or comment.post_id != post.id:
+        raise HTTPException(status_code=404, detail="Izoh topilmadi")
+    allowed = (
+        comment.user_id == user.id
+        or post.author_id == user.id
+        or presenters._is_raisi(db, user)
+    )
+    if not allowed:
+        raise HTTPException(status_code=403, detail="Buni o'chira olmaysiz")
+    db.delete(comment)
+    db.commit()
+    return post_detail(db, post, user)
 
 
 @router.post("/{post_id}/resolve", response_model=schemas.PostDetail)

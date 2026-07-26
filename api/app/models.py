@@ -248,6 +248,21 @@ class PostReaction(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class PostComment(Base):
+    """Free-form discussion on a post — the comment thread, on every post type.
+    Distinct from PostResponse, which is the structured 'I'll help / I'll come'
+    offer that drives help resolution: comments are just talk, so anyone (the author
+    included) can leave as many as they like."""
+
+    __tablename__ = "post_comments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    body: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
+
 class ReputationEntry(Base):
     """Points ledger. reason: help_fulfilled|history_seeded|newcomer_welcomed|founding_member"""
 

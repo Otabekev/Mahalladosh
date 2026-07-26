@@ -321,6 +321,18 @@ class ResponseOut(BaseModel):
     created_at: datetime
 
 
+class CommentIn(BaseModel):
+    body: str = Field(min_length=1, max_length=500)
+
+
+class CommentOut(BaseModel):
+    id: int
+    user: UserOut
+    body: str
+    created_at: datetime
+    can_delete: bool = False  # viewer may remove it (own / post author / raisi)
+
+
 class PostOut(BaseModel):
     id: int
     type: str
@@ -338,12 +350,14 @@ class PostOut(BaseModel):
     pinned: bool = False  # the raisi pinned this to the top of the feed
     rahmat_count: int = 0  # 🤲 one-tap acknowledgements
     my_rahmat: bool = False  # did the viewer give Rahmat
+    comment_count: int = 0  # discussion-thread size
     created_at: datetime
 
 
 class PostDetail(PostOut):
     responses: list[ResponseOut] = []
     resolved_helper: UserOut | None = None
+    comments: list[CommentOut] = []
 
 
 class RahmatOut(BaseModel):
