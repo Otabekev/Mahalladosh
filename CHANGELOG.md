@@ -6,9 +6,35 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Added
+- **Telegram DM push channel** — notifications now also arrive as Telegram direct
+  messages, in each neighbour's own language, using the `tg_id` captured at login.
+  Almost nobody grants browser push, so this is the pilot's real push path. Built to
+  fail silently: it never raises into a request, never touches the caller's database
+  transaction, does its network work off the request thread, and is a complete no-op
+  without a bot token (so dev and CI never dial out). A per-account toggle in Settings
+  opts out of DMs while keeping every in-app notice.
+- **Structured, per-reader notifications** — notifications are stored as an event key
+  plus parameters and rendered into the reader's chosen language at read time, from a
+  single backend catalog shared by the in-app list and the Telegram sender. The same
+  stored row shows Cyrillic to a grandmother and Russian to her son-in-law.
+- **Richer weekly digest** — the Monday digest now reports new posts, help requests
+  resolved, and new neighbours, instead of a bare post count.
+- **Friendlier timestamps** — Hozir / "Bugun 14:30" / "Kecha 14:30" / a real date, in
+  all four languages, in place of "17 soat oldin".
+- **Account language + Telegram opt-out** — the language switcher now mirrors the
+  choice to the account so backend-composed messages match, and DMs can be turned off.
 - **Onboarding checklist** — a feed card that walks a new neighbour through the first
   high-value actions (family page, history, DingDong location, first post, first help),
   with a live progress bar; derived from real state and auto-hiding when complete.
+
+### Fixed
+- The language mirror could strand the backend on an abandoned language (try a
+  language, switch back), so Telegram DMs and reminders would arrive in the wrong one.
+
+### Security
+- Reading language and the Telegram opt-out are no longer serialized to the whole feed;
+  they were briefly present on the public user shape embedded as post authors and are
+  now confined to the account's own self view.
 - **Continuous integration** — GitHub Actions runs backend lint (ruff) + tests
   (pytest) and a frontend typecheck + production build on every push and PR.
 - **Backend test suite** — hermetic pytest suite covering auth/membership gating,

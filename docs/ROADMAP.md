@@ -19,7 +19,7 @@ work is checked; the rest is sequenced by what most moves activation and retenti
 - **Original Uzbek design system** — suzani/tilework palette, girih mark, Rubik + Cormorant
 - **Engineering hygiene** — pytest suite, GitHub Actions CI (lint + tests + build), MIT license
 
-## 🔜 Phase 3 — The Daily Pull (retention)
+## ✅ Phase 3 — The Daily Pull (retention)
 
 The reason to open it every morning.
 
