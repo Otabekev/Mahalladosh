@@ -65,6 +65,20 @@ npm run dev        # http://localhost:5174  (proxies /api → :8000)
 
 In dev, log in with any name — e.g. **Otabek Ergashaliyev** — to enter the seeded Yoshlik mahalla. Production login uses the Telegram Login Widget.
 
+## How it's built
+
+[**docs/ARCHITECTURE.md**](docs/ARCHITECTURE.md) explains the system shape and the
+reasoning behind it — why authorization is centralised in one dependency module, why a
+household is a roster of rows rather than a set of accounts, why the frontend keeps a
+UI-free `core/` layer, and which trade-offs are knowingly outstanding.
+
+| | |
+|---|---|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data model, and trade-offs |
+| [ROADMAP.md](docs/ROADMAP.md) | Phased delivery plan |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Local setup, conventions, commit style |
+| [CHANGELOG.md](CHANGELOG.md) | Release history |
+
 ## Quality
 
 CI runs on every push and PR (see the badge above): backend **lint (ruff)** +
