@@ -26,9 +26,11 @@ import {
   useAddComment,
   useClosePost,
   useDeleteComment,
+  useDeletePost,
   usePost,
   useResolve,
   useRespond,
+  useUpdatePost,
 } from '@/core/queries/posts'
 import { usePinPost } from '@/core/queries/raisi'
 import { useReport, type ReportReason } from '@/core/queries/reports'
@@ -207,6 +209,48 @@ function ResolveModal({
   )
 }
 
+/** Author edits their own post — title (unless a share, whose title tracks the
+ *  body) and body. */
+function EditPostModal({ post, open, onClose }: { post: PostDetail; open: boolean; onClose: () => void }) {
+  const s = useStrings(feedStrings)
+  const c = useStrings(common)
+  const update = useUpdatePost(post.id)
+  const isShare = post.type === 'share'
+  const [title, setTitle] = useState(post.title)
+  const [body, setBody] = useState(post.body ?? '')
+
+  const save = () => {
+    update.mutate(
+      { ...(isShare ? {} : { title: title.trim() }), body: body.trim() },
+      { onSuccess: onClose },
+    )
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={s.editPostTitle}>
+      {update.error && <ErrorNote message={update.error.message} />}
+      <div className="space-y-3">
+        {!isShare && (
+          <Field label={s.titleLabel}>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={200}
+              className="w-full rounded-xl border border-line bg-card px-3 py-2.5 text-ink"
+            />
+          </Field>
+        )}
+        <Field label={s.bodyLabel}>
+          <Textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} />
+        </Field>
+        <Button full loading={update.isPending} disabled={!isShare && title.trim().length < 3} onClick={save}>
+          {c.save}
+        </Button>
+      </div>
+    </Modal>
+  )
+}
+
 /** The discussion thread — free-form comments on every post type. */
 function CommentsSection({ post }: { post: PostDetail }) {
   const s = useStrings(feedStrings)
@@ -295,8 +339,10 @@ export default function PostDetailScreen() {
   const resolve = useResolve(postId)
   const closePost = useClosePost(postId)
   const pin = usePinPost()
+  const del = useDeletePost(postId)
 
   const [message, setMessage] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
 
@@ -451,6 +497,27 @@ export default function PostDetailScreen() {
         </div>
       )}
 
+      {/* author's own edit / delete */}
+      {isAuthor && (
+        <div className="flex justify-end gap-2 mb-3">
+          <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
+            ✏️ {s.editPost}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-danger"
+            loading={del.isPending}
+            onClick={async () => {
+              if (await confirm({ title: c.remove, body: s.deletePostConfirm, confirmLabel: c.remove, danger: true }))
+                del.mutate(undefined, { onSuccess: () => navigate('/app') })
+            }}
+          >
+            🗑 {c.remove}
+          </Button>
+        </div>
+      )}
+
       {/* author controls */}
       {post.status === 'open' && isAuthor && (
         <div className="flex flex-col gap-2 mb-3">
@@ -517,6 +584,7 @@ export default function PostDetailScreen() {
 
       <CommentsSection post={post} />
 
+      <EditPostModal post={post} open={editOpen} onClose={() => setEditOpen(false)} />
       <ResolveModal post={post} postId={postId} open={modalOpen} onClose={() => setModalOpen(false)} />
       <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} postId={postId} />
     </div>

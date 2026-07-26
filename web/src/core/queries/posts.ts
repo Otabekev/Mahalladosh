@@ -97,6 +97,31 @@ export function useRespond(postId: number) {
   })
 }
 
+export function useUpdatePost(postId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { title?: string; body?: string }) =>
+      api<PostDetail>(`/posts/${postId}`, { method: 'PATCH', body }),
+    onSuccess: (detail) => {
+      qc.setQueryData(['post', postId], detail)
+      void qc.invalidateQueries({ queryKey: ['posts'] })
+      void qc.invalidateQueries({ queryKey: ['discover'] })
+    },
+  })
+}
+
+export function useDeletePost(postId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<void>(`/posts/${postId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ['post', postId] })
+      void qc.invalidateQueries({ queryKey: ['posts'] })
+      void qc.invalidateQueries({ queryKey: ['discover'] })
+    },
+  })
+}
+
 export function useAddComment(postId: number) {
   const qc = useQueryClient()
   return useMutation({
