@@ -9,12 +9,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '@/core/api/client'
-import type { User } from '@/core/api/types'
+import type { SelfUser } from '@/core/api/types'
+import type { Lang } from '@/core/i18n'
 import { useAuth } from '@/core/stores/auth'
 
 /** Body for PATCH /me — mirrors backend MeUpdate. */
 export interface MeUpdate {
   full_name?: string
+  /** Account language for backend-sent messages (Telegram DMs, reminders). */
+  lang?: Lang
+  /** Telegram DM opt-in. Off still leaves every notice inside the app. */
+  tg_dm_enabled?: boolean
 }
 
 /** The activation checklist (backend OnboardingOut). Each step key maps to a
@@ -40,7 +45,7 @@ export function useOnboarding() {
 export function useUpdateMe() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: MeUpdate) => api<User>('/me', { method: 'PATCH', body }),
+    mutationFn: (body: MeUpdate) => api<SelfUser>('/me', { method: 'PATCH', body }),
     onSuccess: async () => {
       await qc.invalidateQueries()
       await useAuth.getState().refresh()
@@ -52,7 +57,7 @@ export function useLeaveHousehold() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   return useMutation({
-    mutationFn: () => api<User>('/me/leave-household', { method: 'POST' }),
+    mutationFn: () => api<SelfUser>('/me/leave-household', { method: 'POST' }),
     onSuccess: async () => {
       await qc.invalidateQueries()
       await useAuth.getState().refresh()

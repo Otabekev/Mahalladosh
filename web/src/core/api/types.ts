@@ -1,5 +1,10 @@
 /** Mirrors api/app/schemas.py — keep in sync when the backend contract changes. */
 
+import type { Lang } from '@/core/i18n'
+
+/** Public view of a person — the shape embedded as a post author, petitioner,
+ *  raisi, leaderboard entry, etc. Deliberately has NO lang / tg_dm_enabled: those
+ *  are private account settings and must not be broadcast to the whole feed. */
 export interface User {
   id: number
   full_name: string
@@ -12,6 +17,15 @@ export interface User {
   rep_month: number
   rep_alltime: number
   banned_until: string | null
+}
+
+/** The account's own view of itself (from /auth/me and self-mutations). Only ever
+ *  the current user, so it may carry private settings the public User must not. */
+export interface SelfUser extends User {
+  /** Account language — what the backend writes Telegram DMs / reminders in. */
+  lang: Lang
+  /** Opt-out switch for Telegram direct messages (in-app notices keep coming). */
+  tg_dm_enabled: boolean
 }
 
 export interface AuthConfig {
@@ -84,7 +98,7 @@ export interface Leaderboard {
 }
 
 export interface Me {
-  user: User
+  user: SelfUser
   mahalla: MahallaDetail | null
   petition: PetitionStatus | null
   household: Household | null

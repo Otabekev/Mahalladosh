@@ -294,3 +294,41 @@ def test_normalize_lang_accepts_only_known_languages():
     assert notif_catalog.normalize_lang("ru") == "ru"
     assert notif_catalog.normalize_lang("fr") == "uz"
     assert notif_catalog.normalize_lang(None) == "uz"
+
+
+# ---------- privacy: personal settings must not leak to the feed ----------
+
+
+def test_private_settings_live_only_on_the_self_view():
+    """A schema-level guard: lang / tg_dm_enabled belong on SelfUserOut, never on the
+    public UserOut that is embedded as a post author, petitioner, raisi, etc."""
+    from app import schemas
+
+    for field in ("lang", "tg_dm_enabled"):
+        assert field not in schemas.UserOut.model_fields, f"{field} leaks via UserOut"
+        assert field in schemas.SelfUserOut.model_fields
+
+
+def test_auth_me_exposes_the_readers_own_settings(as_user, world):
+    me = as_user(world.founder)
+    body = me.get("/api/auth/me").json()
+    assert "lang" in body["user"]
+    assert "tg_dm_enabled" in body["user"]
+
+
+def test_a_post_author_does_not_leak_language_or_dm_optout(as_user, world):
+    """The neighbour reading the feed must not learn what language the author reads
+    in or whether they take Telegram DMs."""
+    author = as_user(world.founder)
+    created = author.post(
+        "/api/posts",
+        json={"type": "announcement", "title": "Ertaga yig'in bor"},
+    )
+    assert created.status_code == 200, created.text
+
+    reader = as_user(world.voucher)
+    feed = reader.get("/api/posts").json()
+    assert feed, "expected at least one post in the feed"
+    author_obj = feed[0]["author"]
+    assert "lang" not in author_obj
+    assert "tg_dm_enabled" not in author_obj

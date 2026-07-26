@@ -89,7 +89,7 @@ def _withdraw_active_petitions(db: Session, user_id: int) -> None:
         p.status = "withdrawn"
 
 
-@router.patch("", response_model=schemas.UserOut)
+@router.patch("", response_model=schemas.SelfUserOut)
 def update_me(
     data: schemas.MeUpdate,
     user: models.User = Depends(get_current_user),
@@ -107,7 +107,7 @@ def update_me(
         user.tg_dm_enabled = data.tg_dm_enabled
     db.commit()
     db.refresh(user)
-    return presenters.user_out(db, user)
+    return presenters.self_user_out(db, user)
 
 
 @router.get("/onboarding", response_model=schemas.OnboardingOut)
@@ -169,7 +169,7 @@ def leave_mahalla(
     db.commit()
 
 
-@router.post("/leave-household", response_model=schemas.UserOut)
+@router.post("/leave-household", response_model=schemas.SelfUserOut)
 def leave_household(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -192,7 +192,7 @@ def leave_household(
     )
     db.commit()
     db.refresh(user)
-    return presenters.user_out(db, user)
+    return presenters.self_user_out(db, user)
 
 
 @router.delete("", status_code=204)

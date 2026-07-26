@@ -32,7 +32,7 @@ def _set_session(response: Response, user_id: int) -> None:
     )
 
 
-@router.post("/dev-login", response_model=schemas.UserOut)
+@router.post("/dev-login", response_model=schemas.SelfUserOut)
 def dev_login(data: schemas.DevLoginIn, response: Response, db: Session = Depends(get_db)):
     """Local-development login. Disabled outside dev."""
     if not settings.is_dev:
@@ -56,10 +56,10 @@ def dev_login(data: schemas.DevLoginIn, response: Response, db: Session = Depend
     db.commit()
     db.refresh(user)
     _set_session(response, user.id)
-    return presenters.user_out(db, user)
+    return presenters.self_user_out(db, user)
 
 
-@router.post("/telegram", response_model=schemas.UserOut)
+@router.post("/telegram", response_model=schemas.SelfUserOut)
 def telegram_login(data: schemas.TelegramLoginIn, response: Response, db: Session = Depends(get_db)):
     payload = data.model_dump(exclude_none=True)
     if not verify_telegram_auth({k: str(v) for k, v in payload.items()}):
@@ -81,7 +81,7 @@ def telegram_login(data: schemas.TelegramLoginIn, response: Response, db: Sessio
     db.commit()
     db.refresh(user)
     _set_session(response, user.id)
-    return presenters.user_out(db, user)
+    return presenters.self_user_out(db, user)
 
 
 @router.get("/me", response_model=schemas.MeOut)
@@ -107,7 +107,7 @@ def me(user: models.User = Depends(get_current_user), db: Session = Depends(get_
             household = presenters.household_out(db, h, user)
 
     return schemas.MeOut(
-        user=presenters.user_out(db, user),
+        user=presenters.self_user_out(db, user),
         mahalla=mahalla,
         petition=petition,
         household=household,

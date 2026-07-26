@@ -10,13 +10,26 @@ from . import models, schemas
 from .config import settings
 
 
+def _is_raisi(db: Session, user: models.User) -> bool:
+    if not user.mahalla_id:
+        return False
+    m = db.get(models.Mahalla, user.mahalla_id)
+    return bool(m and m.raisi_user_id == user.id)
+
+
 def user_out(db: Session, user: models.User) -> schemas.UserOut:
-    is_raisi = False
-    if user.mahalla_id:
-        m = db.get(models.Mahalla, user.mahalla_id)
-        is_raisi = bool(m and m.raisi_user_id == user.id)
+    """Public view of a user — safe to embed as a post author, petitioner, etc.
+    Deliberately NOT carrying lang / tg_dm_enabled; those are on self_user_out."""
     out = schemas.UserOut.model_validate(user)
-    out.is_raisi = is_raisi
+    out.is_raisi = _is_raisi(db, user)
+    return out
+
+
+def self_user_out(db: Session, user: models.User) -> schemas.SelfUserOut:
+    """The account's own view, with its private settings. Only for /auth/me and
+    PATCH /me — never embedded in another user's response."""
+    out = schemas.SelfUserOut.model_validate(user)
+    out.is_raisi = _is_raisi(db, user)
     return out
 
 

@@ -21,11 +21,24 @@ class UserOut(BaseModel):
     rep_month: int = 0
     rep_alltime: int = 0
     banned_until: datetime | None = None
-    lang: str = "uz"
-    tg_dm_enabled: bool = True
 
     class Config:
         from_attributes = True
+
+
+class SelfUserOut(UserOut):
+    """The account's view of itself (/auth/me, PATCH /me).
+
+    Adds the personal settings that must NOT leak to other neighbours. UserOut is
+    embedded as a post author, petitioner, raisi and so on, so anything here would
+    otherwise be serialized to the whole feed. Reading language and the Telegram
+    opt-out are private to the account, so they live only on this self view.
+    lang stays a plain str on output (never 500 on a stray value); MeUpdate's
+    Literal is what constrains writes.
+    """
+
+    lang: str = "uz"
+    tg_dm_enabled: bool = True
 
 
 class DevLoginIn(BaseModel):
@@ -145,7 +158,7 @@ class LeaderboardOut(BaseModel):
 
 
 class MeOut(BaseModel):
-    user: UserOut
+    user: SelfUserOut
     mahalla: MahallaDetail | None = None  # set when user is a member
     petition: PetitionStatus | None = None  # set while waiting
     household: Optional["HouseholdOut"] = None
