@@ -7,6 +7,7 @@ import { useAuth } from '@/core/stores/auth'
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { mahallaStrings } from '@/core/i18n/mahalla'
+import { contactsStrings } from '@/core/i18n/contacts'
 import {
   Avatar,
   Badge,
@@ -418,6 +419,8 @@ function XonadonlarTab({ mahallaId }: { mahallaId: number }) {
 
 export default function MahallaScreen() {
   const s = useStrings(mahallaStrings)
+  const cs = useStrings(contactsStrings)
+  const navigate = useNavigate()
   const me = useAuth((state) => state.me)
   const mahallaId = me?.mahalla?.id
   const [tab, setTab] = useState<Tab>('reyting')
@@ -436,6 +439,18 @@ export default function MahallaScreen() {
   return (
     <div>
       <MahallaHeader data={data} />
+
+      <button
+        onClick={() => navigate('/app/contacts')}
+        className="mt-4 w-full flex items-center gap-3 rounded-2xl border border-line bg-card p-3.5 text-left active:scale-[0.99] transition"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-2xl">📞</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] font-bold text-ink">{cs.openTitle}</span>
+          <span className="block text-[13px] text-sub">{cs.openHint}</span>
+        </span>
+        <span className="shrink-0 text-sub">›</span>
+      </button>
 
       {data.faol_qoshni && <FaolQoshniHero entry={data.faol_qoshni} />}
 
