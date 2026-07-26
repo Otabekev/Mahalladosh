@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Added
+- **Social layer** — a 🤲 Rahmat one-tap reaction on every post (optimistic, no
+  points so it can't be farmed), free-form **comment threads** on all post types
+  (with light author/raisi delete), **tappable public profiles** reached from any
+  author name, **edit & delete** for your own posts, and a **mahalla invite link
+  with a QR code** that joins the opener to your mahalla.
 - **Raisi panel** — the mahalla head's daily tools: pin one post to the top of the
   feed, curate the mahalla's contacts, work a moderation queue scoped to their own
   mahalla, and a member roster with a scoped ban. The "approvals queue" is moderation
