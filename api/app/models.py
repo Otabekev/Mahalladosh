@@ -56,6 +56,8 @@ class Mahalla(Base):
     estimated_households: Mapped[int | None] = mapped_column(Integer)
     petition_threshold: Mapped[int | None] = mapped_column(Integer)  # None -> settings default
     raisi_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    # the one post the raisi has pinned to the top of the mahalla feed (or None)
+    pinned_post_id: Mapped[int | None] = mapped_column(ForeignKey("posts.id"))
     activated_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 

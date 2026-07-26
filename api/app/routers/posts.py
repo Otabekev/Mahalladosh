@@ -41,7 +41,9 @@ def _pair_awards_this_month(db: Session, author_id: int, helper_id: int) -> int:
 # ---------- local builders ----------
 
 
-def post_out(db: Session, p: models.Post, viewer: models.User) -> schemas.PostOut:
+def post_out(
+    db: Session, p: models.Post, viewer: models.User, pinned_post_id: int | None = None
+) -> schemas.PostOut:
     author = db.get(models.User, p.author_id)
     response_count = db.query(models.PostResponse).filter_by(post_id=p.id).count()
     my_response = (
@@ -62,6 +64,7 @@ def post_out(db: Session, p: models.Post, viewer: models.User) -> schemas.PostOu
         author_place=presenters.author_place(db, p.mahalla_id),
         response_count=response_count,
         my_response=my_response,
+        pinned=pinned_post_id is not None and p.id == pinned_post_id,
         created_at=p.created_at,
     )
 
@@ -120,7 +123,14 @@ def list_posts(
     if status:
         q = q.filter_by(status=status)
     posts = q.order_by(models.Post.created_at.desc()).limit(100).all()
-    return [post_out(db, p, user) for p in posts]
+
+    # the raisi's pinned post floats to the top, whatever its date — but only on the
+    # unfiltered feed, so a type/status filter still shows a clean filtered list
+    mahalla = db.get(models.Mahalla, user.mahalla_id)
+    pinned_id = mahalla.pinned_post_id if mahalla and not type and not status else None
+    if pinned_id is not None and any(p.id == pinned_id for p in posts):
+        posts.sort(key=lambda p: p.id != pinned_id)  # False(0) sorts before True(1)
+    return [post_out(db, p, user, pinned_id) for p in posts]
 
 
 @router.post("", response_model=schemas.PostOut)

@@ -18,6 +18,7 @@ from .routers import (
     notifications,
     posts,
     proposals,
+    raisi,
     reports,
     services,
     uploads,
@@ -52,7 +53,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for module in (auth, geo, mahallas, households, posts, proposals, services, admin, notifications, uploads, me, reports):
+for module in (auth, geo, mahallas, households, posts, proposals, services, admin, notifications, uploads, me, reports, raisi):
     app.include_router(module.router, prefix="/api")
 
 app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")

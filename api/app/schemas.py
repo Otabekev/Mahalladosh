@@ -290,6 +290,7 @@ class PostOut(BaseModel):
     author_place: str = ""  # "Yoshlik, Pop" — shown on discover cards
     response_count: int = 0
     my_response: bool = False
+    pinned: bool = False  # the raisi pinned this to the top of the feed
     created_at: datetime
 
 

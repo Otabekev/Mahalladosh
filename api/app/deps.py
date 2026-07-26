@@ -55,3 +55,17 @@ def require_admin(user: models.User = Depends(get_current_user)) -> models.User:
     if not user.is_admin:
         raise HTTPException(status_code=403, detail="Admin huquqi kerak")
     return user
+
+
+def require_raisi(
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+) -> models.User:
+    """User must be the raisi (head) of their own active mahalla — the gate on the
+    raisi panel's tools. A platform admin also passes, so support can step in."""
+    if user.is_admin:
+        return user
+    m = db.get(models.Mahalla, user.mahalla_id)
+    if m is None or m.raisi_user_id != user.id:
+        raise HTTPException(status_code=403, detail="Faqat raisi uchun")
+    return user
