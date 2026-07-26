@@ -9,7 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from . import models
+from . import models, notif_catalog
 
 TEXT_LIMIT = 300  # Notification.text column size — Postgres enforces it
 
@@ -22,14 +22,30 @@ def notify(
     db: Session,
     user_ids: Iterable[int],
     type_: str,
-    text: str,
+    text: str | None = None,
     link: str | None = None,
     mahalla_id: int | None = None,
+    event: str | None = None,
+    params: dict | None = None,
 ) -> None:
+    """Queue a notification for each user.
+
+    Prefer `event=` + `params=`: the row is then rendered into whatever language each
+    reader has chosen, at the moment they read it. `text` is the pre-rendered Uzbek
+    fallback — it is still stored so that a row survives an event key being retired,
+    and it is what the Telegram sender falls back to if rendering ever comes up empty.
+    """
+    stored = text if text is not None else notif_catalog.render(event, params, "uz")
     for uid in set(user_ids):
         db.add(
             models.Notification(
-                user_id=uid, mahalla_id=mahalla_id, type=type_, text=_fit(text), link=link
+                user_id=uid,
+                mahalla_id=mahalla_id,
+                type=type_,
+                event=event,
+                params=params,
+                text=_fit(stored),
+                link=link,
             )
         )
 
@@ -38,9 +54,11 @@ def notify_mahalla(
     db: Session,
     mahalla_id: int,
     type_: str,
-    text: str,
+    text: str | None = None,
     link: str | None = None,
     exclude: Iterable[int] = (),
+    event: str | None = None,
+    params: dict | None = None,
 ) -> None:
     """Notify every member of a mahalla except `exclude` and currently
     banned members (ban isolation applies to fan-out too)."""
@@ -53,7 +71,16 @@ def notify_mahalla(
         )
     ]
     skip = set(exclude)
-    notify(db, [i for i in ids if i not in skip], type_, text, link, mahalla_id)
+    notify(
+        db,
+        [i for i in ids if i not in skip],
+        type_,
+        text,
+        link,
+        mahalla_id,
+        event=event,
+        params=params,
+    )
 
 
 def ensure_month_honor(db: Session, mahalla_id: int) -> None:
@@ -110,16 +137,17 @@ def ensure_month_honor(db: Session, mahalla_id: int) -> None:
         db,
         mahalla_id,
         "honor",
-        f"🏆 O'tgan oyning faol qo'shnisi: {winner.full_name} (⭐ {points})",
         link="/app/mahalla",
         exclude=[winner.id],
+        event="honor_public",
+        params={"name": winner.full_name, "points": points},
     )
     notify(
         db,
         [winner.id],
         "honor",
-        "🏆 Tabriklaymiz! Siz o'tgan oyning faol qo'shnisi deb topildingiz",
         link="/app/mahalla",
         mahalla_id=mahalla_id,
+        event="honor_self",
     )
     db.commit()

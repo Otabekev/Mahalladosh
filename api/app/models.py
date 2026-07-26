@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     Float,
@@ -75,6 +76,10 @@ class User(Base):
     rep_month_key: Mapped[str | None] = mapped_column(String(7))  # "2026-07"
     banned_until: Mapped[datetime | None] = mapped_column(DateTime)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime)  # throttled, see track.touch
+    # Reading language, mirrored from the client's switcher. The server needs its own
+    # copy because notifications and Telegram DMs are composed with no browser present.
+    lang: Mapped[str] = mapped_column(String(3), default="uz")
+    tg_dm_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -300,7 +305,11 @@ class MonthHonor(Base):
 
 class Notification(Base):
     """In-app hyperlocal notification (plan §9-H). Fan-out is synchronous —
-    fine at pilot scale; batch/push later."""
+    fine at pilot scale; batch/push later.
+
+    Stored structurally: `event` + `params` are rendered into the reader's language
+    at read time (see notif_catalog). `text` is kept as the fallback for rows written
+    before that change, and as the safety net if an event key is ever retired."""
 
     __tablename__ = "notifications"
 
@@ -308,7 +317,9 @@ class Notification(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     mahalla_id: Mapped[int | None] = mapped_column(ForeignKey("mahallas.id"))
     type: Mapped[str] = mapped_column(String(30))  # post|response|thanks|vote|result|vouch|verified|honor|warning
-    text: Mapped[str] = mapped_column(String(300))
+    event: Mapped[str | None] = mapped_column(String(40))  # notif_catalog key
+    params: Mapped[dict | None] = mapped_column(JSON)
+    text: Mapped[str] = mapped_column(String(300))  # legacy / fallback rendering
     link: Mapped[str | None] = mapped_column(String(200))  # in-app path, e.g. /app/posts/5
     read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)

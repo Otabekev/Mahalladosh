@@ -21,6 +21,8 @@ class UserOut(BaseModel):
     rep_month: int = 0
     rep_alltime: int = 0
     banned_until: datetime | None = None
+    lang: str = "uz"
+    tg_dm_enabled: bool = True
 
     class Config:
         from_attributes = True
@@ -35,6 +37,10 @@ class MeUpdate(BaseModel):
     """A user editing their own profile."""
 
     full_name: str | None = Field(default=None, min_length=2, max_length=150)
+    # mirrored from the client's language switcher so the server can compose
+    # notifications and Telegram DMs in the language this person actually reads
+    lang: Literal["uz", "uzc", "ru", "en"] | None = None
+    tg_dm_enabled: bool | None = None
 
 
 class TelegramLoginIn(BaseModel):

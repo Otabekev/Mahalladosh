@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from .. import models, schemas
+from .. import models, notif_catalog, schemas
 from ..deps import get_current_user, get_db
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -20,8 +20,20 @@ def list_notifications(
         .all()
     )
     unread = db.query(models.Notification).filter_by(user_id=user.id, read=False).count()
+    # rendered per-read, in this reader's language — the same row shows Cyrillic to a
+    # grandmother and Russian to her son-in-law
     return schemas.NotificationsOut(
-        items=[schemas.NotificationOut.model_validate(n) for n in items],
+        items=[
+            schemas.NotificationOut(
+                id=n.id,
+                type=n.type,
+                text=notif_catalog.render(n.event, n.params, user.lang, fallback=n.text),
+                link=n.link,
+                read=n.read,
+                created_at=n.created_at,
+            )
+            for n in items
+        ],
         unread=unread,
     )
 

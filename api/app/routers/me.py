@@ -95,12 +95,16 @@ def update_me(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Edit your own profile. Only full_name is editable for now."""
+    """Edit your own profile: display name, reading language, Telegram DM opt-out."""
     if data.full_name is not None:
         name = data.full_name.strip()
         if len(name) < 2:
             raise HTTPException(status_code=400, detail="Ism kiriting")
         user.full_name = name
+    if data.lang is not None:
+        user.lang = data.lang
+    if data.tg_dm_enabled is not None:
+        user.tg_dm_enabled = data.tg_dm_enabled
     db.commit()
     db.refresh(user)
     return presenters.user_out(db, user)
