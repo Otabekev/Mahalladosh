@@ -175,6 +175,8 @@ export interface Post {
   author_place: string
   response_count: number
   my_response: boolean
+  /** The raisi pinned this to the top of the feed. */
+  pinned: boolean
   created_at: string
 }
 

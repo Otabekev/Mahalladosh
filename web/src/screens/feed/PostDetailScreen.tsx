@@ -17,8 +17,11 @@ import {
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { feedStrings } from '@/core/i18n/feed'
+import { raisiStrings } from '@/core/i18n/raisi'
+import { useConfirm } from '@/components/confirm'
 import { useAuth } from '@/core/stores/auth'
 import { useClosePost, usePost, useResolve, useRespond } from '@/core/queries/posts'
+import { usePinPost } from '@/core/queries/raisi'
 import { useReport, type ReportReason } from '@/core/queries/reports'
 import type { PostDetail, PostType } from '@/core/api/types'
 
@@ -202,11 +205,14 @@ export default function PostDetailScreen() {
   const me = useAuth((s) => s.me)
   const s = useStrings(feedStrings)
   const c = useStrings(common)
+  const r = useStrings(raisiStrings)
+  const confirm = useConfirm()
 
   const { data: post, isLoading, error } = usePost(Number.isFinite(postId) ? postId : undefined)
   const respond = useRespond(postId)
   const resolve = useResolve(postId)
   const closePost = useClosePost(postId)
+  const pin = usePinPost()
 
   const [message, setMessage] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -278,6 +284,29 @@ export default function PostDetailScreen() {
       {post.status === 'resolved' && post.resolved_helper && (
         <div className="rounded-2xl bg-gold-soft border border-amber-200 shadow-card p-4 mb-3 text-sm font-semibold text-gold">
           {fmt(s.resolvedBanner, { name: post.resolved_helper.full_name })}
+        </div>
+      )}
+
+      {/* raisi-only: pin this post to the top of the mahalla feed */}
+      {me?.user.is_raisi && (
+        <div className="mb-3">
+          {post.pinned ? (
+            <Button variant="secondary" size="sm" loading={pin.isPending} onClick={() => pin.mutate(null)}>
+              📌 {r.unpin}
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={pin.isPending}
+              onClick={async () => {
+                if (await confirm({ title: r.pin, body: r.pinConfirm, confirmLabel: r.pin }))
+                  pin.mutate(post.id)
+              }}
+            >
+              📌 {r.pin}
+            </Button>
+          )}
         </div>
       )}
 

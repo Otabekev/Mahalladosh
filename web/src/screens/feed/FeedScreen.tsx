@@ -16,6 +16,7 @@ import {
 } from '@/components/ui'
 import { fmt, useStrings } from '@/core/i18n'
 import { feedStrings } from '@/core/i18n/feed'
+import { raisiStrings } from '@/core/i18n/raisi'
 import { useDiscover, usePosts } from '@/core/queries/posts'
 import { useAuth } from '@/core/stores/auth'
 import type { DiscoverScope, Post } from '@/core/api/types'
@@ -110,9 +111,15 @@ function Composer() {
 
 function WarmCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   const showTitle = post.type !== 'share' && !!post.title
+  const r = useStrings(raisiStrings)
 
   return (
     <Card className="p-0 overflow-hidden" onClick={onOpen}>
+      {post.pinned && (
+        <div className="flex items-center gap-1.5 bg-gold-soft border-b border-amber-200 px-4 py-2 text-[13px] font-bold text-honor-deep">
+          <span aria-hidden>📌</span> {r.pinnedBadge}
+        </div>
+      )}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-3">
         <Avatar name={post.author.full_name} src={post.author.photo_url} size={46} />
         <div className="min-w-0 flex-1">
