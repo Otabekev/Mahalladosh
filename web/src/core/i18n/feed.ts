@@ -95,6 +95,25 @@ export const feedStrings = {
   // ---------- post detail: responses ----------
   responsesHeading: { uz: 'Javoblar ({n})', uzc: 'Жавоблар ({n})', ru: 'Ответы ({n})', en: 'Responses ({n})' },
   noResponsesYet: { uz: "Hali javob yo'q.", uzc: 'Ҳали жавоб йўқ.', ru: 'Пока нет ответов.', en: 'No responses yet.' },
+  commentsHeading: { uz: 'Izohlar ({n})', uzc: 'Изоҳлар ({n})', ru: 'Комментарии ({n})', en: 'Comments ({n})' },
+  commentPlaceholder: {
+    uz: 'Izoh yozing…',
+    uzc: 'Изоҳ ёзинг…',
+    ru: 'Напишите комментарий…',
+    en: 'Write a comment…',
+  },
+  noCommentsYet: {
+    uz: 'Birinchi bo‘lib izoh qoldiring',
+    uzc: 'Биринчи бўлиб изоҳ қолдиринг',
+    ru: 'Оставьте первый комментарий',
+    en: 'Be the first to comment',
+  },
+  deleteCommentConfirm: {
+    uz: 'Bu izohni o‘chirasizmi?',
+    uzc: 'Бу изоҳни ўчирасизми?',
+    ru: 'Удалить этот комментарий?',
+    en: 'Delete this comment?',
+  },
   respondPlaceholderHelp: { uz: 'Qanday yordam bera olasiz?', uzc: 'Қандай ёрдам бера оласиз?', ru: 'Как вы можете помочь?', en: 'How can you help?' },
   respondPlaceholderNewcomer: { uz: 'Xush kelibsiz deb yozing', uzc: 'Хуш келибсиз деб ёзинг', ru: 'Напишите приветствие', en: 'Write a welcome message' },
   respondPlaceholderEvent: { uz: 'Kelasizmi?', uzc: 'Келасизми?', ru: 'Придёте?', en: 'Will you come?' },

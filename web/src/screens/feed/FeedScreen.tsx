@@ -158,7 +158,7 @@ function WarmCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         <div className="mt-3 flex items-center gap-1 text-sub">
           <div className="flex items-center gap-1.5 px-1">
             <CommentIcon />
-            <span className="text-[15px] font-semibold">{post.response_count}</span>
+            <span className="text-[15px] font-semibold">{post.comment_count}</span>
           </div>
           <RahmatButton post={post} />
         </div>

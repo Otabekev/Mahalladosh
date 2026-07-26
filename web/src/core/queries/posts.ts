@@ -97,6 +97,30 @@ export function useRespond(postId: number) {
   })
 }
 
+export function useAddComment(postId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: string) =>
+      api<PostDetail>(`/posts/${postId}/comments`, { method: 'POST', body: { body } }),
+    onSuccess: (detail) => {
+      qc.setQueryData(['post', postId], detail) // server returns the fresh thread
+      void qc.invalidateQueries({ queryKey: ['posts'] }) // comment_count on the feed
+    },
+  })
+}
+
+export function useDeleteComment(postId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (commentId: number) =>
+      api<PostDetail>(`/posts/${postId}/comments/${commentId}`, { method: 'DELETE' }),
+    onSuccess: (detail) => {
+      qc.setQueryData(['post', postId], detail)
+      void qc.invalidateQueries({ queryKey: ['posts'] })
+    },
+  })
+}
+
 export function useResolve(postId: number) {
   const qc = useQueryClient()
   return useMutation({

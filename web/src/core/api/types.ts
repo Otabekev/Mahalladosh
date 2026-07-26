@@ -180,7 +180,18 @@ export interface Post {
   /** 🤲 Rahmat reactions and whether the viewer gave one. */
   rahmat_count: number
   my_rahmat: boolean
+  /** Size of the discussion thread. */
+  comment_count: number
   created_at: string
+}
+
+export interface Comment {
+  id: number
+  user: User
+  body: string
+  created_at: string
+  /** The viewer may remove it (own comment / post author / raisi). */
+  can_delete: boolean
 }
 
 export interface UploadResult {
@@ -202,6 +213,7 @@ export interface PostResponse {
 export interface PostDetail extends Post {
   responses: PostResponse[]
   resolved_helper: User | null
+  comments: Comment[]
 }
 
 export type ProposalAction = 'none' | 'set_raisi' | 'ban_user'

@@ -22,7 +22,14 @@ import { useConfirm } from '@/components/confirm'
 import { useBack } from '@/components/useBack'
 import { RahmatButton } from '@/components/RahmatButton'
 import { useAuth } from '@/core/stores/auth'
-import { useClosePost, usePost, useResolve, useRespond } from '@/core/queries/posts'
+import {
+  useAddComment,
+  useClosePost,
+  useDeleteComment,
+  usePost,
+  useResolve,
+  useRespond,
+} from '@/core/queries/posts'
 import { usePinPost } from '@/core/queries/raisi'
 import { useReport, type ReportReason } from '@/core/queries/reports'
 import type { PostDetail, PostType } from '@/core/api/types'
@@ -200,6 +207,77 @@ function ResolveModal({
   )
 }
 
+/** The discussion thread — free-form comments on every post type. */
+function CommentsSection({ post }: { post: PostDetail }) {
+  const s = useStrings(feedStrings)
+  const c = useStrings(common)
+  const navigate = useNavigate()
+  const confirm = useConfirm()
+  const add = useAddComment(post.id)
+  const del = useDeleteComment(post.id)
+  const [text, setText] = useState('')
+
+  const submit = () => {
+    const body = text.trim()
+    if (!body) return
+    add.mutate(body, { onSuccess: () => setText('') })
+  }
+  const remove = async (id: number) => {
+    if (await confirm({ title: c.remove, body: s.deleteCommentConfirm, confirmLabel: c.remove, danger: true }))
+      del.mutate(id)
+  }
+
+  return (
+    <div className="mt-4">
+      <h2 className="font-bold text-ink mb-2">{fmt(s.commentsHeading, { n: post.comments.length })}</h2>
+
+      {post.comments.length === 0 && <p className="text-sm text-sub mb-3">{s.noCommentsYet}</p>}
+
+      {post.comments.length > 0 && (
+        <Card className="mb-3 divide-y divide-line">
+          {post.comments.map((cm) => (
+            <div key={cm.id} className="flex items-start gap-3 p-3">
+              <button onClick={() => navigate(`/app/u/${cm.user.id}`)} className="shrink-0 rounded-full">
+                <Avatar name={cm.user.full_name} src={cm.user.photo_url} size={32} />
+              </button>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => navigate(`/app/u/${cm.user.id}`)}
+                    className="text-sm font-semibold text-ink truncate text-left"
+                  >
+                    {cm.user.full_name}
+                  </button>
+                  <span className="text-xs text-sub shrink-0">{timeAgo(cm.created_at)}</span>
+                </div>
+                <p className="text-[15px] text-ink mt-0.5 whitespace-pre-wrap">{cm.body}</p>
+                {cm.can_delete && (
+                  <button onClick={() => remove(cm.id)} className="mt-1 min-h-[32px] text-[13px] font-semibold text-danger">
+                    {c.remove}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      <Card className="p-3">
+        {add.error && <ErrorNote message={add.error.message} />}
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={s.commentPlaceholder}
+          maxLength={500}
+        />
+        <Button full className="mt-3" onClick={submit} loading={add.isPending} disabled={!text.trim()}>
+          {c.send}
+        </Button>
+      </Card>
+    </div>
+  )
+}
+
 export default function PostDetailScreen() {
   const { id } = useParams()
   const postId = Number(id)
@@ -245,7 +323,15 @@ export default function PostDetailScreen() {
 
   const isAuthor = me !== null && post.author.id === me.user.id
   const isShare = post.type === 'share'
-  const canRespond = post.status === 'open' && me !== null && !isAuthor && !post.my_response
+  // structured responses ("I'll help / I'll come / welcome") only make sense for
+  // these types; every other type discusses through comments instead of a second box
+  const RESPOND_TYPES: PostType[] = ['help', 'event', 'newcomer']
+  const canRespond =
+    RESPOND_TYPES.includes(post.type) &&
+    post.status === 'open' &&
+    me !== null &&
+    !isAuthor &&
+    !post.my_response
 
   const sendResponse = () => {
     respond.mutate(
@@ -428,6 +514,8 @@ export default function PostDetailScreen() {
           </Button>
         </Card>
       )}
+
+      <CommentsSection post={post} />
 
       <ResolveModal post={post} postId={postId} open={modalOpen} onClose={() => setModalOpen(false)} />
       <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} postId={postId} />
