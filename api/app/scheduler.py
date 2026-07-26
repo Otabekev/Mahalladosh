@@ -80,8 +80,9 @@ def _remind_closing_votes(db: Session, now: datetime) -> None:
             db,
             p.mahalla_id,
             "vote_reminder",
-            f"⏳ Ovoz berish tez orada tugaydi: {p.title}",
             link=link,
+            event="vote_closing",
+            params={"title": p.title},
         )
         db.commit()
 
@@ -107,7 +108,14 @@ def _remind_tomorrow_events(db: Session, now: datetime) -> None:
         )
         if already:
             continue
-        notify.notify_mahalla(db, post.mahalla_id, "event_reminder", f"🎉 Ertaga: {post.title}", link=link)
+        notify.notify_mahalla(
+            db,
+            post.mahalla_id,
+            "event_reminder",
+            link=link,
+            event="event_tomorrow",
+            params={"title": post.title},
+        )
         db.commit()
 
 
@@ -120,10 +128,15 @@ def _honor_active_mahallas(db: Session, now: datetime) -> None:
 
 
 def _send_weekly_digests(db: Session, now: datetime) -> None:
-    """5. Monday digest per active mahalla: last-7-days post count. Dedupe: a
-    'digest' notification for that mahalla within the last 6 days."""
+    """5. Monday digest per active mahalla. Dedupe: a 'digest' notification for that
+    mahalla within the last 6 days.
+
+    Counts three different things rather than just posts, because "12 e'lon" is a
+    statistic and the digest has to be a *reason to open the app*. Help resolved and
+    new neighbours are the two numbers that actually say the mahalla is alive."""
     if now.weekday() != 0:  # Monday (UTC)
         return
+    since = now - DIGEST_LOOKBACK
     for mahalla in db.query(models.Mahalla).filter(models.Mahalla.status == "active").all():
         already = (
             db.query(models.Notification)
@@ -136,19 +149,40 @@ def _send_weekly_digests(db: Session, now: datetime) -> None:
         )
         if already:
             continue
-        rows = (
-            db.query(models.Post.type, func.count(models.Post.id))
+
+        posts = (
+            db.query(func.count(models.Post.id))
+            .filter(models.Post.mahalla_id == mahalla.id, models.Post.created_at >= since)
+            .scalar()
+            or 0
+        )
+        helped = (
+            db.query(func.count(models.Post.id))
             .filter(
                 models.Post.mahalla_id == mahalla.id,
-                models.Post.created_at >= now - DIGEST_LOOKBACK,
+                models.Post.type == "help",
+                models.Post.status == "resolved",
+                models.Post.resolved_at >= since,
             )
-            .group_by(models.Post.type)
-            .all()
+            .scalar()
+            or 0
         )
-        total = sum(count for _, count in rows)
-        if total == 0:
-            continue  # nothing happened — no dedupe row either, harmlessly re-checked
-        notify.notify_mahalla(db, mahalla.id, "digest", f"📬 Bu hafta mahallangizda: {total} e'lon")
+        neighbours = (
+            db.query(func.count(models.User.id))
+            .filter(models.User.mahalla_id == mahalla.id, models.User.created_at >= since)
+            .scalar()
+            or 0
+        )
+
+        if posts == 0 and helped == 0 and neighbours == 0:
+            continue  # a genuinely quiet week — no digest, and no dedupe row either
+        notify.notify_mahalla(
+            db,
+            mahalla.id,
+            "digest",
+            event="digest",
+            params={"posts": posts, "helped": helped, "neighbours": neighbours},
+        )
         db.commit()
 
 
