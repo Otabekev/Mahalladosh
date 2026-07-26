@@ -9,13 +9,30 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from . import models, notif_catalog
+from . import models, notif_catalog, telegram
 
 TEXT_LIMIT = 300  # Notification.text column size — Postgres enforces it
 
 
 def _fit(text: str) -> str:
     return text if len(text) <= TEXT_LIMIT else text[: TEXT_LIMIT - 1] + "…"
+
+
+def _dm(
+    db: Session,
+    user_ids: set[int],
+    event: str | None,
+    params: dict | None,
+    text: str | None,
+    link: str | None,
+) -> None:
+    """Mirror an in-app notification out as a Telegram DM. A no-op unless a bot token
+    is configured, so dev and CI never dial out; telegram.send_dm_bulk does the
+    per-user filtering (opt-out, no tg_id) and can never raise into us."""
+    if not user_ids or not telegram.enabled():
+        return
+    users = db.query(models.User).filter(models.User.id.in_(user_ids)).all()
+    telegram.send_dm_bulk(users, event=event, params=params, text=text, link=link)
 
 
 def notify(
@@ -36,7 +53,8 @@ def notify(
     and it is what the Telegram sender falls back to if rendering ever comes up empty.
     """
     stored = text if text is not None else notif_catalog.render(event, params, "uz")
-    for uid in set(user_ids):
+    ids = set(user_ids)
+    for uid in ids:
         db.add(
             models.Notification(
                 user_id=uid,
@@ -48,6 +66,7 @@ def notify(
                 link=link,
             )
         )
+    _dm(db, ids, event, params, stored, link)
 
 
 def notify_mahalla(

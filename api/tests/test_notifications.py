@@ -231,6 +231,46 @@ def test_legacy_row_without_an_event_still_displays(db, world, as_user):
     assert items[0]["text"] == "Eski uslubdagi xabar"
 
 
+def test_notify_also_fans_out_as_a_telegram_dm(db, world, monkeypatch):
+    """Wiring: creating an in-app notification for someone with Telegram enabled also
+    sends them a DM, rendered in their language — without the caller doing anything."""
+    from app import notify, telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_bot_token", "T:token")
+    monkeypatch.setattr(telegram.settings, "telegram_dm_enabled", True)
+    monkeypatch.setattr(telegram, "_submit", lambda job: job())  # run inline
+    sent: list[tuple[int, str]] = []
+    monkeypatch.setattr(telegram, "_transport", lambda chat_id, text: sent.append((chat_id, text)))
+
+    neighbour = db.get(models.User, world.neighbor_id)
+    neighbour.tg_id = 909
+    neighbour.lang = "ru"
+    db.commit()
+
+    notify.notify(db, [neighbour.id], "dingdong", event="dingdong", params={"name": "Aziza"})
+    db.commit()
+
+    assert len(sent) == 1
+    assert sent[0][0] == 909
+    assert "двери" in sent[0][1]  # rendered in the recipient's Russian
+
+
+def test_notify_sends_no_dm_without_a_token(db, world, monkeypatch):
+    """The default everywhere but production: an in-app notification is stored, but
+    nothing reaches Telegram."""
+    from app import notify, telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_bot_token", "")
+    calls: list = []
+    monkeypatch.setattr(telegram, "send_dm_bulk", lambda *a, **k: calls.append(1))
+
+    notify.notify(db, [world.neighbor_id], "dingdong", event="dingdong", params={"name": "A"})
+    db.commit()
+
+    assert calls == []
+    assert db.query(models.Notification).filter_by(user_id=world.neighbor_id).count() == 1
+
+
 def test_lang_defaults_to_uzbek_and_dms_default_on(db, world):
     user = db.get(models.User, world.founder_id)
     assert user.lang == "uz"
