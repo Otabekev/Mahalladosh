@@ -118,8 +118,9 @@ def _refresh(db: Session, p: models.Proposal) -> None:
                     db,
                     p.mahalla_id,
                     "vote",
-                    f"🗳 Ovoz berish boshlandi: {p.title}",
                     link=f"/app/proposals/{p.id}",
+                    event="vote_started",
+                    params={"title": p.title},
                 )
                 db.commit()
 
@@ -145,17 +146,17 @@ def _refresh(db: Session, p: models.Proposal) -> None:
         if claimed:
             if new_status == "passed":
                 _apply_action(db, p)
-            result_text = {
-                "passed": "✅ Qabul qilindi",
-                "rejected": "❌ Rad etildi",
-                "expired": "⏳ Kvorum yetmadi",
-            }[new_status]
             notify.notify_mahalla(
                 db,
                 p.mahalla_id,
                 "result",
-                f"{result_text}: {p.title} (Ha {yes} · Yo'q {no})",
                 link=f"/app/proposals/{p.id}",
+                event={
+                    "passed": "vote_passed",
+                    "rejected": "vote_rejected",
+                    "expired": "vote_expired",
+                }[new_status],
+                params={"title": p.title, "yes": yes, "no": no},
             )
             db.commit()
 
@@ -289,18 +290,19 @@ def create_proposal(
             db,
             [target_user_id],
             "warning",
-            "⚠️ Sizga nisbatan chetlatish taklifi kiritildi — javob berish huquqiga egasiz",
             link=f"/app/proposals/{proposal.id}",
             mahalla_id=user.mahalla_id,
+            event="ban_proposed",
         )
     elif data.action == "set_raisi" and target_user_id:
         notify.notify(
             db,
             [target_user_id],
             "vote",
-            f"👑 Sizni raisi lavozimiga taklif qilishdi: {proposal.title}",
             link=f"/app/proposals/{proposal.id}",
             mahalla_id=user.mahalla_id,
+            event="raisi_proposed",
+            params={"title": proposal.title},
         )
     db.commit()
     db.refresh(proposal)

@@ -2,10 +2,16 @@
 `render` must be total — it sits on the read path of the notifications screen, so
 any input at all has to produce a string rather than an exception."""
 
+import ast
+import re
+from pathlib import Path
+
 import pytest
 
 from app import models, notif_catalog
 from app.notif_catalog import CATALOG, LANGS, placeholders, render
+
+APP_DIR = Path(__file__).resolve().parent.parent / "app"
 
 # ---------- catalog completeness ----------
 
@@ -31,6 +37,83 @@ def test_placeholders_agree_across_languages(event):
 
 def test_catalog_covers_the_languages_the_app_offers():
     assert set(LANGS) == {"uz", "uzc", "ru", "en"}
+
+
+def _strings_in(node: ast.AST) -> set[str]:
+    """Every string literal that could *be* the event key under `node` — copes with a
+    plain `event="x"`, an `"a" if cond else "b"`, and a `{...}[status]` dispatch.
+
+    Descends into dict values but not dict keys: in the vote-result dispatch the keys
+    are proposal statuses ("passed"), not catalog keys."""
+    if isinstance(node, ast.Constant):
+        return {node.value} if isinstance(node.value, str) else set()
+    if isinstance(node, ast.Dict):
+        return set().union(*(_strings_in(v) for v in node.values)) if node.values else set()
+    out: set[str] = set()
+    for child in ast.iter_child_nodes(node):
+        out |= _strings_in(child)
+    return out
+
+
+def _event_keys_used_in_source() -> set[str]:
+    """Every catalog key referenced from app/ — via an `event=` keyword, or passed
+    positionally to the _notify_stewards helper."""
+    found: set[str] = set()
+    for path in APP_DIR.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", "")
+            for kw in node.keywords:
+                if kw.arg == "event":
+                    found |= _strings_in(kw.value)
+            # _notify_stewards(db, household, "<event>", {...})
+            if name == "_notify_stewards" and len(node.args) >= 3:
+                found |= _strings_in(node.args[2])
+    return found
+
+
+def test_every_event_used_in_code_exists_in_the_catalog():
+    """A typo'd event key renders to an EMPTY notification rather than an error —
+    the reader just gets a blank row and nobody finds out. This is the guard."""
+    used = _event_keys_used_in_source()
+    assert used, "found no event= call sites — the AST scan is broken, not the code"
+    unknown = sorted(used - set(CATALOG))
+    assert not unknown, f"event keys used in code but missing from CATALOG: {unknown}"
+
+
+def test_catalog_has_no_dead_entries():
+    """The other direction: an entry nobody sends is either a leftover from a
+    rename or a call site that quietly stopped passing its event."""
+    unused = sorted(set(CATALOG) - _event_keys_used_in_source())
+    assert not unused, f"catalog entries never sent from code: {unused}"
+
+
+def test_no_notification_still_passes_hardcoded_uzbek_text():
+    """Regression for the migration itself: a call site left with a literal Uzbek
+    string would keep showing Uzbek to Russian readers, silently."""
+    offenders = []
+    # Uzbek-specific letters/digraphs that would not appear in an English event key
+    uzbek = re.compile(r"(qo'sh|xonadon|mahalla\w*si|e'lon|rahmat|ovoz berish)", re.I)
+    for path in APP_DIR.rglob("*.py"):
+        if path.name == "notif_catalog.py":
+            continue  # the catalog is *supposed* to contain Uzbek
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", "")
+            if name not in ("notify", "notify_mahalla"):
+                continue
+            for arg in list(node.args) + [k.value for k in node.keywords]:
+                for sub in ast.walk(arg):
+                    if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                        if uzbek.search(sub.value):
+                            offenders.append(f"{path.name}:{sub.lineno} {sub.value!r}")
+    assert not offenders, "hardcoded Uzbek left in notify calls:\n" + "\n".join(offenders)
 
 
 def test_cyrillic_uzbek_is_not_a_copy_of_russian():

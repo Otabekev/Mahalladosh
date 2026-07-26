@@ -125,9 +125,10 @@ def approve_mahalla(
         db,
         enrolled_ids,
         "post",
-        f"🎉 {m.name} mahallasi ochildi! Siz asoschilardansiz (+20 ball)",
         link="/app",
         mahalla_id=m.id,
+        event="mahalla_opened",
+        params={"mahalla": m.name},
     )
 
     if first_petitioner_id is not None:
@@ -329,9 +330,10 @@ def ban_user(
             db,
             target.mahalla_id,
             "warning",
-            f"⚠️ {target.full_name} qoidabuzarlik uchun chetlatildi",
             link="/app",
             exclude=[target.id],
+            event="member_banned",
+            params={"name": target.full_name},
         )
     db.commit()
     db.refresh(target)

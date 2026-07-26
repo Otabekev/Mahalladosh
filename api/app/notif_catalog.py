@@ -120,11 +120,19 @@ CATALOG: dict[str, dict[str, str]] = {
         "ru": "✅ Принято: {title} (За {yes} · Против {no})",
         "en": "✅ Passed: {title} (Yes {yes} · No {no})",
     },
-    "vote_failed": {
-        "uz": "❌ Qabul qilinmadi: {title} (Ha {yes} · Yo'q {no})",
-        "uzc": "❌ Қабул қилинмади: {title} (Ҳа {yes} · Йўқ {no})",
-        "ru": "❌ Не принято: {title} (За {yes} · Против {no})",
-        "en": "❌ Did not pass: {title} (Yes {yes} · No {no})",
+    "vote_rejected": {
+        "uz": "❌ Rad etildi: {title} (Ha {yes} · Yo'q {no})",
+        "uzc": "❌ Рад этилди: {title} (Ҳа {yes} · Йўқ {no})",
+        "ru": "❌ Отклонено: {title} (За {yes} · Против {no})",
+        "en": "❌ Rejected: {title} (Yes {yes} · No {no})",
+    },
+    # a vote that simply did not draw enough neighbours — worth distinguishing from a
+    # rejection, since "nobody voted" and "the mahalla said no" mean different things
+    "vote_expired": {
+        "uz": "⏳ Kvorum yetmadi: {title} (Ha {yes} · Yo'q {no})",
+        "uzc": "⏳ Кворум етмади: {title} (Ҳа {yes} · Йўқ {no})",
+        "ru": "⏳ Кворум не набран: {title} (За {yes} · Против {no})",
+        "en": "⏳ Quorum not reached: {title} (Yes {yes} · No {no})",
     },
     "raisi_proposed": {
         "uz": "👑 Sizni raisi lavozimiga taklif qilishdi: {title}",

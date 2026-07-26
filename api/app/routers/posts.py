@@ -171,9 +171,14 @@ def create_post(
             db,
             user.mahalla_id,
             "post",
-            f"{TYPE_EMOJI.get(post.type, '📌')} {user.full_name}: {post.title}",
             link=f"/app/posts/{post.id}",
             exclude=[user.id],
+            event="new_post",
+            params={
+                "emoji": TYPE_EMOJI.get(post.type, "📌"),
+                "name": user.full_name,
+                "title": post.title,
+            },
         )
     db.commit()
     db.refresh(post)
@@ -249,9 +254,10 @@ def respond_to_post(
         db,
         [post.author_id],
         "response",
-        f"💬 {user.full_name} javob berdi: {post.title}",
         link=f"/app/posts/{post.id}",
         mahalla_id=post.mahalla_id,
+        event="post_response",
+        params={"name": user.full_name, "title": post.title},
     )
     db.commit()
     return post_detail(db, post, user)
@@ -290,15 +296,19 @@ def resolve_post(
                     db, helper, "help_fulfilled", "post", post.id, mahalla_id=post.mahalla_id
                 )
                 awarded = True
+        # the points variant is a separate event so each language can place the
+        # amount naturally instead of splicing a parenthetical into a sentence
+        params = {"name": user.full_name, "title": post.title}
+        if awarded:
+            params["points"] = reputation.REWARDS["help_fulfilled"]
         notify.notify(
             db,
             [helper.id],
             "thanks",
-            f"⭐ {user.full_name} sizga rahmat aytdi"
-            + (" (+10 ball)" if awarded else "")
-            + f": {post.title}",
             link=f"/app/posts/{post.id}",
             mahalla_id=post.mahalla_id,
+            event="thanks_points" if awarded else "thanks",
+            params=params,
         )
     post.status = "resolved"
     post.resolved_at = datetime.utcnow()

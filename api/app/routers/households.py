@@ -94,7 +94,9 @@ def _get_join_request(
     return jr
 
 
-def _notify_stewards(db: Session, household: models.Household, text: str) -> None:
+def _notify_stewards(
+    db: Session, household: models.Household, event: str, params: dict
+) -> None:
     """Ping every account-holding member of a household — so a join/claim request
     isn't left sitting unseen with no one to approve it."""
     steward_ids = [
@@ -108,9 +110,10 @@ def _notify_stewards(db: Session, household: models.Household, text: str) -> Non
             db,
             steward_ids,
             "household",
-            text,
             link=f"/app/households/{household.id}",
             mahalla_id=household.mahalla_id,
+            event=event,
+            params=params,
         )
 
 
@@ -280,9 +283,10 @@ def dingdong(
         db,
         member_ids,
         "dingdong",
-        f"🔔 {user.full_name} eshigingiz oldida turibdi!",
         link=f"/app/households/{household.id}",
         mahalla_id=household.mahalla_id,
+        event="dingdong",
+        params={"name": user.full_name},
     )
     db.commit()
     return schemas.DingDongOut(ok=True, message="🔔 Qo'ng'iroq chalindi — xonadon xabardor qilindi")
@@ -342,18 +346,19 @@ def vouch_household(
         db,
         member_ids,
         "vouch",
-        f"🤝 {user.full_name} xonadoningizga kafolat berdi",
         link=f"/app/households/{household.id}",
         mahalla_id=household.mahalla_id,
+        event="vouch_received",
+        params={"name": user.full_name},
     )
     if newly_verified:
         notify.notify(
             db,
             member_ids,
             "verified",
-            "✅ Xonadoningiz qo'shnilar tomonidan tasdiqlandi!",
             link=f"/app/households/{household.id}",
             mahalla_id=household.mahalla_id,
+            event="household_verified",
         )
 
     db.commit()
@@ -391,7 +396,7 @@ def request_join(
     elif existing.status != "pending":
         existing.status = "pending"
         existing.member_id = None  # a plain re-request drops any earlier claim
-    _notify_stewards(db, household, f"👋 {user.full_name} xonadoningizga qo'shilmoqchi")
+    _notify_stewards(db, household, "join_request", {"name": user.full_name})
     db.commit()
     db.refresh(household)
     return presenters.household_out(db, household, user)
@@ -471,9 +476,10 @@ def approve_join(
                 db,
                 [requester.id],
                 "household",
-                f"✅ {household.family_name} oilasiga qabul qilindingiz",
                 link=f"/app/households/{household.id}",
                 mahalla_id=household.mahalla_id,
+                event="join_approved",
+                params={"family": household.family_name},
             )
         db.commit()
         db.refresh(household)
@@ -499,9 +505,10 @@ def decline_join(
             db,
             [jr.user_id],
             "household",
-            f"{household.family_name} oilasiga qo'shilish so'rovingiz rad etildi",
             link="/app/mahalla",
             mahalla_id=household.mahalla_id,
+            event="join_rejected",
+            params={"family": household.family_name},
         )
         db.commit()
         db.refresh(household)
@@ -548,7 +555,7 @@ def claim_member(
         existing.member_id = member.id
         existing.status = "pending"
     _notify_stewards(
-        db, household, f"👋 {user.full_name} o'zini «{member.full_name}» deb xonadoningizga qo'shilmoqchi"
+        db, household, "claim_request", {"name": user.full_name, "member": member.full_name}
     )
     db.commit()
     db.refresh(household)
