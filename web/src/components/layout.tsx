@@ -9,6 +9,7 @@ import { common } from '@/core/i18n/common'
 import { Avatar } from './ui'
 import { Logo } from './Logo'
 import OfflineBanner from './OfflineBanner'
+import { InstallPrompt } from './InstallPrompt'
 
 /** Two-tone "ding-dong" via WebAudio — no asset file needed. */
 function playDingDong() {
@@ -150,6 +151,7 @@ export default function AppLayout() {
       <OfflineBanner />
 
       <main className="max-w-xl mx-auto px-4 pt-4 pb-28">
+        <InstallPrompt />
         <Outlet />
       </main>
 
