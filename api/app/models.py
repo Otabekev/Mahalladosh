@@ -234,6 +234,20 @@ class PostResponse(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class PostReaction(Base):
+    """A one-tap 🤲 Rahmat — a light "thank you / well said" on a post. Deliberately
+    NOT tied to reputation (that would make it farmable); it is a purely social
+    acknowledgement. One per person per post, so the tap toggles."""
+
+    __tablename__ = "post_reactions"
+    __table_args__ = (UniqueConstraint("post_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class ReputationEntry(Base):
     """Points ledger. reason: help_fulfilled|history_seeded|newcomer_welcomed|founding_member"""
 

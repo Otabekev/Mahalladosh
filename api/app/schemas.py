@@ -320,12 +320,21 @@ class PostOut(BaseModel):
     response_count: int = 0
     my_response: bool = False
     pinned: bool = False  # the raisi pinned this to the top of the feed
+    rahmat_count: int = 0  # 🤲 one-tap acknowledgements
+    my_rahmat: bool = False  # did the viewer give Rahmat
     created_at: datetime
 
 
 class PostDetail(PostOut):
     responses: list[ResponseOut] = []
     resolved_helper: UserOut | None = None
+
+
+class RahmatOut(BaseModel):
+    """The reaction state after a toggle, so the tap updates without a refetch."""
+
+    count: int = 0
+    mine: bool = False
 
 
 class ResolveIn(BaseModel):

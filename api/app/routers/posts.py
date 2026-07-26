@@ -50,6 +50,11 @@ def post_out(
         db.query(models.PostResponse).filter_by(post_id=p.id, user_id=viewer.id).first()
         is not None
     )
+    rahmat_count = db.query(models.PostReaction).filter_by(post_id=p.id).count()
+    my_rahmat = (
+        db.query(models.PostReaction).filter_by(post_id=p.id, user_id=viewer.id).first()
+        is not None
+    )
     return schemas.PostOut(
         id=p.id,
         type=p.type,
@@ -65,6 +70,8 @@ def post_out(
         response_count=response_count,
         my_response=my_response,
         pinned=pinned_post_id is not None and p.id == pinned_post_id,
+        rahmat_count=rahmat_count,
+        my_rahmat=my_rahmat,
         created_at=p.created_at,
     )
 
@@ -271,6 +278,29 @@ def respond_to_post(
     )
     db.commit()
     return post_detail(db, post, user)
+
+
+@router.post("/{post_id}/rahmat", response_model=schemas.RahmatOut)
+def toggle_rahmat(
+    post_id: int,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """One-tap 🤲 Rahmat — toggles: a second tap takes it back. No points, no
+    notification (it must stay light enough to give freely)."""
+    post = _get_post(db, post_id, user)
+    existing = (
+        db.query(models.PostReaction).filter_by(post_id=post.id, user_id=user.id).first()
+    )
+    if existing is not None:
+        db.delete(existing)
+        mine = False
+    else:
+        db.add(models.PostReaction(post_id=post.id, user_id=user.id))
+        mine = True
+    db.commit()
+    count = db.query(models.PostReaction).filter_by(post_id=post.id).count()
+    return schemas.RahmatOut(count=count, mine=mine)
 
 
 @router.post("/{post_id}/resolve", response_model=schemas.PostDetail)
