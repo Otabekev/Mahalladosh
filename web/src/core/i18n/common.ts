@@ -1,6 +1,6 @@
 /** Shared strings: navigation, generic actions, time units, post types. */
 
-import type { Dict, Entry } from './index'
+import type { Dict, Entry, Lang } from './index'
 
 export const common = {
   // bottom nav
@@ -42,12 +42,27 @@ export const common = {
 
 // ---------- time ----------
 
+/** Wording for timeAgo() in components/ui.tsx. Elders read a clock, not a
+ * countdown: "Bugun 14:30" beats "3 soat oldin". {t} is a HH:MM clock time,
+ * {d}/{mon}/{y} a day/month/year. */
 export const time = {
-  now: { uz: 'hozir', uzc: 'ҳозир', ru: 'только что', en: 'just now' },
-  minutes: { uz: '{n} daqiqa oldin', uzc: '{n} дақиқа олдин', ru: '{n} мин. назад', en: '{n} min ago' },
-  hours: { uz: '{n} soat oldin', uzc: '{n} соат олдин', ru: '{n} ч. назад', en: '{n} h ago' },
-  days: { uz: '{n} kun oldin', uzc: '{n} кун олдин', ru: '{n} дн. назад', en: '{n} d ago' },
+  now: { uz: 'Hozir', uzc: 'Ҳозир', ru: 'Сейчас', en: 'Just now' },
+  today: { uz: 'Bugun {t}', uzc: 'Бугун {t}', ru: 'Сегодня в {t}', en: 'Today at {t}' },
+  yesterday: { uz: 'Kecha {t}', uzc: 'Кеча {t}', ru: 'Вчера в {t}', en: 'Yesterday at {t}' },
+  /** A date inside the current year. */
+  dateShort: { uz: '{d}-{mon}', uzc: '{d}-{mon}', ru: '{d} {mon}', en: '{d} {mon}' },
+  /** A date in an earlier year. */
+  dateFull: { uz: '{d}-{mon}, {y}', uzc: '{d}-{mon}, {y}', ru: '{d} {mon} {y}', en: '{d} {mon} {y}' },
 } satisfies Dict
+
+/** Month names, index 0 = January. Russian is genitive ("12 июля"), English is
+ * the 3-letter short form; both Uzbek scripts use the everyday spoken form. */
+export const monthNames: Record<Lang, string[]> = {
+  uz: ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'],
+  uzc: ['январ', 'феврал', 'март', 'апрел', 'май', 'июн', 'июл', 'август', 'сентабр', 'октабр', 'ноябр', 'декабр'],
+  ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+}
 
 // ---------- post types ----------
 

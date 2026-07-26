@@ -28,6 +28,34 @@ export const settingsStrings = {
   save: { uz: 'Saqlash', uzc: 'Сақлаш', ru: 'Сохранить', en: 'Save' },
   saved: { uz: 'Saqlandi', uzc: 'Сақланди', ru: 'Сохранено', en: 'Saved' },
 
+  // ---------- notifications: Telegram DM ----------
+  notifSectionTitle: {
+    uz: 'Xabarnomalar',
+    uzc: 'Хабарномалар',
+    ru: 'Уведомления',
+    en: 'Notifications',
+  },
+  tgDmLabel: {
+    uz: 'Telegramga xabar yuborilsin',
+    uzc: 'Телеграмга хабар юборилсин',
+    ru: 'Присылать сообщения в Telegram',
+    en: 'Send me Telegram messages',
+  },
+  tgDmHint: {
+    uz: "Yangi e'lon va eslatmalar Telegramdagi botimizdan ham keladi. O'chirsangiz, ularni faqat shu ilovada ko'rasiz.",
+    uzc: 'Янги эълон ва эслатмалар Телеграмдаги ботимиздан ҳам келади. Ўчирсангиз, уларни фақат шу иловада кўрасиз.',
+    ru: 'Новые объявления и напоминания будут приходить и от нашего бота в Telegram. Если выключить, вы увидите их только в приложении.',
+    en: "New notices and reminders also arrive from our Telegram bot. If you turn this off, you'll only see them inside the app.",
+  },
+  tgDmOn: { uz: 'Yoqilgan', uzc: 'Ёқилган', ru: 'Включено', en: 'On' },
+  tgDmOff: { uz: "O'chirilgan", uzc: 'Ўчирилган', ru: 'Выключено', en: 'Off' },
+  tgDmFailed: {
+    uz: "Saqlanmadi. Internetni tekshirib, qayta bosing.",
+    uzc: 'Сақланмади. Интернетни текшириб, қайта босинг.',
+    ru: 'Не сохранилось. Проверьте интернет и нажмите ещё раз.',
+    en: "Couldn't save. Check your connection and tap again.",
+  },
+
   // ---------- danger zone ----------
   dangerTitle: { uz: "Ehtiyot bo'ling", uzc: 'Эҳтиёт бўлинг', ru: 'Будьте осторожны', en: 'Careful zone' },
   dangerHint: {

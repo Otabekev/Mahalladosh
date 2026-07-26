@@ -3,7 +3,7 @@
 
 import { useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { fmt, pick, useLang } from '@/core/i18n'
-import { common, postTypeLabels, time } from '@/core/i18n/common'
+import { common, monthNames, postTypeLabels, time } from '@/core/i18n/common'
 import { translateBackend } from '@/core/i18n/backend'
 
 // ---------- buttons ----------
@@ -379,16 +379,51 @@ export function ImagePicker({
 
 // ---------- misc ----------
 
+/** Backend timestamps are naive UTC ("2026-07-26T09:15:00"); anything already
+ * carrying Z or a ±HH:MM offset is left alone. */
+const HAS_TZ = /(?:Z|[+-]\d{2}:?\d{2})$/
+
+const pad2 = (n: number) => (n < 10 ? `0${n}` : String(n))
+
+/** Same calendar day in the device's own timezone. */
+function sameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+  )
+}
+
+/**
+ * Friendly, localized timestamp: "Hozir" → "Bugun 14:30" → "Kecha 14:30" →
+ * "12-iyul". Elders read a clock and a date far quicker than "17 soat oldin".
+ *
+ * Signature is deliberately unchanged — screens call timeAgo(post.created_at).
+ * Language comes from the store via pick(), same as before, so it also works
+ * outside React (the calling component re-renders on a language switch).
+ */
 export function timeAgo(iso: string): string {
-  const then = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z').getTime()
-  const mins = Math.floor((Date.now() - then) / 60000)
-  if (mins < 1) return pick(time.now)
-  if (mins < 60) return fmt(pick(time.minutes), { n: mins })
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return fmt(pick(time.hours), { n: hours })
-  const days = Math.floor(hours / 24)
-  if (days < 30) return fmt(pick(time.days), { n: days })
-  return new Date(then).toLocaleDateString('uz')
+  const then = new Date(HAS_TZ.test(iso) ? iso : iso + 'Z')
+  const ms = then.getTime()
+  if (!Number.isFinite(ms)) return '' // unparseable — show nothing, never "Invalid Date"
+
+  const now = new Date()
+  const diffMs = now.getTime() - ms
+  if (diffMs < 60_000) return pick(time.now) // also covers small clock skew (negative diff)
+
+  const clock = `${pad2(then.getHours())}:${pad2(then.getMinutes())}`
+  if (sameDay(then, now)) return fmt(pick(time.today), { t: clock })
+
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (sameDay(then, yesterday)) return fmt(pick(time.yesterday), { t: clock })
+
+  const lang = useLang.getState().lang
+  const month = (monthNames[lang] ?? monthNames.uz)[then.getMonth()]
+  const sameYear = then.getFullYear() === now.getFullYear()
+  return fmt(pick(sameYear ? time.dateShort : time.dateFull), {
+    d: then.getDate(),
+    mon: month,
+    y: then.getFullYear(),
+  })
 }
 
 export function RankNumber({ rank }: { rank: number }) {
