@@ -142,6 +142,22 @@ class MahallaDetail(MahallaOut):
     activated_at: datetime | None = None
 
 
+class ContactIn(BaseModel):
+    label: str = Field(min_length=1, max_length=60)
+    name: str | None = Field(default=None, max_length=120)
+    phone: str = Field(min_length=3, max_length=40)
+
+
+class ContactOut(BaseModel):
+    id: int
+    label: str
+    name: str | None = None
+    phone: str
+
+    class Config:
+        from_attributes = True
+
+
 class PetitionIn(BaseModel):
     estimated_households: int | None = Field(default=None, ge=1, le=5000)
 

@@ -164,6 +164,24 @@ def members(
     return [presenters.user_out(db, u) for u in rows]
 
 
+@router.get("/{mahalla_id}/contacts", response_model=list[schemas.ContactOut])
+def contacts(
+    mahalla_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(require_member),
+):
+    """The mahalla's curated phone numbers — visible to every member, edited only
+    by the raisi (see the raisi router)."""
+    _require_local_member(user, mahalla_id)
+    rows = (
+        db.query(models.MahallaContact)
+        .filter_by(mahalla_id=mahalla_id)
+        .order_by(models.MahallaContact.position, models.MahallaContact.id)
+        .all()
+    )
+    return [schemas.ContactOut.model_validate(c) for c in rows]
+
+
 @router.get("/{mahalla_id}/leaderboard", response_model=schemas.LeaderboardOut)
 def leaderboard(
     mahalla_id: int,

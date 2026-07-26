@@ -381,3 +381,20 @@ class BanRecord(Base):
     permanent: Mapped[bool] = mapped_column(Boolean, default=False)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class MahallaContact(Base):
+    """A phone number the raisi curates for the whole mahalla — the raisi's own
+    line, the clinic, emergency services, the gas/water utilities. Every member
+    sees them; only the raisi adds, edits, or removes. For elders this is the
+    single most useful page: the numbers they need in a hurry, in one place."""
+
+    __tablename__ = "mahalla_contacts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
+    label: Mapped[str] = mapped_column(String(60))  # "Tez yordam", "Poliklinika"
+    name: Mapped[str | None] = mapped_column(String(120))  # optional person/place name
+    phone: Mapped[str] = mapped_column(String(40))
+    position: Mapped[int] = mapped_column(Integer, default=0)  # display order
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
