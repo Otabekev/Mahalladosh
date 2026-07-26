@@ -157,3 +157,95 @@ def test_contacts_are_scoped_to_the_readers_mahalla(db, world, as_user):
     # the stranger belongs to the other mahalla — cannot read this one's contacts
     stranger = as_user(world.stranger)
     assert stranger.get(f"/api/mahallas/{world.mahalla_id}/contacts").status_code == 403
+
+
+# ---------- moderation queue ----------
+
+
+def _report(db, world, reporter_id, target_id, mahalla_id=None):
+    r = models.Report(
+        reporter_id=reporter_id,
+        target_type="user",
+        target_id=target_id,
+        reason="abuse",
+        mahalla_id=mahalla_id or world.mahalla_id,
+        status="open",
+    )
+    db.add(r)
+    db.commit()
+    return r.id
+
+
+def test_raisi_sees_only_their_own_mahallas_reports(db, world, as_user):
+    _make_raisi(db, world, world.founder)
+    mine = _report(db, world, world.neighbor_id, world.voucher_id)
+    _report(db, world, world.stranger_id, world.stranger_id, mahalla_id=world.other_mahalla_id)
+
+    rows = as_user(world.founder).get("/api/raisi/reports").json()
+    assert [r["id"] for r in rows] == [mine]
+
+
+def test_raisi_can_resolve_and_dismiss(db, world, as_user):
+    _make_raisi(db, world, world.founder)
+    rid = _report(db, world, world.neighbor_id, world.voucher_id)
+    raisi = as_user(world.founder)
+
+    assert raisi.post(f"/api/raisi/reports/{rid}/resolve").json()["status"] == "resolved"
+    # once resolved it leaves the open queue
+    assert as_user(world.founder).get("/api/raisi/reports").json() == []
+
+
+def test_raisi_cannot_touch_a_foreign_report(db, world, as_user):
+    _make_raisi(db, world, world.founder)
+    foreign = _report(db, world, world.stranger_id, world.stranger_id, mahalla_id=world.other_mahalla_id)
+    raisi = as_user(world.founder)
+    assert raisi.post(f"/api/raisi/reports/{foreign}/resolve").status_code == 404
+
+
+def test_a_plain_member_cannot_see_the_queue(db, world, as_user):
+    _make_raisi(db, world, world.founder)
+    assert as_user(world.neighbor).get("/api/raisi/reports").status_code == 403
+
+
+# ---------- roster + ban ----------
+
+
+def test_roster_lists_members_with_flags(db, world, as_user):
+    _make_raisi(db, world, world.founder)
+    rows = as_user(world.founder).get("/api/raisi/members").json()
+    by_id = {r["id"]: r for r in rows}
+    assert by_id[world.founder_id]["is_raisi"] is True
+    assert by_id[world.neighbor_id]["is_raisi"] is False
+    assert all(r["banned"] is False for r in rows)
+    # scoped: the other mahalla's stranger is not in this roster
+    assert world.stranger_id not in by_id
+
+
+def test_raisi_bans_a_member_and_it_locks_them_out(db, world, as_user):
+    _make_raisi(db, world, world.founder)
+    raisi = as_user(world.founder)
+    victim = as_user(world.neighbor)  # log them in BEFORE the ban
+
+    row = raisi.post(f"/api/raisi/members/{world.neighbor_id}/ban")
+    assert row.status_code == 200
+    assert row.json()["banned"] is True
+
+    # the ban is enforced in get_current_user, so their session is now rejected
+    assert victim.get("/api/auth/me").status_code == 403
+
+
+def test_raisi_cannot_ban_themselves_or_the_head(db, world, as_user):
+    _make_raisi(db, world, world.founder)
+    raisi = as_user(world.founder)
+    assert raisi.post(f"/api/raisi/members/{world.founder_id}/ban").status_code == 400
+
+
+def test_raisi_cannot_ban_across_mahallas(db, world, as_user):
+    _make_raisi(db, world, world.founder)
+    raisi = as_user(world.founder)
+    assert raisi.post(f"/api/raisi/members/{world.stranger_id}/ban").status_code == 404
+
+
+def test_a_plain_member_cannot_ban(db, world, as_user):
+    _make_raisi(db, world, world.founder)
+    assert as_user(world.neighbor).post(f"/api/raisi/members/{world.voucher_id}/ban").status_code == 403

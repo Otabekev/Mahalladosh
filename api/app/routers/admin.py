@@ -2,22 +2,18 @@
 platform stats, and moderation (report queue + takedown/ban). Every route
 requires admin."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from .. import models, notify, presenters, reputation, schemas, track
+from .. import models, moderation, notify, presenters, reputation, schemas, track
 from ..deps import get_db, require_admin
 from ..seed import normalize_name
 from .reports import report_out
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-
-# A repeat offender (already has a ban on record) is banned forever — plan §10.
-PERMANENT_UNTIL = datetime(9999, 12, 31)
-DEFAULT_BAN_DAYS = 30
 
 
 class BanIn(BaseModel):
@@ -286,37 +282,8 @@ def ban_user(
     if target.id == admin.id:
         raise HTTPException(status_code=400, detail="O'zingizni chetlata olmaysiz")
 
-    had_prior_ban = (
-        db.query(models.BanRecord).filter_by(user_id=target.id).first() is not None
-    )
-    if had_prior_ban:
-        target.banned_until = PERMANENT_UNTIL
-        record_until = None
-        permanent = True
-    else:
-        days = data.days if data.days and data.days > 0 else DEFAULT_BAN_DAYS
-        target.banned_until = datetime.utcnow() + timedelta(days=days)
-        record_until = target.banned_until
-        permanent = False
-
-    db.add(
-        models.BanRecord(
-            user_id=target.id,
-            mahalla_id=target.mahalla_id,
-            reason=data.reason,
-            source="admin",
-            until=record_until,
-            permanent=permanent,
-            created_by=admin.id,
-        )
-    )
-
-    # take down anything they left standing
-    db.query(models.Post).filter_by(author_id=target.id, status="open").update(
-        {"status": "closed"}
-    )
-    db.query(models.ServiceOffering).filter_by(created_by=target.id, active=True).update(
-        {"active": False}
+    moderation.apply_ban(
+        db, target, reason=data.reason, source="admin", created_by=admin.id, days=data.days
     )
 
     track.log_event(

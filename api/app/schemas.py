@@ -158,6 +158,19 @@ class ContactOut(BaseModel):
         from_attributes = True
 
 
+class MemberRow(BaseModel):
+    """A member as seen in the raisi roster — public fields plus the two flags the
+    raisi acts on (is this the head; are they currently banned)."""
+
+    id: int
+    full_name: str
+    photo_url: str | None = None
+    rep_month: int = 0
+    rep_alltime: int = 0
+    is_raisi: bool = False
+    banned: bool = False
+
+
 class PetitionIn(BaseModel):
     estimated_households: int | None = Field(default=None, ge=1, le=5000)
 
