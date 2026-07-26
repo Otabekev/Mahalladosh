@@ -17,6 +17,7 @@ import {
 import { fmt, useStrings } from '@/core/i18n'
 import { feedStrings } from '@/core/i18n/feed'
 import { raisiStrings } from '@/core/i18n/raisi'
+import { RahmatButton } from '@/components/RahmatButton'
 import { useDiscover, usePosts } from '@/core/queries/posts'
 import { useAuth } from '@/core/stores/auth'
 import type { DiscoverScope, Post } from '@/core/api/types'
@@ -145,9 +146,12 @@ function WarmCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         {post.body && (
           <p className="mt-1 text-[16px] leading-relaxed text-ink whitespace-pre-wrap line-clamp-6">{post.body}</p>
         )}
-        <div className="mt-3 flex items-center gap-1.5 text-sub">
-          <CommentIcon />
-          <span className="text-[15px] font-semibold">{post.response_count}</span>
+        <div className="mt-3 flex items-center gap-1 text-sub">
+          <div className="flex items-center gap-1.5 px-1">
+            <CommentIcon />
+            <span className="text-[15px] font-semibold">{post.response_count}</span>
+          </div>
+          <RahmatButton post={post} />
         </div>
       </div>
     </Card>

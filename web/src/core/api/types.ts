@@ -177,6 +177,9 @@ export interface Post {
   my_response: boolean
   /** The raisi pinned this to the top of the feed. */
   pinned: boolean
+  /** 🤲 Rahmat reactions and whether the viewer gave one. */
+  rahmat_count: number
+  my_rahmat: boolean
   created_at: string
 }
 

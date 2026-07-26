@@ -39,6 +39,51 @@ export function useCreatePost() {
   })
 }
 
+/** Toggle 🤲 Rahmat on a post, optimistically. The button reacts on tap; the POST
+ *  returns the authoritative {count, mine} which we then pin exactly. */
+export function useToggleRahmat() {
+  const qc = useQueryClient()
+
+  const write = (id: number, mine: boolean, count: number) => {
+    const set = (p: Post) => (p.id === id ? { ...p, my_rahmat: mine, rahmat_count: count } : p)
+    qc.setQueriesData<Post[]>({ queryKey: ['posts'] }, (old) => old?.map(set))
+    qc.setQueriesData<Post[]>({ queryKey: ['discover'] }, (old) => old?.map(set))
+    qc.setQueryData<PostDetail>(['post', id], (old) =>
+      old ? { ...old, my_rahmat: mine, rahmat_count: count } : old,
+    )
+  }
+
+  return useMutation({
+    mutationFn: (id: number) =>
+      api<{ count: number; mine: boolean }>(`/posts/${id}/rahmat`, { method: 'POST' }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ['post', id] })
+      // read current state from whichever cache has this post
+      let current: Post | PostDetail | undefined = qc.getQueryData<PostDetail>(['post', id])
+      if (!current) {
+        for (const [, list] of qc.getQueriesData<Post[]>({ queryKey: ['posts'] })) {
+          const found = list?.find((p) => p.id === id)
+          if (found) {
+            current = found
+            break
+          }
+        }
+      }
+      const mine = !(current?.my_rahmat ?? false)
+      const count = Math.max(0, (current?.rahmat_count ?? 0) + (mine ? 1 : -1))
+      write(id, mine, count)
+    },
+    // the server is the source of truth for the exact count (concurrent givers)
+    onSuccess: (res, id) => write(id, res.mine, res.count),
+    onError: (_err, id) => {
+      // our optimistic guess may be wrong now — refetch the truth
+      void qc.invalidateQueries({ queryKey: ['posts'] })
+      void qc.invalidateQueries({ queryKey: ['discover'] })
+      void qc.invalidateQueries({ queryKey: ['post', id] })
+    },
+  })
+}
+
 export function useRespond(postId: number) {
   const qc = useQueryClient()
   return useMutation({

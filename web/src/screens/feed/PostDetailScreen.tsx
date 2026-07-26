@@ -20,6 +20,7 @@ import { feedStrings } from '@/core/i18n/feed'
 import { raisiStrings } from '@/core/i18n/raisi'
 import { useConfirm } from '@/components/confirm'
 import { useBack } from '@/components/useBack'
+import { RahmatButton } from '@/components/RahmatButton'
 import { useAuth } from '@/core/stores/auth'
 import { useClosePost, usePost, useResolve, useRespond } from '@/core/queries/posts'
 import { usePinPost } from '@/core/queries/raisi'
@@ -340,6 +341,11 @@ export default function PostDetailScreen() {
           <span className="text-xs text-sub ml-auto shrink-0">{timeAgo(post.created_at)}</span>
         </div>
       </Card>
+
+      {/* 🤲 Rahmat — a light acknowledgement, on every post type */}
+      <div className="mb-3">
+        <RahmatButton post={post} />
+      </div>
 
       {/* report — neighbors flag bad content; not shown on your own post */}
       {me !== null && !isAuthor && (

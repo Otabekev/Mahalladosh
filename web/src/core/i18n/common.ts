@@ -25,6 +25,7 @@ export const common = {
   add: { uz: "Qo'shish", uzc: 'Қўшиш', ru: 'Добавить', en: 'Add' },
   remove: { uz: "O'chirish", uzc: 'Ўчириш', ru: 'Удалить', en: 'Delete' },
   edit: { uz: 'Tahrirlash', uzc: 'Таҳрирлаш', ru: 'Изменить', en: 'Edit' },
+  rahmat: { uz: 'Rahmat', uzc: 'Раҳмат', ru: 'Спасибо', en: 'Thanks' },
   logout: { uz: 'Chiqish', uzc: 'Чиқиш', ru: 'Выйти', en: 'Log out' },
   login: { uz: 'Kirish', uzc: 'Кириш', ru: 'Войти', en: 'Log in' },
   error: { uz: 'Xatolik yuz berdi', uzc: 'Хатолик юз берди', ru: 'Произошла ошибка', en: 'Something went wrong' },
