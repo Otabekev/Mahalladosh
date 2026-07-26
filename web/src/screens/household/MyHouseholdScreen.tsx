@@ -8,6 +8,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
+import { useConfirm } from '@/components/confirm'
 import { fmt, useLang, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { householdStrings } from '@/core/i18n/household'
@@ -533,6 +534,7 @@ function DingDongCard({ household }: { household: Household }) {
 function MembersCard({ household }: { household: Household }) {
   const s = useStrings(householdStrings)
   const c = useStrings(common)
+  const confirm = useConfirm()
   const addMember = useAddMember(household.id)
   const removeMember = useRemoveMember()
   const [open, setOpen] = useState(false)
@@ -554,8 +556,9 @@ function MembersCard({ household }: { household: Household }) {
     )
   }
 
-  function remove(m: HouseholdMember) {
-    if (window.confirm(s.confirmRemove)) removeMember.mutate(m.id)
+  async function remove(m: HouseholdMember) {
+    if (await confirm({ title: c.remove, body: s.confirmRemove, confirmLabel: c.remove, danger: true }))
+      removeMember.mutate(m.id)
   }
 
   return (

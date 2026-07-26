@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth } from '@/core/stores/auth'
 import { FullScreenSpinner } from '@/components/ui'
+import { ConfirmProvider } from '@/components/confirm'
 import AppLayout from '@/components/layout'
 
 const LoginScreen = lazy(() => import('@/screens/auth/LoginScreen'))
@@ -62,6 +63,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ConfirmProvider>
         <Suspense fallback={<FullScreenSpinner />}>
           <Routes>
             <Route path="/" element={<RootRedirect />} />
@@ -108,6 +110,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        </ConfirmProvider>
       </BrowserRouter>
     </QueryClientProvider>
   )

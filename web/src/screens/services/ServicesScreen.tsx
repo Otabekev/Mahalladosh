@@ -25,6 +25,7 @@ import {
   useUpdateService,
 } from '@/core/queries/services'
 import { useReport, type ReportReason } from '@/core/queries/reports'
+import { useConfirm } from '@/components/confirm'
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { servicesStrings } from '@/core/i18n/services'
@@ -232,6 +233,7 @@ function ServiceCard({ service }: { service: Service }) {
 function MyServiceRow({ service }: { service: Service }) {
   const s = useStrings(servicesStrings)
   const c = useStrings(common)
+  const confirm = useConfirm()
   const update = useUpdateService(service.id)
   const del = useDeleteService()
   const meta = categoryMeta(service.category)
@@ -253,8 +255,9 @@ function MyServiceRow({ service }: { service: Service }) {
         <button
           aria-label={c.remove}
           className="w-11 h-11 -my-2 -mr-2 flex items-center justify-center text-sub hover:text-danger text-xl leading-none"
-          onClick={() => {
-            if (window.confirm(s.confirmDeleteService)) del.mutate(service.id)
+          onClick={async () => {
+            if (await confirm({ title: c.remove, body: s.confirmDeleteService, confirmLabel: c.remove, danger: true }))
+              del.mutate(service.id)
           }}
         >
           ×

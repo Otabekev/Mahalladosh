@@ -31,6 +31,7 @@ import {
   useResolveReport,
 } from '@/core/queries/admin'
 import { useDistricts, useRegions } from '@/core/queries/onboarding'
+import { useConfirm } from '@/components/confirm'
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { servicesStrings } from '@/core/i18n/services'
@@ -43,6 +44,7 @@ type Tab = 'petitions' | 'reports' | 'mfy' | 'stats'
 function PetitionsTab() {
   const s = useStrings(servicesStrings)
   const c = useStrings(common)
+  const confirm = useConfirm()
   const petitions = useAdminPetitions()
   const approve = useApprove()
   const reject = useReject()
@@ -84,8 +86,8 @@ function PetitionsTab() {
             <Button
               className="bg-good! hover:opacity-90 text-white"
               loading={approve.isPending && approve.variables === p.mahalla.id}
-              onClick={() => {
-                if (window.confirm(s.confirmApprove)) {
+              onClick={async () => {
+                if (await confirm({ title: s.approve, body: s.confirmApprove, confirmLabel: s.approve })) {
                   approve.mutate(p.mahalla.id, {
                     onSuccess: () => {
                       void useAuth.getState().refresh()
@@ -99,8 +101,9 @@ function PetitionsTab() {
             <Button
               variant="danger"
               loading={reject.isPending && reject.variables === p.mahalla.id}
-              onClick={() => {
-                if (window.confirm(s.confirmReject)) reject.mutate(p.mahalla.id)
+              onClick={async () => {
+                if (await confirm({ title: s.reject, body: s.confirmReject, confirmLabel: s.reject, danger: true }))
+                  reject.mutate(p.mahalla.id)
               }}
             >
               {s.reject}
