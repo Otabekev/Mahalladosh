@@ -178,7 +178,7 @@ export default function AppLayout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition ${isActive ? 'text-brand' : 'text-sub/60'}`
+                `flex flex-col items-center justify-center gap-0.5 min-h-[54px] py-2 text-[11px] font-semibold transition ${isActive ? 'text-brand' : 'text-sub/60'}`
               }
             >
               {({ isActive }) => (

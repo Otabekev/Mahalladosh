@@ -343,7 +343,13 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
       <div className="relative bg-card w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-pop max-h-[85dvh] overflow-y-auto">
         <div className="sticky top-0 bg-card flex items-center justify-between px-5 py-4 border-b border-line">
           <h3 className="font-bold text-ink">{title}</h3>
-          <button onClick={onClose} className="text-sub hover:text-ink text-xl leading-none px-1">×</button>
+          <button
+            onClick={onClose}
+            aria-label="×"
+            className="-mr-2 flex h-11 w-11 items-center justify-center text-2xl leading-none text-sub hover:text-ink"
+          >
+            ×
+          </button>
         </div>
         <div className="px-5 py-4">{children}</div>
       </div>

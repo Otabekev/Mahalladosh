@@ -15,12 +15,12 @@ export default function LanguageSwitcher({ variant = 'chips' }: { variant?: 'chi
           <button
             key={l.value}
             onClick={() => setLang(l.value)}
-            className="w-full flex items-center justify-between px-4 py-3.5 min-h-[44px] text-left hover:bg-gray-50 transition"
+            className="w-full flex items-center justify-between px-4 py-4 min-h-[52px] text-left hover:bg-gray-50 transition"
           >
-            <span className={`text-[15px] ${lang === l.value ? 'font-bold text-ink' : 'text-ink'}`}>
+            <span className={`text-[16px] ${lang === l.value ? 'font-bold text-ink' : 'text-ink'}`}>
               {l.label}
             </span>
-            {lang === l.value && <span className="text-good font-bold">✓</span>}
+            {lang === l.value && <span className="text-good font-bold text-lg">✓</span>}
           </button>
         ))}
       </div>
@@ -33,7 +33,7 @@ export default function LanguageSwitcher({ variant = 'chips' }: { variant?: 'chi
         <button
           key={l.value}
           onClick={() => setLang(l.value)}
-          className={`rounded-full px-3 py-1.5 min-h-[36px] text-sm font-semibold transition ${
+          className={`rounded-full px-3.5 min-h-[44px] min-w-[44px] text-[15px] font-semibold transition ${
             lang === l.value ? 'bg-brand text-white' : 'bg-card border border-line text-sub hover:text-ink'
           }`}
         >
