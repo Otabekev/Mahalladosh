@@ -447,6 +447,33 @@ def close_post(
     return post_detail(db, post, user)
 
 
+@router.patch("/{post_id}", response_model=schemas.PostDetail)
+def edit_post(
+    post_id: int,
+    data: schemas.PostUpdate,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Edit your own post's words. Only the author, and only the free text — a
+    share post keeps deriving its title from the body, like it did at creation."""
+    post = _get_post(db, post_id, user)
+    if post.author_id != user.id:
+        raise HTTPException(status_code=403, detail="Faqat e'lon egasi")
+
+    if data.body is not None:
+        post.body = data.body.strip() or None
+    if post.type == "share":
+        # share posts show no title of their own — keep it in sync with the body
+        post.title = (post.body or "")[:80] if post.body else "📷 Rasm"
+    elif data.title is not None:
+        title = data.title.strip()
+        if len(title) < 3:
+            raise HTTPException(status_code=400, detail="Sarlavha juda qisqa")
+        post.title = title
+    db.commit()
+    return post_detail(db, post, user)
+
+
 @router.delete("/{post_id}", status_code=204)
 def delete_post(
     post_id: int,
@@ -461,7 +488,14 @@ def delete_post(
         raise HTTPException(status_code=404, detail="E'lon topilmadi")
     if post.author_id != user.id and not user.is_admin:
         raise HTTPException(status_code=403, detail="Faqat e'lon egasi")
+    # a pinned post being deleted must not leave the mahalla pointing at a ghost
+    mahalla = db.get(models.Mahalla, post.mahalla_id)
+    if mahalla and mahalla.pinned_post_id == post.id:
+        mahalla.pinned_post_id = None
+    # take the whole thread with it — responses, comments, reactions
     db.query(models.PostResponse).filter_by(post_id=post.id).delete()
+    db.query(models.PostComment).filter_by(post_id=post.id).delete()
+    db.query(models.PostReaction).filter_by(post_id=post.id).delete()
     track.log_event(
         db, user.id, "post_delete", entity_type="post", entity_id=post.id,
         mahalla_id=post.mahalla_id,

@@ -321,6 +321,14 @@ class ResponseOut(BaseModel):
     created_at: datetime
 
 
+class PostUpdate(BaseModel):
+    """Author editing their own post. Only the free-text fields are editable — not
+    the type or the structured metadata, which would change what the post *is*."""
+
+    title: str | None = Field(default=None, max_length=200)
+    body: str | None = Field(default=None, max_length=4000)
+
+
 class CommentIn(BaseModel):
     body: str = Field(min_length=1, max_length=500)
 
