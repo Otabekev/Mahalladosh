@@ -29,12 +29,13 @@ The reason to open it every morning.
 - Notification i18n refactor — store type + params, render per-language
 - Friendlier time formatting (Bugun / Kecha + date separators)
 
-## 🎨 Phase 4 — Identity & Feel
+## ✅ Phase 4 — Identity & Feel
 
-- Elder-UX pass — larger-text mode, simpler navigation audit
-- App-feel round — no shell flash, real Back, optimistic UI, motion
-- Raisi panel — real daily tools for the mahalla head
-- Skeleton loaders · installable-PWA prompt (elder-guided)
+- Elder-UX pass — larger-text mode, tap-target audit
+- App-feel round — killed the shell flash, real Back, optimistic UI, page motion, styled confirms
+- Raisi panel — the mahalla head's daily tools (pin · contacts · moderation · roster)
+- Skeleton loaders on every list · installable-PWA prompt (elder-guided)
+- Mahalla contacts page (pulled forward from Phase 6)
 
 ## 🤝 Phase 5 — Social layer
 
