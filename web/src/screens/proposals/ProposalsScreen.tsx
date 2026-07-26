@@ -11,7 +11,8 @@ import {
   ErrorNote,
   PageTitle,
   SegmentedTabs,
-  Spinner,
+  RowSkeleton,
+  SkeletonList,
   timeAgo,
 } from '@/components/ui'
 import { useProposals } from '@/core/queries/proposals'
@@ -69,9 +70,9 @@ export default function ProposalsScreen() {
       </div>
 
       {isLoading && (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <SkeletonList count={4}>
+          <RowSkeleton />
+        </SkeletonList>
       )}
       {error && <ErrorNote message={error.message} />}
 

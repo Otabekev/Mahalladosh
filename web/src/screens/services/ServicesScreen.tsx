@@ -14,7 +14,8 @@ import {
   Modal,
   PageTitle,
   Select,
-  Spinner,
+  RowSkeleton,
+  SkeletonList,
   Textarea,
 } from '@/components/ui'
 import {
@@ -390,9 +391,9 @@ export default function ServicesScreen() {
       </div>
 
       {services.isPending && (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <SkeletonList count={4}>
+          <RowSkeleton />
+        </SkeletonList>
       )}
       {services.error && <ErrorNote message={services.error.message} />}
       {services.data && services.data.length === 0 && (
