@@ -1,7 +1,7 @@
 /** Profile screen — pixel-faithful to the Uzbek design mockup (screen 5 · PROFILE):
  * teal girih-washed hero with honor-ring avatar + daraja pill, two overlapping
  * stat cards, a Nishonlar (badges) grid, and an elder-first settings list
- * (household, language, large-text toggle, homeland tie, admin, logout). */
+ * (household, language, large-text toggle, admin, logout). */
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -60,7 +60,6 @@ function Chevron({ open = false }: { open?: boolean }) {
 const ICON_HOME = 'M3 10l9-7 9 7v9a1 1 0 0 1-1 1h-4v-6h-8v6H4a1 1 0 0 1-1-1z'
 const ICON_GLOBE = 'M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18'
 const ICON_FONT = 'M4 7V5h16v2M9 20h6M12 5v15'
-const ICON_SHIELD = 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z'
 const ICON_SLIDERS = 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'
 const ICON_LOGOUT = 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9'
 const ICON_GEAR = 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z'
@@ -226,13 +225,6 @@ export default function ProfileScreen() {
               />
             </span>
           </button>
-
-          {/* Vatan bilan aloqa — diaspora placeholder (non-navigating) */}
-          <div className={ROW}>
-            <RowIcon path={ICON_SHIELD} stroke="var(--color-brand)" />
-            <span className="flex-1 text-[17px] font-semibold text-brand">{p.homelandTie}</span>
-            <span className="text-[13px] text-sub">{p.homelandHint}</span>
-          </div>
 
           {u.is_admin && (
             <button onClick={() => navigate('/app/admin')} className={`${ROW} hover:bg-black/[0.03] transition`}>

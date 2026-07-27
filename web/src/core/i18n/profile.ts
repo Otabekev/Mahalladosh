@@ -59,13 +59,6 @@ export const profileStrings = {
 
   // ---------- settings list ----------
   largeText: { uz: 'Katta shrift', uzc: 'Катта шрифт', ru: 'Крупный шрифт', en: 'Large text' },
-  homelandTie: {
-    uz: 'Vatan bilan aloqa',
-    uzc: 'Ватан билан алоқа',
-    ru: 'Связь с родиной',
-    en: 'Ties to homeland',
-  },
-  homelandHint: { uz: 'Moskva → uy', uzc: 'Москва → уй', ru: 'Москва → дом', en: 'Moscow → home' },
 
   // ----- public person page -----
   raisiTag: { uz: 'Raisi', uzc: 'Раиси', ru: 'Раис', en: 'Raisi' },
