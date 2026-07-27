@@ -11,7 +11,8 @@ def test_a_member_adds_and_sees_their_album(db, world, as_user):
         f"/api/households/{world.alfa_id}/photos",
         json={"urls": ["/api/uploads/1.jpg", "/api/uploads/2.jpg"]},
     ).json()
-    assert out["photos"] == ["/api/uploads/1.jpg", "/api/uploads/2.jpg"]
+    assert [p["url"] for p in out["photos"]] == ["/api/uploads/1.jpg", "/api/uploads/2.jpg"]
+    assert all("id" in p for p in out["photos"])
 
 
 def test_only_own_household_can_add(db, world, as_user):
@@ -50,7 +51,7 @@ def test_a_member_can_delete_a_photo(db, world, as_user):
     img_id = db.query(models.HouseholdImage).filter_by(household_id=world.alfa_id).one().id
     after = founder.delete(f"/api/households/{world.alfa_id}/photos/{img_id}").json()
     assert after["photos"] == []
-    assert out["photos"] == ["/api/uploads/1.jpg"]  # sanity: it was there before
+    assert [p["url"] for p in out["photos"]] == ["/api/uploads/1.jpg"]  # was there before
 
 
 def test_album_follows_the_privacy_gate(db, world, as_user):
@@ -62,7 +63,7 @@ def test_album_follows_the_privacy_gate(db, world, as_user):
 
     # voucher owns a VERIFIED household → trusted → sees the album
     trusted = as_user(world.voucher).get(f"/api/households/{world.alfa_id}").json()
-    assert trusted["photos"] == ["/api/uploads/1.jpg"]
+    assert [p["url"] for p in trusted["photos"]] == ["/api/uploads/1.jpg"]
 
     # neighbor has no household of their own → not trusted → gated out
     outsider = as_user(world.neighbor).get(f"/api/households/{world.alfa_id}").json()

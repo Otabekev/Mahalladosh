@@ -158,7 +158,7 @@ def household_out(db: Session, h: models.Household, viewer: models.User) -> sche
         vouch_count=vouch_count,
         my_vouch=my_vouch,
         members=[] if hide else [schemas.MemberOut.model_validate(mb) for mb in members],
-        photos=[] if hide else [im.path for im in photos],
+        photos=[] if hide else [schemas.PhotoOut(id=im.id, url=im.path) for im in photos],
         created_by=h.created_by,
         created_at=h.created_at,
     )
