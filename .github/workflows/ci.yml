@@ -32,7 +32,7 @@ jobs:
         run: pytest
 
   frontend:
-    name: Frontend · types + build
+    name: Frontend · types + i18n + build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -46,5 +46,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Four-language guard
+        run: npm run check:i18n
       - name: Typecheck + build
         run: npm run build
