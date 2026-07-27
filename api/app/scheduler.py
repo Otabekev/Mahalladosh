@@ -16,9 +16,13 @@ dies (asyncio.CancelledError still propagates for clean shutdown).
 
 import asyncio
 import logging
+import os
+import socket
+import uuid
 from datetime import datetime, timedelta
 
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from . import models, notify
@@ -26,6 +30,11 @@ from .db import SessionLocal
 from .routers.proposals import _refresh
 
 logger = logging.getLogger("mahalladosh.scheduler")
+
+# Identifies this process in the lease row — useful in logs when working out which
+# instance is actually doing the work. The uuid suffix separates two processes on
+# one host (a local reload, two workers in one container).
+HOLDER = f"{socket.gethostname()}:{os.getpid()}:{uuid.uuid4().hex[:8]}"
 
 SWEEP_INTERVAL_SECONDS = 300  # 5 minutes
 VOTE_REMINDER_WINDOW = timedelta(hours=6)
@@ -197,12 +206,60 @@ _STEPS = (
 )
 
 
+def try_acquire_lease(db: Session, now: datetime, name: str = "sweep") -> bool:
+    """Take the right to run the sweep, or report that someone else has it.
+
+    A conditional UPDATE whose rowcount decides the winner. That is atomic on both
+    SQLite and Postgres, unlike a Postgres advisory lock, which would be a silent
+    no-op in development — exactly where a broken lock would go unnoticed.
+
+    Held for a full interval rather than released at the end of the sweep, so two
+    instances cannot sweep back-to-back either. See models.SchedulerLease.
+    """
+    until = now + timedelta(seconds=SWEEP_INTERVAL_SECONDS)
+    won = (
+        db.query(models.SchedulerLease)
+        .filter(models.SchedulerLease.name == name, models.SchedulerLease.expires_at <= now)
+        .update(
+            {"holder": HOLDER, "acquired_at": now, "expires_at": until},
+            synchronize_session=False,
+        )
+    )
+    db.commit()
+    if won:
+        return True
+    # Zero rows updated means either the lease is held, or it has never existed.
+    # The primary key is what makes this insert safe against a simultaneous first run.
+    try:
+        db.add(
+            models.SchedulerLease(
+                name=name, holder=HOLDER, acquired_at=now, expires_at=until
+            )
+        )
+        db.commit()
+        return True
+    except IntegrityError:
+        db.rollback()  # another instance inserted first — it holds the lease
+        return False
+
+
 def run_sweep() -> None:
     """One full pass over all time-based work. Opens its own session (runs in a
-    worker thread, never a request session). Safe to call any time — every step
-    is idempotent via CAS updates, unique constraints, or dedupe queries."""
+    worker thread, never a request session).
+
+    Takes a lease first, because three of the five steps are check-then-act
+    (SELECT for an existing notification, then insert) and two instances would
+    interleave them into duplicate reminders and duplicate weekly digests. The
+    per-step guards that ARE real — the MonthHonor unique constraint and the
+    proposal CAS update — stay exactly where they are: the lease protects sweep
+    against sweep, while those same code paths are still reachable from ordinary
+    requests, which the lease knows nothing about.
+    """
     now = datetime.utcnow()
     with SessionLocal() as db:
+        if not try_acquire_lease(db, now):
+            logger.info("Sweep skipped: another instance holds the lease")
+            return
         for step in _STEPS:
             try:
                 step(db, now)

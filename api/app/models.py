@@ -479,6 +479,38 @@ class HouseholdImage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class SchedulerLease(Base):
+    """One row per background job, holding the right to run it for a while.
+
+    The scheduler's docstring used to claim every sweep step was idempotent. Three
+    of the five are not: `_remind_closing_votes`, `_remind_tomorrow_events` and
+    `_send_weekly_digests` each SELECT for an existing notification and then insert
+    if there wasn't one — check-then-act, which two instances interleave happily.
+    Only `_honor_active_mahallas` (guarded by the MonthHonor unique constraint) and
+    `_close_due_votes` (a CAS update checked by rowcount) are genuinely safe, and
+    those two are safe because the DATABASE enforces it, not because the code looks
+    careful.
+
+    So the sweep takes a lease first. Acquisition is a conditional UPDATE whose
+    rowcount decides the winner, which is atomic on both SQLite and Postgres — a
+    Postgres advisory lock would be the natural choice but is a silent no-op in
+    development, where the difference would never be noticed.
+
+    The lease is deliberately NOT released when a sweep finishes: holding it for the
+    full interval means at most one sweep happens globally per interval, which also
+    rules out two instances sweeping back-to-back rather than merely at the same
+    moment. If a holder dies mid-sweep, the lease simply expires and the next
+    instance picks the work up.
+    """
+
+    __tablename__ = "scheduler_leases"
+
+    name: Mapped[str] = mapped_column(String(40), primary_key=True)
+    holder: Mapped[str] = mapped_column(String(64))  # which process holds it
+    acquired_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
 class ServiceImage(Base):
     """A photo of a neighbour's work, attached to a service offering (plan §9-G).
     The directory is a wall of text without these: a tailor's finished dress is
