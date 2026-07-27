@@ -1,8 +1,13 @@
 """Shared pytest fixtures.
 
-Tests run against a throwaway SQLite database (DATABASE_URL is set below, before
-the app is imported, so settings pick it up). The schema is rebuilt for every
-test, so each test starts from a known-empty world and never touches the dev DB.
+Tests run against a throwaway database, SQLite by default. `setdefault` is what
+makes the engine swappable: CI's Postgres job exports DATABASE_URL before pytest
+starts and the same suite runs unchanged against a real server. An untested
+Postgres is not a supported Postgres, and the two engines genuinely differ —
+foreign keys are enforced, sequences keep climbing after a DELETE, and a value
+longer than String(n) is an error rather than a shrug.
+
+The schema is built once per session; tests isolate themselves by wiping rows.
 """
 
 import os
@@ -21,6 +26,8 @@ from app import models  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 
+IS_POSTGRES = engine.dialect.name == "postgresql"
+
 
 @pytest.fixture(scope="session", autouse=True)
 def _schema():
@@ -35,12 +42,18 @@ def _schema():
     Doing the DDL exactly once removes the whole class of race — tests isolate
     themselves by wiping rows, not by rebuilding tables (see _clean).
 
-    DROP first (IF EXISTS, any order — SQLite ignores foreign keys unless the pragma
-    is on) so a schema left over from a previous run cannot collide.
+    DROP first so a schema left over from a previous run cannot collide. How that is
+    done differs by engine, and the difference is the foreign-key cycle: SQLite
+    ignores foreign keys unless the pragma is on, so any order works, while Postgres
+    enforces them and would refuse. Dropping the whole schema sidesteps ordering
+    entirely, and also clears anything the models no longer declare.
     """
     with engine.begin() as conn:
-        for table in Base.metadata.tables:
-            conn.exec_driver_sql(f'DROP TABLE IF EXISTS "{table}"')
+        if IS_POSTGRES:
+            conn.exec_driver_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        else:
+            for table in Base.metadata.tables:
+                conn.exec_driver_sql(f'DROP TABLE IF EXISTS "{table}"')
         Base.metadata.create_all(bind=conn)
     yield
 
@@ -48,11 +61,20 @@ def _schema():
 @pytest.fixture(autouse=True)
 def _clean():
     """Empty every table before each test, so each starts from a known-empty world
-    without any DDL. DELETE, not TRUNCATE/DROP; order does not matter with SQLite's
-    foreign keys off."""
+    without any DDL.
+
+    On Postgres this is one TRUNCATE ... CASCADE: it handles the foreign-key cycle
+    in a single statement, and RESTART IDENTITY matters because Postgres sequences
+    keep climbing after a DELETE while SQLite's rowids do not — without it the two
+    engines would hand out different ids and any test naming one would diverge.
+    """
     with engine.begin() as conn:
-        for table in reversed(list(Base.metadata.tables)):
-            conn.exec_driver_sql(f'DELETE FROM "{table}"')
+        if IS_POSTGRES:
+            names = ", ".join(f'"{t}"' for t in Base.metadata.tables)
+            conn.exec_driver_sql(f"TRUNCATE {names} RESTART IDENTITY CASCADE")
+        else:
+            for table in reversed(list(Base.metadata.tables)):
+                conn.exec_driver_sql(f'DELETE FROM "{table}"')
     yield
 
 

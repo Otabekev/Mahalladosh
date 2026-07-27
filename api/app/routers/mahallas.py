@@ -158,7 +158,7 @@ def members(
     rows = (
         db.query(models.User)
         .filter(models.User.mahalla_id == mahalla_id)
-        .order_by(models.User.rep_month.desc())
+        .order_by(models.User.rep_month.desc(), models.User.id)
         .all()
     )
     return [presenters.user_out(db, u) for u in rows]
@@ -199,7 +199,7 @@ def leaderboard(
         )
         .filter_by(mahalla_id=mahalla_id, month=month_key)
         .group_by(models.ReputationEntry.user_id)
-        .order_by(func.sum(models.ReputationEntry.amount).desc())
+        .order_by(func.sum(models.ReputationEntry.amount).desc(), models.ReputationEntry.user_id)
         .limit(20)
         .all()
     )
@@ -217,7 +217,7 @@ def leaderboard(
     alltime_rows = (
         db.query(models.User)
         .filter(models.User.mahalla_id == mahalla_id, models.User.rep_alltime > 0)
-        .order_by(models.User.rep_alltime.desc())
+        .order_by(models.User.rep_alltime.desc(), models.User.id)
         .limit(20)
         .all()
     )

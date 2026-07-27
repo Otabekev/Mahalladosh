@@ -126,7 +126,9 @@ def ensure_month_honor(db: Session, mahalla_id: int) -> None:
         )
         .filter_by(mahalla_id=mahalla_id, month=last_month)
         .group_by(models.ReputationEntry.user_id)
-        .order_by(func.sum(models.ReputationEntry.amount).desc())
+        # id breaks a points tie deterministically — without it the honoured
+        # neighbour could differ between engines, and between two runs on Postgres
+        .order_by(func.sum(models.ReputationEntry.amount).desc(), models.ReputationEntry.user_id)
         .limit(5)
         .all()
     )

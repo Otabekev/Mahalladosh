@@ -57,7 +57,7 @@ def last_month_winner(db: Session, mahalla_id: int) -> schemas.LeaderboardEntry 
         )
         .filter_by(mahalla_id=mahalla_id, month=last_month)
         .group_by(models.ReputationEntry.user_id)
-        .order_by(func.sum(models.ReputationEntry.amount).desc())
+        .order_by(func.sum(models.ReputationEntry.amount).desc(), models.ReputationEntry.user_id)
         .first()
     )
     if row is None:

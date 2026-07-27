@@ -180,7 +180,7 @@ def post_detail(db: Session, p: models.Post, viewer: models.User) -> schemas.Pos
     rows = (
         db.query(models.PostResponse)
         .filter_by(post_id=p.id)
-        .order_by(models.PostResponse.created_at.asc())
+        .order_by(models.PostResponse.created_at.asc(), models.PostResponse.id)
         .all()
     )
     responses = []
@@ -199,7 +199,7 @@ def post_detail(db: Session, p: models.Post, viewer: models.User) -> schemas.Pos
     comment_rows = (
         db.query(models.PostComment)
         .filter_by(post_id=p.id)
-        .order_by(models.PostComment.created_at.asc())
+        .order_by(models.PostComment.created_at.asc(), models.PostComment.id)
         .all()
     )
     comments = [
@@ -302,7 +302,7 @@ def bugun(
             models.Post.event_date.isnot(None),
             models.Post.event_date >= models.utcnow() - EVENT_GRACE,
         )
-        .order_by(models.Post.event_date.asc())
+        .order_by(models.Post.event_date.asc(), models.Post.id)
         .first()
     )
     return schemas.BugunOut(
@@ -402,7 +402,7 @@ def upcoming_events(
             models.Post.event_date.isnot(None),
             models.Post.event_date >= models.utcnow() - EVENT_GRACE,
         )
-        .order_by(models.Post.event_date.asc())
+        .order_by(models.Post.event_date.asc(), models.Post.id)
         .limit(UPCOMING_LIMIT)
         .all()
     )
