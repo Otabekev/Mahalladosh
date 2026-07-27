@@ -99,6 +99,28 @@ export function useVouch(id: number) {
   })
 }
 
+export function useAddPhotos(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (urls: string[]) =>
+      api<Household>(`/households/${id}/photos`, { method: 'POST', body: { urls } }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['households'] })
+    },
+  })
+}
+
+export function useDeletePhoto(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (imageId: number) =>
+      api<Household>(`/households/${id}/photos/${imageId}`, { method: 'DELETE' }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['households'] })
+    },
+  })
+}
+
 // ---------- join / claim / stewardship ----------
 
 /** POST /households/{id}/join-request — ask a family's stewards to let you in. */

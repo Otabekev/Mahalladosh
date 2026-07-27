@@ -238,6 +238,18 @@ export const householdStrings = {
   // family album strip
   albumTitle: { uz: 'Oila albomi', uzc: 'Оила альбоми', ru: 'Семейный альбом', en: 'Family album' },
   albumSoon: { uz: 'Tez orada', uzc: 'Тез орада', ru: 'Скоро', en: 'Coming soon' },
+  albumEmptyOwn: {
+    uz: 'Oila suratlarini qo‘shing',
+    uzc: 'Оила суратларини қўшинг',
+    ru: 'Добавьте семейные фото',
+    en: 'Add your family photos',
+  },
+  deletePhotoConfirm: {
+    uz: 'Bu suratni o‘chirasizmi?',
+    uzc: 'Бу суратни ўчирасизми?',
+    ru: 'Удалить это фото?',
+    en: 'Delete this photo?',
+  },
 
   // "Bizning tariximiz" read-mode prose
   ourHistory: { uz: 'Bizning tariximiz', uzc: 'Бизнинг тарихимиз', ru: 'Наша история', en: 'Our story' },

@@ -127,8 +127,14 @@ export interface Household {
   my_vouch: boolean
   has_location: boolean
   members: HouseholdMember[]
+  photos: HouseholdPhoto[]
   created_by: number
   created_at: string
+}
+
+export interface HouseholdPhoto {
+  id: number
+  url: string
 }
 
 export interface HouseholdIn {

@@ -68,7 +68,7 @@ export default function HouseholdDetailScreen() {
       {household.generations_here != null && <GenerationsStat generations={household.generations_here} />}
 
       <div className="mt-6 space-y-7">
-        <AlbumStrip />
+        <AlbumStrip household={household} />
         <HistoryProse history={household.family_history} verified={verified} own={false} />
         <MembersRead members={household.members} />
 

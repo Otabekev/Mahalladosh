@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom'
 import { useBack } from '@/components/useBack'
 import { useAuth } from '@/core/stores/auth'
 import { useConfirm } from '@/components/confirm'
+import { Lightbox } from '@/components/Lightbox'
 import { fmt, useLang, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { householdStrings } from '@/core/i18n/household'
@@ -21,6 +22,7 @@ import {
   ErrorNote,
   Field,
   Input,
+  MultiImagePicker,
   PageTitle,
   PointsBadge,
   Select,
@@ -30,9 +32,11 @@ import {
 import {
   getPosition,
   useAddMember,
+  useAddPhotos,
   useApproveJoin,
   useCreateHousehold,
   useDeclineJoin,
+  useDeletePhoto,
   useHousehold,
   useJoinRequests,
   useRemoveMember,
@@ -141,25 +145,73 @@ export function GenerationsStat({ generations }: { generations: number }) {
   )
 }
 
-/** Oila albomi — a warm 4-tile strip. Real photo upload is a future task; for now
- * these are gentle cream placeholders so the album still feels present. */
-export function AlbumStrip() {
+/** Oila albomi — the family photo album. Read-only for neighbours (server gates who
+ * sees it); the household's own members get add + delete. Tapping opens the shared
+ * fullscreen Lightbox. Hidden entirely for a neighbour when there are no photos. */
+export function AlbumStrip({ household, editable = false }: { household: Household; editable?: boolean }) {
   const s = useStrings(householdStrings)
+  const c = useStrings(common)
+  const confirm = useConfirm()
+  const addPhotos = useAddPhotos(household.id)
+  const delPhoto = useDeletePhoto(household.id)
+  const [lightbox, setLightbox] = useState<number | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const photos = household.photos
+
+  if (!editable && photos.length === 0) return null
+
+  const remove = async (id: number) => {
+    if (await confirm({ title: s.albumTitle, body: s.deletePhotoConfirm, confirmLabel: c.remove, danger: true }))
+      delPhoto.mutate(id)
+  }
+
   return (
     <div>
-      <div className="mb-2.5 flex items-center justify-between">
-        <div className="text-[13px] font-semibold uppercase tracking-[0.08em] text-brand">{s.albumTitle}</div>
-        <span className="text-[13px] text-sub">{s.albumSoon}</span>
+      <div className="mb-2.5 text-[13px] font-semibold uppercase tracking-[0.08em] text-brand">
+        {s.albumTitle}
       </div>
-      <div className="flex gap-2.5">
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="aspect-[3/4] flex-1 rounded-xl border border-line"
-            style={{ background: 'repeating-linear-gradient(135deg,#E7D6B4,#E7D6B4 8px,#EEE1C4 8px,#EEE1C4 16px)' }}
-          />
+      {uploadError && <ErrorNote message={uploadError} />}
+
+      <div className="grid grid-cols-3 gap-2">
+        {photos.map((p, i) => (
+          <div key={p.id} className="relative aspect-square overflow-hidden rounded-xl border border-line">
+            <button onClick={() => setLightbox(i)} className="h-full w-full">
+              <img src={p.url} alt="" className="h-full w-full object-cover" />
+            </button>
+            {editable && (
+              <button
+                type="button"
+                aria-label={c.remove}
+                onClick={() => remove(p.id)}
+                className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-base leading-none text-white"
+              >
+                ×
+              </button>
+            )}
+          </div>
         ))}
       </div>
+
+      {editable && photos.length < 12 && (
+        <div className="mt-2">
+          <MultiImagePicker
+            value={[]}
+            max={12 - photos.length}
+            onChange={(urls) => {
+              setUploadError(null)
+              if (urls.length) addPhotos.mutate(urls)
+            }}
+            onError={setUploadError}
+          />
+        </div>
+      )}
+      {editable && photos.length === 0 && (
+        <p className="text-[13px] text-sub">{s.albumEmptyOwn}</p>
+      )}
+
+      {lightbox !== null && (
+        <Lightbox images={photos.map((p) => p.url)} startIndex={lightbox} onClose={() => setLightbox(null)} />
+      )}
     </div>
   )
 }
@@ -397,7 +449,7 @@ function ReadMode({ household, onEdit }: { household: Household; onEdit: () => v
       {household.generations_here != null && <GenerationsStat generations={household.generations_here} />}
 
       <div className="mt-6 space-y-7">
-        <AlbumStrip />
+        <AlbumStrip household={household} editable />
         <HistoryProse history={household.family_history} verified={verified} own />
         <MembersRead members={household.members} />
         <JoinRequestsSection id={household.id} />
