@@ -43,11 +43,16 @@ The reason to open it every morning.
 - Tappable public profiles · edit/delete own content · invite link + QR
 - Multi-photo posts + fullscreen lightbox · opt-in family albums
 
-## 📚 Phase 6 — Depth
+## ✅ Phase 6 — Depth
 
-- Levels from all-time points · badges (Asoschi, Tarixchi, Mehmondo‘st…)
-- Events with RSVP · charity progress bars · quick polls
-- Mahalla contacts page · service photos · content lifecycle + in-mahalla search · pagination
+- Earned badges (Faol qo‘shni · Asoschi · Mehmondo‘st · Tarixchi), derived from
+  facts rather than awarded — no table, nothing to backfill or revoke
+- Events done properly — RSVP with a guest list, an “Upcoming” strip, day-before reminder
+- Charity progress bars · quick polls answerable from the feed card
+- Service photos · keyset feed pagination + pull-to-refresh
+- Content lifecycle (old posts age off the feed) + in-mahalla search that folds
+  Uzbek apostrophes and matches Cyrillic queries against Latin content
+- A four-language CI guard that catches Russian pasted into the Uzbek Cyrillic slot
 
 ## 🌍 Phase 7 — Scale & go-to-market
 

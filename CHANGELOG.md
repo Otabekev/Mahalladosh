@@ -6,6 +6,51 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Added
+- **Depth pass** — the mahalla now has the things a community actually does.
+  **Quick polls** answerable in one tap from the feed card (deliberately the light
+  counterpart to a binding governance proposal: no seconding, no quorum, no
+  deadline). **Events done properly** — a guest list, an *Upcoming* strip so a to‘y
+  stops sinking into a reverse-chronological feed, and a day-before reminder.
+  **Charity collections** with a goal and a progress bar. **Photos of the work** on
+  service offerings, so the directory stops being a wall of text. **Earned badges**
+  — Faol qo‘shni, Asoschi, Mehmondo‘st, Tarixchi — on every profile.
+- **Feed pagination and pull-to-refresh** — the feed loads fifteen posts at a time
+  behind an explicit "Yana ko‘rsatish", rather than everything at once. Keyset
+  rather than offset paging, so a neighbour posting while you read cannot make the
+  next page repeat or skip a row.
+- **Content lifecycle** — old posts age off the front page on a per-type schedule
+  (a help request is stale in a month, a charity collection runs all season, a
+  to‘y is irrelevant the morning after). Purely a query-time filter: nothing is
+  written, nothing is deleted, and an aged-out post still opens by link.
+- **In-mahalla search** over posts and services, folding text so that the four ways
+  Uzbek writes an apostrophe (qo'shni / qoʻshni / qo‘shni / qoshni) are one word,
+  and a Cyrillic query finds the Latin post — it is the same word. Household
+  members are deliberately *not* searchable: that would let an unverified account
+  confirm who lives where, bypassing the family privacy gate.
+
+### Fixed
+- Closing a post never recorded *when* it was closed, only that it was. Harmless
+  until the feed lifecycle started reading that timestamp, at which point an old
+  announcement would have vanished the instant its author closed it.
+- The badge grid on your own profile was fabricated — it showed all four badges to
+  every account regardless of anything they had done.
+- Family album photos were served as bare paths while the UI expected `{id, url}`,
+  so on a fresh checkout the grid rendered nothing and delete sent an undefined id.
+
+### Security
+- **Four-language CI guard.** TypeScript already catches a *missing* language;
+  what it cannot see is Russian pasted into the Uzbek Cyrillic slot, which looks
+  plausible to any reviewer who does not read Uzbek and reaches exactly the elders
+  that slot exists for. A dependency-free check now fails the build on it, along
+  with the wrong script in any slot and lost `{placeholders}`.
+- One shared photo mechanism (`app/images.py`) behind posts, family albums and
+  service offerings, replacing what had become three copies of the same
+  validate-then-write block. The rule that matters — a stored path must have come
+  from the upload endpoint, or a caller could point a row at any URL on the
+  internet and have it render inside a neighbour's family album — is now stated
+  and enforced once.
+
+### Added
 - **Social layer** — a 🤲 Rahmat one-tap reaction on every post (optimistic, no
   points so it can't be farmed), free-form **comment threads** on all post types
   (with light author/raisi delete), **tappable public profiles** reached from any
