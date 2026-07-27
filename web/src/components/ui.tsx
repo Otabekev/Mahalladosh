@@ -436,6 +436,71 @@ export function ImagePicker({
   )
 }
 
+/** Multi-photo picker — a grid of thumbnails plus an add tile, up to `max`. Each
+ *  file is uploaded as it is picked; the value is the list of served URLs. */
+export function MultiImagePicker({
+  value,
+  onChange,
+  max = 6,
+  onError,
+}: {
+  value: string[]
+  onChange: (urls: string[]) => void
+  max?: number
+  onError?: (msg: string) => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const lang = useLang((s) => s.lang)
+
+  const pickFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (files.length === 0) return
+    setBusy(true)
+    try {
+      const room = Math.max(0, max - value.length)
+      const uploaded: string[] = []
+      for (const file of files.slice(0, room)) uploaded.push(await uploadImage(file))
+      onChange([...value, ...uploaded])
+    } catch (err) {
+      onError?.(err instanceof Error ? err.message : pick(common.uploadFailed))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mb-4 grid grid-cols-3 gap-2">
+      {value.map((url, i) => (
+        <div key={url} className="relative aspect-square overflow-hidden rounded-xl border border-line">
+          <img src={url} alt="" className="h-full w-full object-cover" />
+          <button
+            type="button"
+            aria-label="×"
+            onClick={() => onChange(value.filter((_, j) => j !== i))}
+            className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-base leading-none text-white"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      {value.length < max && (
+        <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line bg-gray-50 hover:bg-gray-100">
+          {busy ? (
+            <Spinner />
+          ) : (
+            <>
+              <span className="text-2xl">📷</span>
+              <span className="text-[11px] font-semibold text-sub">{common.addPhoto[lang]}</span>
+            </>
+          )}
+          <input type="file" accept="image/*" multiple className="hidden" onChange={pickFiles} disabled={busy} />
+        </label>
+      )}
+    </div>
+  )
+}
+
 // ---------- misc ----------
 
 /** Backend timestamps are naive UTC ("2026-07-26T09:15:00"); anything already

@@ -21,6 +21,7 @@ import { raisiStrings } from '@/core/i18n/raisi'
 import { useConfirm } from '@/components/confirm'
 import { useBack } from '@/components/useBack'
 import { RahmatButton } from '@/components/RahmatButton'
+import { Lightbox } from '@/components/Lightbox'
 import { useAuth } from '@/core/stores/auth'
 import {
   useAddComment,
@@ -343,6 +344,7 @@ export default function PostDetailScreen() {
 
   const [message, setMessage] = useState('')
   const [editOpen, setEditOpen] = useState(false)
+  const [lightbox, setLightbox] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
 
@@ -461,7 +463,25 @@ export default function PostDetailScreen() {
         {post.body && (
           <p className={`text-[15px] text-ink whitespace-pre-wrap ${isShare ? '' : 'mt-2'}`}>{post.body}</p>
         )}
-        {post.image_url && <img src={post.image_url} alt="" className="rounded-xl w-full mt-3" />}
+        {post.image_urls.length > 0 && (
+          <div className={`mt-3 grid gap-1.5 ${post.image_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {post.image_urls.map((url, idx) => (
+              <button
+                key={url}
+                onClick={() => setLightbox(idx)}
+                className={`overflow-hidden rounded-xl ${
+                  post.image_urls.length === 1 ? '' : 'aspect-square'
+                }`}
+              >
+                <img
+                  src={url}
+                  alt=""
+                  className={post.image_urls.length === 1 ? 'w-full rounded-xl' : 'h-full w-full object-cover'}
+                />
+              </button>
+            ))}
+          </div>
+        )}
         {post.event_date && <p className="text-sm text-sub mt-2">📅 {formatEventDate(post.event_date)}</p>}
         {post.goal && <p className="text-sm text-sub mt-1">🎯 {post.goal}</p>}
         <div className="flex items-center gap-2 mt-4 pt-3 border-t border-line">
@@ -584,6 +604,9 @@ export default function PostDetailScreen() {
 
       <CommentsSection post={post} />
 
+      {lightbox !== null && (
+        <Lightbox images={post.image_urls} startIndex={lightbox} onClose={() => setLightbox(null)} />
+      )}
       <EditPostModal post={post} open={editOpen} onClose={() => setEditOpen(false)} />
       <ResolveModal post={post} postId={postId} open={modalOpen} onClose={() => setModalOpen(false)} />
       <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} postId={postId} />

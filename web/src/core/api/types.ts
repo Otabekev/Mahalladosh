@@ -159,6 +159,7 @@ export interface PostIn {
   event_date?: string | null
   goal?: string | null
   image_url?: string | null
+  image_urls?: string[]
 }
 
 export interface Post {
@@ -172,6 +173,8 @@ export interface Post {
   image_url: string | null
   status: PostStatus
   author: User
+  /** All photos, cover first. image_url stays the single cover for the feed. */
+  image_urls: string[]
   author_place: string
   response_count: number
   my_response: boolean

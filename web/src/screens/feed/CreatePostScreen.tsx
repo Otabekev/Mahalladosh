@@ -7,7 +7,7 @@ import {
   Card,
   ErrorNote,
   Field,
-  ImagePicker,
+  MultiImagePicker,
   Input,
   PageTitle,
   POST_TYPE_META,
@@ -52,7 +52,7 @@ export default function CreatePostScreen() {
   const [category, setCategory] = useState<HelpCategory>('tool')
   const [eventDate, setEventDate] = useState('')
   const [goal, setGoal] = useState('')
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [images, setImages] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
   // ---- step 1: type picker ----
@@ -92,14 +92,14 @@ export default function CreatePostScreen() {
   // ---- step 2: form ----
   const meta = POST_TYPE_META[type]
   const option = TYPE_OPTIONS.find((o) => o.type === type)
-  const canSubmit = type === 'share' ? body.trim().length > 0 || imageUrl !== null : title.trim().length >= 3
+  const canSubmit = type === 'share' ? body.trim().length > 0 || images.length > 0 : title.trim().length >= 3
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     const input: PostIn = { type }
     if (body.trim()) input.body = body.trim()
     if (type === 'share') {
-      if (imageUrl) input.image_url = imageUrl
+      if (images.length) input.image_urls = images
     } else {
       input.title = title.trim()
       if (type === 'help') input.category = category
@@ -146,10 +146,10 @@ export default function CreatePostScreen() {
                 autoFocus
                 className="mb-4"
               />
-              <ImagePicker
-                value={imageUrl}
-                onChange={(url) => {
-                  setImageUrl(url)
+              <MultiImagePicker
+                value={images}
+                onChange={(urls) => {
+                  setImages(urls)
                   setError(null)
                 }}
                 onError={setError}
