@@ -21,6 +21,7 @@ import { raisiStrings } from '@/core/i18n/raisi'
 import { RahmatButton } from '@/components/RahmatButton'
 import { PullToRefresh } from '@/components/PullToRefresh'
 import { PollCard } from '@/components/PollCard'
+import { CharityBar } from '@/components/CharityBar'
 import { feedItems, useBugun, useDiscover, usePosts } from '@/core/queries/posts'
 import { useAuth } from '@/core/stores/auth'
 import type { DiscoverScope, Post } from '@/core/api/types'
@@ -160,6 +161,7 @@ function WarmCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         )}
         {/* a quick poll is answerable straight from the feed — that is the point of it */}
         {post.poll && <PollCard postId={post.id} poll={post.poll} closed={post.status !== 'open'} />}
+        {post.type === 'charity' && <CharityBar post={post} canReport={false} />}
         <div className="mt-3 flex items-center gap-1 text-sub">
           <div className="flex items-center gap-1.5 px-1">
             <CommentIcon />

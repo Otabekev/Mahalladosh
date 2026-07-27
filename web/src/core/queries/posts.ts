@@ -171,6 +171,19 @@ export function useVote(postId: number) {
   })
 }
 
+/** Report how much a collection has raised. Author-only on the server. */
+export function useUpdateCharity(postId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (collected: number) =>
+      api<PostDetail>(`/posts/${postId}/charity`, { method: 'PATCH', body: { collected } }),
+    onSuccess: (detail) => {
+      qc.setQueryData(['post', postId], detail)
+      invalidateFeeds(qc)
+    },
+  })
+}
+
 export function useRespond(postId: number) {
   const qc = useQueryClient()
   return useMutation({

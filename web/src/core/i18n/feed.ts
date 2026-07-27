@@ -190,6 +190,63 @@ export const feedStrings = {
     en: 'Your report was sent. Thank you.',
   },
 
+  // ---------- charity progress (#15) ----------
+  som: { uz: "so'm", uzc: 'сўм', ru: 'сум', en: 'soum' },
+  fieldGoalAmount: {
+    uz: "Maqsad summasi (so'm)",
+    uzc: 'Мақсад суммаси (сўм)',
+    ru: 'Сумма цели (сум)',
+    en: 'Goal amount (soum)',
+  },
+  goalAmountHint: {
+    uz: "Ixtiyoriy — summani yozsangiz, jarayon chizig'i ko'rinadi",
+    uzc: 'Ихтиёрий — суммани ёзсангиз, жараён чизиғи кўринади',
+    ru: 'Необязательно — с суммой появится полоса прогресса',
+    en: 'Optional — with an amount, a progress bar appears',
+  },
+  charityOfGoal: {
+    uz: '{goal} dan',
+    uzc: '{goal} дан',
+    ru: 'из {goal}',
+    en: 'of {goal}',
+  },
+  charityReported: {
+    uz: 'Yangilandi: {when}',
+    uzc: 'Янгиланди: {when}',
+    ru: 'Обновлено: {when}',
+    en: 'Updated {when}',
+  },
+  charityNotReported: {
+    uz: 'Hali hisobot berilmagan',
+    uzc: 'Ҳали ҳисобот берилмаган',
+    ru: 'Пока не отчитались',
+    en: 'Not reported yet',
+  },
+  charityReport: {
+    uz: 'Yangilash',
+    uzc: 'Янгилаш',
+    ru: 'Обновить',
+    en: 'Update',
+  },
+  charityReportTitle: {
+    uz: "Yig'ilgan summa",
+    uzc: 'Йиғилган сумма',
+    ru: 'Собранная сумма',
+    en: 'Amount collected',
+  },
+  charityReportHint: {
+    uz: "Faqat siz o'zgartira olasiz. Qachon yangilanganini hamma ko'radi.",
+    uzc: 'Фақат сиз ўзгартира оласиз. Қачон янгиланганини ҳамма кўради.',
+    ru: 'Менять можете только вы. Все видят, когда обновлено.',
+    en: 'Only you can change it. Everyone sees when it was updated.',
+  },
+  charityCollected: {
+    uz: "Hozirgacha yig'ildi",
+    uzc: 'Ҳозиргача йиғилди',
+    ru: 'Собрано на сейчас',
+    en: 'Collected so far',
+  },
+
   // ---------- quick polls (#16) ----------
   pollDesc: {
     uz: "Qisqa so'rovnoma — bir teginish",

@@ -136,6 +136,13 @@ def run():
                   image_path=img("post_hashar.jpg"))
     db.add(models.PostResponse(post_id=hashar.id, user_id=users["otabek"].id, message="Ajoyib kun edi"))
 
+    # a charity collection, part-way to its goal
+    post("gulnora", "charity", "Maktab kutubxonasiga kitob yig'amiz", 900,
+         goal="Kitoblar", charity_goal_amount=3_000_000,
+         charity_collected_amount=1_850_000,
+         charity_updated_at=NOW - timedelta(hours=20),
+         body="Bolalarimiz uchun. Kim qancha qo'sha olsa.")
+
     # a quick poll, mid-vote — the light counterpart to a governance proposal
     poll = post("malika", "poll", "Hasharni qaysi kuni qilamiz?", 180,
                 body="Ko'pchilikka qulay kunni tanlaymiz.")

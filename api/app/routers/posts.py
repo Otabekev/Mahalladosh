@@ -89,6 +89,16 @@ def _page(q, cursor: str | None, limit: int = PAGE_SIZE):
 
 
 
+def _charity_percent(p: models.Post) -> int:
+    """Progress toward the goal, 0-100. Computed here rather than on each client so
+    the feed card, the post page and any future surface can never disagree — and
+    clamped, because an over-subscribed collection should read 100%, not 143%."""
+    goal = p.charity_goal_amount or 0
+    if goal <= 0:
+        return 0
+    return max(0, min(100, round(p.charity_collected_amount * 100 / goal)))
+
+
 def poll_out(db: Session, p: models.Post, viewer: models.User) -> schemas.PollOut | None:
     """A poll's live tallies. Returns None for every other post type, so this costs
     nothing on the ordinary feed."""
@@ -155,6 +165,10 @@ def post_out(
         comment_count=comment_count,
         image_urls=image_urls,
         poll=poll_out(db, p, viewer),
+        charity_goal_amount=p.charity_goal_amount,
+        charity_collected_amount=p.charity_collected_amount,
+        charity_percent=_charity_percent(p),
+        charity_updated_at=p.charity_updated_at,
         created_at=p.created_at,
     )
 
@@ -338,6 +352,7 @@ def create_post(
         category=data.category,
         event_date=data.event_date,
         goal=data.goal,
+        charity_goal_amount=data.goal_amount if data.type == "charity" else None,
         image_path=photos[0] if photos else None,  # cover = first
     )
     db.add(post)
@@ -500,6 +515,39 @@ def vote_on_poll(
         db.add(models.PollVote(post_id=post.id, option_id=option.id, user_id=user.id))
     db.commit()
     return poll_out(db, post, user)
+
+
+@router.patch("/{post_id}/charity", response_model=schemas.PostDetail)
+def update_charity(
+    post_id: int,
+    data: schemas.CharityUpdate,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Report how much a collection has raised so far.
+
+    This app has no payment rail, so the figure is one a person types in — which
+    makes it the most abusable number in the product. The guardrails are:
+
+    - Only the post's author may change it. Not the raisi: `require_raisi` has an
+      admin bypass, which would let a platform admin type a number into a mahalla's
+      collection, and a number about money should have exactly one accountable
+      author.
+    - `charity_updated_at` is stamped on every write and always shown, so a figure
+      nobody has touched in three weeks reads as stale instead of as fact.
+    - The amount MAY go down. Refusing to let it decrease would make an honest typo
+      permanent, which is worse than allowing a correction.
+    - Whole so'm only, and never a float.
+    """
+    post = _get_post(db, post_id, user)
+    if post.type != "charity":
+        raise HTTPException(status_code=400, detail="Bu xayriya e'loni emas")
+    if post.author_id != user.id:
+        raise HTTPException(status_code=403, detail="Faqat e'lon egasi")
+    post.charity_collected_amount = data.collected
+    post.charity_updated_at = models.utcnow()
+    db.commit()
+    return post_detail(db, post, user)
 
 
 @router.post("/{post_id}/comments", response_model=schemas.PostDetail)

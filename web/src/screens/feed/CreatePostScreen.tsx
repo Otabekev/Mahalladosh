@@ -18,6 +18,7 @@ import {
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { feedStrings } from '@/core/i18n/feed'
+import { formatSom } from '@/components/CharityBar'
 import { useCreatePost } from '@/core/queries/posts'
 import type { HelpCategory, PostIn, PostType } from '@/core/api/types'
 
@@ -57,6 +58,7 @@ export default function CreatePostScreen() {
   const [category, setCategory] = useState<HelpCategory>('tool')
   const [eventDate, setEventDate] = useState('')
   const [goal, setGoal] = useState('')
+  const [goalAmount, setGoalAmount] = useState('')
   const [images, setImages] = useState<string[]>([])
   // a poll starts with the two empty rows it needs at minimum
   const [options, setOptions] = useState<string[]>(['', ''])
@@ -118,6 +120,10 @@ export default function CreatePostScreen() {
       if (type === 'help') input.category = category
       if (type === 'event' && eventDate) input.event_date = new Date(eventDate).toISOString()
       if (type === 'charity' && goal.trim()) input.goal = goal.trim()
+      if (type === 'charity') {
+        const amount = Number(goalAmount.replace(/\D/g, '') || '0')
+        if (amount > 0) input.goal_amount = amount
+      }
       if (type === 'poll') input.options = filledOptions
     }
     create.mutate(input, {
@@ -207,6 +213,22 @@ export default function CreatePostScreen() {
                     placeholder={s.goalPlaceholder}
                     maxLength={200}
                   />
+                </Field>
+              )}
+
+              {type === 'charity' && (
+                <Field label={s.fieldGoalAmount} hint={s.goalAmountHint}>
+                  <div className="relative">
+                    <Input
+                      inputMode="numeric"
+                      value={goalAmount && formatSom(Number(goalAmount.replace(/\D/g, '') || '0'))}
+                      onChange={(e) => setGoalAmount(e.target.value)}
+                      placeholder="1 000 000"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-sub">
+                      {s.som}
+                    </span>
+                  </div>
                 </Field>
               )}
 

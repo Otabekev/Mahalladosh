@@ -320,6 +320,8 @@ class PostIn(BaseModel):
     category: Literal["tool", "ride", "labor", "childcare", "other"] | None = None
     event_date: datetime | None = None
     goal: str | None = Field(default=None, max_length=200)
+    # charity: the target, in whole so'm. Set once at creation.
+    goal_amount: int | None = Field(default=None, ge=0, le=10_000_000_000)
     image_url: str | None = Field(default=None, max_length=300)  # legacy single image
     image_urls: list[str] | None = Field(default=None, max_length=6)  # multi-photo
     # poll only: the question is the title, these are the answers
@@ -342,6 +344,12 @@ class PollOut(BaseModel):
 
 class PollVoteIn(BaseModel):
     option_id: int
+
+
+class CharityUpdate(BaseModel):
+    """Report how much has been collected so far. Whole so'm."""
+
+    collected: int = Field(ge=0, le=10_000_000_000)
 
 
 class ResponseIn(BaseModel):
@@ -395,6 +403,11 @@ class PostOut(BaseModel):
     my_rahmat: bool = False  # did the viewer give Rahmat
     comment_count: int = 0  # discussion-thread size
     poll: PollOut | None = None  # poll posts only
+    # charity collections — amounts in whole so'm
+    charity_goal_amount: int | None = None
+    charity_collected_amount: int = 0
+    charity_percent: int = 0  # 0-100, clamped; computed so every surface agrees
+    charity_updated_at: datetime | None = None
     created_at: datetime
 
 

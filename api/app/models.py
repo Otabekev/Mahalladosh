@@ -214,7 +214,17 @@ class Post(Base):
 
     category: Mapped[str | None] = mapped_column(String(30))  # help: tool|ride|labor|childcare|other
     event_date: Mapped[datetime | None] = mapped_column(DateTime)
-    goal: Mapped[str | None] = mapped_column(String(200))  # charity
+    goal: Mapped[str | None] = mapped_column(String(200))  # charity: what it is FOR, in words
+
+    # Charity collections. Amounts are whole so'm as INTEGERS — never floats, because
+    # binary floating point cannot hold 1 200 000.10 exactly and money must not drift.
+    # There is no payment rail in this app and adding one is out of scope, so
+    # `collected` is a number a human reports by hand; `charity_updated_at` exists so
+    # a figure nobody has touched in three weeks is visibly stale rather than silently
+    # wrong. See the guardrails on PATCH /posts/{id}/charity.
+    charity_goal_amount: Mapped[int | None] = mapped_column(Integer)
+    charity_collected_amount: Mapped[int] = mapped_column(Integer, default=0)
+    charity_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
     status: Mapped[str] = mapped_column(String(20), default="open")  # open|resolved|closed
     resolved_helper_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime)

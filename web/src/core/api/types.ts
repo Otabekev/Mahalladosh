@@ -177,6 +177,8 @@ export interface PostIn {
   category?: HelpCategory | null
   event_date?: string | null
   goal?: string | null
+  /** Charity only: the target, in whole so'm. */
+  goal_amount?: number | null
   image_url?: string | null
   image_urls?: string[]
   /** Poll only: the question is the title, these are the answers. */
@@ -222,6 +224,14 @@ export interface Post {
   comment_count: number
   /** Poll posts only; null on every other type. */
   poll: Poll | null
+  /** Charity collections. Amounts are whole so'm; percent is computed and clamped
+   *  by the server so every surface shows the same figure. */
+  charity_goal_amount: number | null
+  charity_collected_amount: number
+  charity_percent: number
+  /** When the author last reported the total — always shown, so a figure nobody
+   *  has touched in weeks reads as stale rather than as fact. */
+  charity_updated_at: string | null
   created_at: string
 }
 

@@ -23,6 +23,7 @@ import { useBack } from '@/components/useBack'
 import { RahmatButton } from '@/components/RahmatButton'
 import { Lightbox } from '@/components/Lightbox'
 import { PollCard } from '@/components/PollCard'
+import { CharityBar } from '@/components/CharityBar'
 import { useAuth } from '@/core/stores/auth'
 import {
   useAddComment,
@@ -465,6 +466,7 @@ export default function PostDetailScreen() {
           <p className={`text-[15px] text-ink whitespace-pre-wrap ${isShare ? '' : 'mt-2'}`}>{post.body}</p>
         )}
         {post.poll && <PollCard postId={post.id} poll={post.poll} closed={post.status !== 'open'} />}
+        {post.type === 'charity' && <CharityBar post={post} canReport={isAuthor} />}
         {post.image_urls.length > 0 && (
           <div className={`mt-3 grid gap-1.5 ${post.image_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {post.image_urls.map((url, idx) => (
