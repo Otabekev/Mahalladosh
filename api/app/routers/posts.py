@@ -6,12 +6,14 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, notify, presenters, reputation, schemas, track
+from .. import images, models, notify, presenters, reputation, schemas, track
 from ..deps import get_current_user, get_db, require_member
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 TYPE_EMOJI = {"help": "🤝", "announcement": "📢", "charity": "❤️", "event": "🎉", "share": "📷"}
+
+POST_PHOTO_CAP = 6
 
 # Anti-gaming soft cap (plan §9-C): max thanked-awards per month from the same
 # requester to the same helper. Resolve still works past the cap — only the
@@ -56,14 +58,10 @@ def post_out(
         is not None
     )
     comment_count = db.query(models.PostComment).filter_by(post_id=p.id).count()
-    image_rows = (
-        db.query(models.PostImage)
-        .filter_by(post_id=p.id)
-        .order_by(models.PostImage.position, models.PostImage.id)
-        .all()
-    )
     # fall back to the single cover for posts created before multi-photo existed
-    image_urls = [im.path for im in image_rows] or ([p.image_path] if p.image_path else [])
+    image_urls = images.paths(db, models.PostImage, "post_id", p.id) or (
+        [p.image_path] if p.image_path else []
+    )
     return schemas.PostOut(
         id=p.id,
         type=p.type,
@@ -185,15 +183,13 @@ def create_post(
         raise HTTPException(status_code=400, detail="Sanani kiriting")
 
     # collect photos: image_urls (multi) wins, image_url (legacy single) as fallback
-    images = list(data.image_urls) if data.image_urls else ([data.image_url] if data.image_url else [])
-    images = [u for u in images if u][:6]  # drop blanks, cap at 6
-    if any(not u.startswith("/api/uploads/") for u in images):
-        raise HTTPException(status_code=400, detail="Rasm avval yuklanishi kerak")
+    raw = list(data.image_urls) if data.image_urls else ([data.image_url] if data.image_url else [])
+    photos = images.clean_urls(raw, POST_PHOTO_CAP)
 
     if data.type == "share":
         # open people-post: needs text or a photo; title derives from the text
         body = (data.body or "").strip()
-        if not body and not images:
+        if not body and not photos:
             raise HTTPException(status_code=400, detail="Matn yoki rasm qo'shing")
         title = body[:80] if body else "📷 Rasm"
     else:
@@ -210,12 +206,11 @@ def create_post(
         category=data.category,
         event_date=data.event_date,
         goal=data.goal,
-        image_path=images[0] if images else None,  # cover = first
+        image_path=photos[0] if photos else None,  # cover = first
     )
     db.add(post)
     db.flush()
-    for i, path in enumerate(images):
-        db.add(models.PostImage(post_id=post.id, path=path, position=i))
+    images.replace(db, models.PostImage, "post_id", post.id, photos)
     # share posts don't ping the whole mahalla — they're browse-content, not a
     # call to action; the structured types keep their fan-out
     if post.type != "share":

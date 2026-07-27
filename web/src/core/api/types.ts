@@ -263,6 +263,8 @@ export interface ServiceIn {
   description?: string | null
   price?: string | null
   contact?: string | null
+  /** The whole photo set. Omit on update to leave the existing photos alone. */
+  image_urls?: string[]
 }
 
 export interface ServiceUpdate extends Partial<ServiceIn> {
@@ -279,6 +281,7 @@ export interface Service {
   price: string | null
   contact: string | null
   active: boolean
+  image_urls: string[]
   created_at: string
 }
 

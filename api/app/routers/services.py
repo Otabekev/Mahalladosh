@@ -4,10 +4,12 @@ each other and settle everything offline — no booking, no payments."""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, schemas
+from .. import images, models, schemas
 from ..deps import get_current_user, get_db, require_member
 
 router = APIRouter(prefix="/services", tags=["services"])
+
+PHOTO_CAP = schemas.SERVICE_PHOTO_CAP
 
 
 def service_out(db: Session, s: models.ServiceOffering) -> schemas.ServiceOut:
@@ -22,6 +24,7 @@ def service_out(db: Session, s: models.ServiceOffering) -> schemas.ServiceOut:
         price=s.price,
         contact=s.contact,
         active=s.active,
+        image_urls=images.paths(db, models.ServiceImage, "service_id", s.id),
         created_at=s.created_at,
     )
 
@@ -79,13 +82,16 @@ def create_service(
 ):
     if user.household_id is None:
         raise HTTPException(status_code=400, detail="Avval xonadoningizni yarating")
+    urls = images.clean_urls(data.image_urls, PHOTO_CAP)
     s = models.ServiceOffering(
         household_id=user.household_id,
         mahalla_id=user.mahalla_id,
         created_by=user.id,
-        **data.model_dump(),
+        **data.model_dump(exclude={"image_urls"}),
     )
     db.add(s)
+    db.flush()
+    images.replace(db, models.ServiceImage, "service_id", s.id, urls)
     db.commit()
     db.refresh(s)
     return service_out(db, s)
@@ -99,7 +105,12 @@ def update_service(
     db: Session = Depends(get_db),
 ):
     s = _own_offering(db, user, service_id)
-    for field, value in data.model_dump(exclude_unset=True).items():
+    fields = data.model_dump(exclude_unset=True)
+    # image_urls omitted = leave the photos alone; sent = it is the whole new set
+    if "image_urls" in fields:
+        urls = images.clean_urls(fields.pop("image_urls"), PHOTO_CAP)
+        images.replace(db, models.ServiceImage, "service_id", s.id, urls)
+    for field, value in fields.items():
         setattr(s, field, value)
     db.commit()
     db.refresh(s)
@@ -123,5 +134,6 @@ def delete_service(
         raise HTTPException(
             status_code=403, detail="Bu xizmat sizning xonadoningizga tegishli emas"
         )
+    db.query(models.ServiceImage).filter_by(service_id=s.id).delete(synchronize_session=False)
     db.delete(s)
     db.commit()

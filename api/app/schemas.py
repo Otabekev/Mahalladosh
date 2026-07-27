@@ -432,12 +432,16 @@ class VoteIn(BaseModel):
 ServiceCategory = Literal["food", "goods", "rental", "service", "skill"]
 
 
+SERVICE_PHOTO_CAP = 4  # a 2x2 grid — enough to prove the work, small enough to load
+
+
 class ServiceIn(BaseModel):
     title: str = Field(min_length=2, max_length=150)
     category: ServiceCategory
     description: str | None = Field(default=None, max_length=500)
     price: str | None = Field(default=None, max_length=80)
     contact: str | None = Field(default=None, max_length=120)
+    image_urls: list[str] = Field(default_factory=list, max_length=SERVICE_PHOTO_CAP)
 
 
 class ServiceUpdate(BaseModel):
@@ -447,6 +451,9 @@ class ServiceUpdate(BaseModel):
     price: str | None = Field(default=None, max_length=80)
     contact: str | None = Field(default=None, max_length=120)
     active: bool | None = None
+    # the whole set, or omitted to leave the photos alone — re-saving without a
+    # photo is how you remove it, so no per-photo delete endpoint is needed
+    image_urls: list[str] | None = Field(default=None, max_length=SERVICE_PHOTO_CAP)
 
 
 class ServiceOut(BaseModel):
@@ -459,6 +466,7 @@ class ServiceOut(BaseModel):
     price: str | None = None
     contact: str | None = None
     active: bool = True
+    image_urls: list[str] = []  # photos of the work, cover first
     created_at: datetime
 
 

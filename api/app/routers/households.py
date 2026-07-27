@@ -7,15 +7,15 @@ import math
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from .. import models, notify, presenters, reputation, schemas, track
+from .. import images, models, notify, presenters, reputation, schemas, track
 from ..config import settings
 from ..deps import get_db, require_member
 
 router = APIRouter(prefix="/households", tags=["households"])
 
+ALBUM_CAP = 12
 DINGDONG_RADIUS_M = 100  # generous — phone GPS in a courtyard is noisy
 DINGDONG_COOLDOWN_S = 60
 
@@ -241,17 +241,8 @@ def add_photos(
     """Add photos to your own family's album. Only the household's account-holders,
     and every url must be an uploaded /api/uploads/ path. Capped at 12 total."""
     household = _get_own_household(db, household_id, user)
-    urls = [u for u in data.urls if u][:12]
-    if any(not u.startswith("/api/uploads/") for u in urls):
-        raise HTTPException(status_code=400, detail="Rasm avval yuklanishi kerak")
-    existing = db.query(models.HouseholdImage).filter_by(household_id=household.id).count()
-    start = (
-        db.query(func.coalesce(func.max(models.HouseholdImage.position), -1))
-        .filter_by(household_id=household.id)
-        .scalar()
-    ) + 1
-    for offset, url in enumerate(urls[: max(0, 12 - existing)]):
-        db.add(models.HouseholdImage(household_id=household.id, path=url, position=start + offset))
+    urls = images.clean_urls(data.urls, ALBUM_CAP)
+    images.append(db, models.HouseholdImage, "household_id", household.id, urls, ALBUM_CAP)
     db.commit()
     db.refresh(household)
     return presenters.household_out(db, household, user)

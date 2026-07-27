@@ -439,6 +439,21 @@ class HouseholdImage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class ServiceImage(Base):
+    """A photo of a neighbour's work, attached to a service offering (plan §9-G).
+    The directory is a wall of text without these: a tailor's finished dress is
+    what actually earns the call. Set as a whole batch when the offering is saved
+    — see app/images.py — so there is no per-photo endpoint here."""
+
+    __tablename__ = "service_images"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    service_id: Mapped[int] = mapped_column(ForeignKey("service_offerings.id"), index=True)
+    path: Mapped[str] = mapped_column(String(300))
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class MahallaContact(Base):
     """A phone number the raisi curates for the whole mahalla — the raisi's own
     line, the clinic, emergency services, the gas/water utilities. Every member

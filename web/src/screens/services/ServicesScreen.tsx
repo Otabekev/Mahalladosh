@@ -1,6 +1,6 @@
 /** Xizmatlar — neighbor services directory. Discovery only: contact, no booking (plan §9-G). */
 
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
 import {
@@ -12,12 +12,14 @@ import {
   Field,
   Input,
   Modal,
+  MultiImagePicker,
   PageTitle,
   Select,
   RowSkeleton,
   SkeletonList,
   Textarea,
 } from '@/components/ui'
+import { Lightbox } from '@/components/Lightbox'
 import {
   useCreateService,
   useDeleteService,
@@ -126,6 +128,9 @@ function ReportServiceModal({
   )
 }
 
+/** Mirrors SERVICE_PHOTO_CAP in api/app/schemas.py — a 2x2 grid on the card. */
+const SERVICE_PHOTO_MAX = 4
+
 const CATEGORIES: { value: ServiceCategory; key: keyof typeof servicesStrings; emoji: string }[] = [
   { value: 'food', key: 'catFood', emoji: '🥚' },
   { value: 'goods', key: 'catGoods', emoji: '📦' },
@@ -187,6 +192,34 @@ function ContactButton({ contact }: { contact: string }) {
 
 // ---------- directory card ----------
 
+/** Photos of the work — the thing that turns a line of text into a reason to call.
+ *  A single photo gets the full width; several tile, and any of them opens the
+ *  shared fullscreen Lightbox. */
+function ServicePhotos({ urls, title }: { urls: string[]; title: string }) {
+  const [at, setAt] = useState<number | null>(null)
+  if (urls.length === 0) return null
+  return (
+    <>
+      <div className={`mt-3 grid gap-1.5 ${urls.length === 1 ? 'grid-cols-1' : 'grid-cols-3'}`}>
+        {urls.map((url, i) => (
+          <button
+            key={url}
+            type="button"
+            onClick={() => setAt(i)}
+            aria-label={title}
+            className={`overflow-hidden rounded-xl border border-line ${
+              urls.length === 1 ? 'aspect-[16/10]' : 'aspect-square'
+            }`}
+          >
+            <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" />
+          </button>
+        ))}
+      </div>
+      {at !== null && <Lightbox images={urls} startIndex={at} onClose={() => setAt(null)} />}
+    </>
+  )
+}
+
 function ServiceCard({ service }: { service: Service }) {
   const s = useStrings(servicesStrings)
   const myHouseholdId = useAuth((st) => st.me?.user.household_id ?? null)
@@ -207,6 +240,7 @@ function ServiceCard({ service }: { service: Service }) {
         )}
       </div>
       <div className="text-xs text-sub mt-0.5">{fmt(s.householdSuffix, { name: service.household_name })}</div>
+      <ServicePhotos urls={service.image_urls} title={service.title} />
       {service.description && <p className="text-sm text-ink mt-2 line-clamp-3">{service.description}</p>}
       {(service.price || service.contact) && (
         <div className="flex items-center justify-between gap-2 mt-3">
@@ -231,6 +265,44 @@ function ServiceCard({ service }: { service: Service }) {
 
 // ---------- my services row: hide/show + delete ----------
 
+/** The owner's photo editor. Photos are saved as a whole set, so this is just the
+ *  picker plus Save — removing one is saving without it, and no photo endpoint of
+ *  its own is needed. */
+function EditPhotosModal({
+  service,
+  open,
+  onClose,
+}: {
+  service: Service
+  open: boolean
+  onClose: () => void
+}) {
+  const s = useStrings(servicesStrings)
+  const c = useStrings(common)
+  const update = useUpdateService(service.id)
+  const [photos, setPhotos] = useState<string[]>(service.image_urls)
+
+  // reopening after a save elsewhere should show what the server has
+  useEffect(() => {
+    if (open) setPhotos(service.image_urls)
+  }, [open, service.image_urls])
+
+  return (
+    <Modal open={open} onClose={onClose} title={s.editPhotosTitle}>
+      {update.error && <ErrorNote message={update.error.message} />}
+      <p className="mb-3 text-sm text-sub">{s.photosHint}</p>
+      <MultiImagePicker value={photos} onChange={setPhotos} max={SERVICE_PHOTO_MAX} />
+      <Button
+        full
+        loading={update.isPending}
+        onClick={() => update.mutate({ image_urls: photos }, { onSuccess: onClose })}
+      >
+        {c.save}
+      </Button>
+    </Modal>
+  )
+}
+
 function MyServiceRow({ service }: { service: Service }) {
   const s = useStrings(servicesStrings)
   const c = useStrings(common)
@@ -238,13 +310,21 @@ function MyServiceRow({ service }: { service: Service }) {
   const update = useUpdateService(service.id)
   const del = useDeleteService()
   const meta = categoryMeta(service.category)
+  const [photosOpen, setPhotosOpen] = useState(false)
   return (
     <div className="flex items-center justify-between gap-2 py-3">
       <div className={`flex-1 min-w-0 text-sm font-semibold truncate ${service.active ? 'text-ink' : 'text-sub'}`}>
         {meta?.emoji} {service.title}
         {!service.active && <span className="text-xs font-normal text-sub"> · {s.hiddenTag}</span>}
+        <span className="block text-xs font-normal text-sub">
+          {fmt(s.photoCount, { n: service.image_urls.length })}
+        </span>
       </div>
       <div className="flex items-center gap-1 shrink-0">
+        <Button size="sm" variant="ghost" onClick={() => setPhotosOpen(true)}>
+          📷 {s.editPhotos}
+        </Button>
+        <EditPhotosModal service={service} open={photosOpen} onClose={() => setPhotosOpen(false)} />
         <Button
           size="sm"
           variant="ghost"
@@ -279,6 +359,7 @@ function CreateServiceModal({ open, onClose }: { open: boolean; onClose: () => v
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [contact, setContact] = useState('')
+  const [photos, setPhotos] = useState<string[]>([])
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -290,6 +371,7 @@ function CreateServiceModal({ open, onClose }: { open: boolean; onClose: () => v
         description: description.trim() || null,
         price: price.trim() || null,
         contact: contact.trim() || null,
+        image_urls: photos,
       },
       {
         onSuccess: () => {
@@ -298,6 +380,7 @@ function CreateServiceModal({ open, onClose }: { open: boolean; onClose: () => v
           setDescription('')
           setPrice('')
           setContact('')
+          setPhotos([])
           onClose()
         },
       },
@@ -328,6 +411,9 @@ function CreateServiceModal({ open, onClose }: { open: boolean; onClose: () => v
         </Field>
         <Field label={s.fieldPhone}>
           <Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="+998 90 123 45 67" />
+        </Field>
+        <Field label={s.fieldPhotos} hint={s.photosHint}>
+          <MultiImagePicker value={photos} onChange={setPhotos} max={SERVICE_PHOTO_MAX} />
         </Field>
         <Button type="submit" full loading={create.isPending} disabled={title.trim().length < 2}>
           {c.add}

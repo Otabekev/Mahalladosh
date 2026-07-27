@@ -265,4 +265,26 @@ export const servicesStrings = {
     ru: 'Когда соседи станут активнее, вы увидите это здесь.',
     en: "You'll see it here when your neighbors get active.",
   },
+
+  // ---------- photos of the work (#18) ----------
+  fieldPhotos: {
+    uz: 'Ishingiz rasmlari',
+    uzc: 'Ишингиз расмлари',
+    ru: 'Фото вашей работы',
+    en: 'Photos of your work',
+  },
+  photosHint: {
+    uz: "4 tagacha rasm — ishingizni ko'rsating",
+    uzc: '4 тагача расм — ишингизни кўрсатинг',
+    ru: 'До 4 фото — покажите свою работу',
+    en: 'Up to 4 photos — show your work',
+  },
+  editPhotos: { uz: 'Rasmlar', uzc: 'Расмлар', ru: 'Фото', en: 'Photos' },
+  editPhotosTitle: {
+    uz: 'Ish rasmlari',
+    uzc: 'Иш расмлари',
+    ru: 'Фото работы',
+    en: 'Photos of the work',
+  },
+  photoCount: { uz: '{n} ta rasm', uzc: '{n} та расм', ru: '{n} фото', en: '{n} photos' },
 } satisfies Dict
