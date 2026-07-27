@@ -4,10 +4,13 @@ elder, real posts). Run once against a fresh DB:
     .venv/Scripts/python.exe demo_seed.py
 """
 
+import shutil
 from datetime import timedelta
+from pathlib import Path
 
 from app import models
 from app.db import Base, SessionLocal, engine
+from app.routers.uploads import UPLOAD_DIR
 from app.seed import seed
 
 # The demo has to be alive whenever it is opened, so everything is placed relative
@@ -19,12 +22,38 @@ THIS_MONTH = NOW.strftime("%Y-%m")
 LAST_MONTH = (NOW.replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
 UP = "/api/uploads/"
 
+# api/uploads/ is gitignored — it is a runtime directory, and on a fresh clone or a
+# container it is empty. Anything the demo needs to *show* therefore lives here,
+# committed, and is copied across at seed time.
+ASSETS = Path(__file__).resolve().parent / "app" / "demo_assets"
+
+
+def install_assets() -> set[str]:
+    """Copy the committed demo images into the uploads directory. Returns the set
+    of filenames that are actually available afterwards."""
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    if ASSETS.is_dir():
+        for src in ASSETS.iterdir():
+            if src.is_file():
+                shutil.copy2(src, UPLOAD_DIR / src.name)
+    return {p.name for p in UPLOAD_DIR.iterdir() if p.is_file()}
+
+
+_AVAILABLE: set[str] = set()
+
 
 def img(n):
-    return UP + n
+    """A URL for an image, or None if that file is not present.
+
+    Returning None rather than a dead path is deliberate: a missing avatar then
+    falls back to the initials circle the UI already draws, instead of rendering a
+    broken-image icon in the middle of the demo."""
+    return UP + n if n in _AVAILABLE else None
 
 
 def run():
+    global _AVAILABLE
+    _AVAILABLE = install_assets()
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     seed(db)  # regions/districts + forming MFYs
