@@ -171,6 +171,15 @@ class MemberRow(BaseModel):
     banned: bool = False
 
 
+class BadgeOut(BaseModel):
+    """An earned badge. The backend returns facts only — the emoji, colour and
+    name live on the client next to core/levels.ts, where the rest of the honour
+    presentation already is."""
+
+    code: str  # faol|asoschi|mehmondost|tarixchi
+    count: int = 1  # months won, neighbours helped; 1 where a count is meaningless
+
+
 class PublicProfileOut(BaseModel):
     """A neighbour's public person page — what anyone in the same mahalla may see.
     No language, no contact, no private settings; just who they are in the mahalla."""
@@ -185,6 +194,7 @@ class PublicProfileOut(BaseModel):
     household_id: int | None = None
     household_name: str | None = None
     post_count: int = 0
+    badges: list[BadgeOut] = []
 
 
 class PetitionIn(BaseModel):

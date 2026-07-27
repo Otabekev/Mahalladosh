@@ -4,6 +4,7 @@
 
 import { useNavigate, useParams } from 'react-router-dom'
 import { Avatar, Button, Card, EmptyState, RowSkeleton, SkeletonList } from '@/components/ui'
+import { BadgeChip } from '@/components/BadgeChip'
 import { useBack } from '@/components/useBack'
 import { fmt, useLang, useStrings, type Lang } from '@/core/i18n'
 import { common, monthNames } from '@/core/i18n/common'
@@ -56,6 +57,9 @@ export default function PublicProfileScreen() {
               <span className="rounded-full bg-brand-soft px-3 py-1 text-[13px] font-semibold text-brand">
                 {fmt(s.darajaPill, { level: daraja.level, name: levelName(daraja.level, lang) })}
               </span>
+              {u.badges.map((b) => (
+                <BadgeChip key={b.code} code={b.code} count={b.count} />
+              ))}
             </div>
             {joinedLabel(u.created_at, lang) && (
               <p className="mt-2 text-[13px] text-sub">

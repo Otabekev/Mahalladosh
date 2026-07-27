@@ -6,7 +6,7 @@ wide, matching the reports router's rule."""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, presenters, schemas
+from .. import badges, models, presenters, schemas
 from ..deps import get_db, require_member
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -37,4 +37,7 @@ def profile(
         household_id=household.id if household else None,
         household_name=household.family_name if household else None,
         post_count=post_count,
+        badges=[
+            schemas.BadgeOut(code=code, count=n) for code, n in badges.for_user(db, target)
+        ],
     )

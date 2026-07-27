@@ -5,6 +5,9 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BadgeTile } from '@/components/BadgeChip'
+import { BADGE_ORDER } from '@/core/badges'
+import { useProfile } from '@/core/queries/users'
 import { useAuth } from '@/core/stores/auth'
 import { usePrefs } from '@/core/stores/prefs'
 import { fmt, LANGS, useLang, useStrings } from '@/core/i18n'
@@ -96,20 +99,11 @@ export default function ProfileScreen() {
 
   const currentLangLabel = LANGS.find((l) => l.value === lang)?.label ?? ''
 
-  // Earned honours. No badges API yet — a faithful demo set derived from what we
-  // do know (level → Faol multiplier); ready to swap for a real feed later.
-  const badges = [
-    { label: p.badgeFounder, bg: '#FBEDE0', border: '#EBD3BE', stroke: 'var(--color-brand)', path: 'M4 21V5a2 2 0 0 1 2-2h9l-2 4 2 4H6' },
-    {
-      label: activeN > 1 ? `${p.badgeActive} ×${activeN}` : p.badgeActive,
-      bg: '#FBF0D8',
-      border: '#EDD8A6',
-      stroke: 'var(--color-honor-deep)',
-      path: 'M6 4h12v3a6 6 0 0 1-12 0zM9 15v3h6v-3M8 21h8',
-    },
-    { label: p.badgeHistorian, bg: '#E3F0F0', border: '#C8E0E0', stroke: 'var(--color-accent)', path: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM19 3v18' },
-    { label: p.badgeHost, bg: '#EAF2EE', border: '#CFE3D6', stroke: 'var(--color-good)', path: 'M18 8h1a3 3 0 0 1 0 6h-1M4 8h14v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM7 3v2M11 3v2M15 3v2' },
-  ]
+  // Real earned badges, from the same public profile endpoint everyone else sees.
+  // This grid used to be fabricated — it showed all four to every account, which
+  // made the one screen that says "here is what this community values" a lie.
+  const { data: profile } = useProfile(u.id)
+  const earned = new Map((profile?.badges ?? []).map((b) => [b.code, b.count]))
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -171,18 +165,13 @@ export default function ProfileScreen() {
         <section>
           <h2 className="text-[19px] font-semibold text-ink mb-3">{p.badgesTitle}</h2>
           <div className="grid grid-cols-4 gap-2.5">
-            {badges.map((b) => (
-              <div key={b.label} className="text-center">
-                <div
-                  className="w-full aspect-square rounded-2xl border flex items-center justify-center"
-                  style={{ background: b.bg, borderColor: b.border }}
-                >
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={b.stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d={b.path} />
-                  </svg>
-                </div>
-                <div className="text-xs text-sub font-semibold mt-1.5">{b.label}</div>
-              </div>
+            {BADGE_ORDER.map((code) => (
+              <BadgeTile
+                key={code}
+                code={code}
+                count={earned.get(code) ?? 0}
+                earned={earned.has(code)}
+              />
             ))}
           </div>
         </section>

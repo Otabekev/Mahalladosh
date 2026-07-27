@@ -76,6 +76,18 @@ def run():
     db.add(models.MonthHonor(mahalla_id=yoshlik.id, month=LAST_MONTH,
            winner_user_id=users["malika"].id, created_at=NOW - timedelta(days=19)))
 
+    # badges (#11) are derived from facts, so the demo needs the facts themselves:
+    # the founders who were here when Yoshlik opened, and the family historians.
+    for un in ["otabek", "toshpolat", "malika", "rustam"]:
+        db.add(models.ReputationEntry(user_id=users[un].id, mahalla_id=yoshlik.id,
+               amount=20, reason="founding_member", month=THIS_MONTH,
+               source_type="mahalla", source_id=yoshlik.id,
+               created_at=NOW - timedelta(days=40)))
+    for un in ["otabek", "malika"]:
+        db.add(models.ReputationEntry(user_id=users[un].id, mahalla_id=yoshlik.id,
+               amount=15, reason="history_seeded", month=THIS_MONTH,
+               created_at=NOW - timedelta(days=30)))
+
     # ---- households ----
     erg = models.Household(
         mahalla_id=yoshlik.id, family_name="Ergashaliyevlar", resident_count=5,
@@ -140,6 +152,14 @@ def run():
     hashar = post("gulnora", "share", "O'tgan hashardan xotira 💚", 1440, body="O'tgan hashardan xotira",
                   image_path=img("post_hashar.jpg"))
     db.add(models.PostResponse(post_id=hashar.id, user_id=users["otabek"].id, message="Ajoyib kun edi"))
+
+    # resolved help requests — the mutual-aid history, and what earns Mehmondo'st
+    for i, (asker, days) in enumerate([("salima", 12), ("bekzod", 20), ("dilnoza", 28)]):
+        done = post(asker, "help", f"Yordam kerak edi ({i + 1})", days * 1440,
+                    category="tool", status="resolved",
+                    resolved_helper_id=users["malika"].id,
+                    resolved_at=NOW - timedelta(days=days - 1))
+        db.add(models.PostResponse(post_id=done.id, user_id=users["malika"].id))
 
     # a charity collection, part-way to its goal
     post("gulnora", "charity", "Maktab kutubxonasiga kitob yig'amiz", 900,

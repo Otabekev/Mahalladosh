@@ -20,10 +20,42 @@ export const profileStrings = {
 
   // ---------- nishonlar (badges) ----------
   badgesTitle: { uz: 'Nishonlar', uzc: 'Нишонлар', ru: 'Награды', en: 'Badges' },
-  badgeFounder: { uz: 'Asoschi', uzc: 'Асосчи', ru: 'Основатель', en: 'Founder' },
-  badgeActive: { uz: 'Faol', uzc: 'Фаол', ru: 'Активный', en: 'Active' },
-  badgeHistorian: { uz: 'Tarixchi', uzc: 'Тарихчи', ru: 'Историк', en: 'Historian' },
-  badgeHost: { uz: "Mehmondo'st", uzc: 'Меҳмондўст', ru: 'Гостеприимный', en: 'Host' },
+  // earned badges (#11) — names mirror BADGE_ORDER in core/badges.ts
+  badgeFaol: { uz: "Faol qo'shni", uzc: 'Фаол қўшни', ru: 'Активный сосед', en: 'Active neighbor' },
+  badgeAsoschi: { uz: 'Asoschi', uzc: 'Асосчи', ru: 'Основатель', en: 'Founder' },
+  badgeMehmondost: { uz: "Mehmondo'st", uzc: 'Меҳмондўст', ru: 'Гостеприимный', en: 'Host' },
+  badgeTarixchi: { uz: 'Tarixchi', uzc: 'Тарихчи', ru: 'Историк', en: 'Historian' },
+  badgesHeading: { uz: 'Nishonlar', uzc: 'Нишонлар', ru: 'Знаки', en: 'Badges' },
+  badgeLocked: {
+    uz: "Hali qo'lga kiritilmagan",
+    uzc: 'Ҳали қўлга киритилмаган',
+    ru: 'Пока не получен',
+    en: 'Not earned yet',
+  },
+  badgeFaolHow: {
+    uz: "Oyning faol qo'shnisi bo'ling",
+    uzc: 'Ойнинг фаол қўшниси бўлинг',
+    ru: 'Станьте активным соседом месяца',
+    en: 'Be the active neighbor of the month',
+  },
+  badgeAsoschiHow: {
+    uz: 'Mahalla ochilishida qatnashing',
+    uzc: 'Маҳалла очилишида қатнашинг',
+    ru: 'Участвуйте в открытии махалли',
+    en: 'Be there when the mahalla opens',
+  },
+  badgeMehmondostHow: {
+    uz: "Uch qo'shningizga yordam bering",
+    uzc: 'Уч қўшнингизга ёрдам беринг',
+    ru: 'Помогите трём соседям',
+    en: 'Help three neighbors',
+  },
+  badgeTarixchiHow: {
+    uz: 'Oila tarixingizni yozing',
+    uzc: 'Оила тарихингизни ёзинг',
+    ru: 'Запишите историю семьи',
+    en: 'Write your family history',
+  },
 
   // ---------- settings list ----------
   largeText: { uz: 'Katta shrift', uzc: 'Катта шрифт', ru: 'Крупный шрифт', en: 'Large text' },
