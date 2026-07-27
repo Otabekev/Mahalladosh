@@ -6,6 +6,31 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Added
+- **Versioned schema (Alembic).** Migrations replace `create_all` everywhere, and a
+  drift-guard test fails CI if a model changes without one. Landing it meant naming
+  eleven anonymous constraints and breaking a real foreign-key cycle that would have
+  produced a first migration valid on SQLite and invalid on Postgres.
+- **Postgres in CI.** The whole suite now runs against `postgres:16-alpine` as well
+  as SQLite, because the engine reading `DATABASE_URL` is not the same thing as the
+  engine being supported. Connection strings in the `postgres://` form that hosts
+  actually hand out are normalised rather than failing with a driver error.
+
+### Fixed
+- **The scheduler was not safe for a second instance**, contrary to its own
+  docstring. Three of five sweep steps check for an existing notification and then
+  insert — two instances interleave that into duplicate reminders and duplicate
+  weekly digests. The sweep now takes a lease before doing any work.
+- **Nine `ORDER BY` clauses had no tiebreaker**, including the one that decides who
+  is honoured as *Faol qo'shni*. Two neighbours on equal points is the normal case,
+  and the winner was effectively arbitrary.
+- The demo seed pointed at four service images that were never created, and
+  `api/uploads/` is gitignored, so a fresh clone had no demo images at all. Demo
+  assets are now committed and installed at seed time, and a missing file falls back
+  to the initials avatar instead of a broken image.
+- Removed a dead "Vatan bilan aloqa" row from the profile screen — styled exactly
+  like the tappable rows around it, and doing nothing.
+
+### Added
 - **Depth pass** — the mahalla now has the things a community actually does.
   **Quick polls** answerable in one tap from the feed card (deliberately the light
   counterpart to a binding governance proposal: no seconding, no quorum, no

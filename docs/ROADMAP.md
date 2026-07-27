@@ -54,25 +54,42 @@ The reason to open it every morning.
   Uzbek apostrophes and matches Cyrillic queries against Latin content
 - A four-language CI guard that catches Russian pasted into the Uzbek Cyrillic slot
 
+### ✅ Launch prerequisites — done
+
+These blocked the first deployment with real users, regardless of feature progress.
+
+- **Alembic migrations.** The schema is versioned and reversible, and a drift-guard
+  test fails CI if `models.py` changes without a migration. Landing it required
+  naming eleven anonymous constraints (SQLite's batch mode cannot drop an unnamed
+  one) and breaking a real foreign-key cycle that would have made the first
+  migration valid on SQLite and invalid on Postgres.
+- **Postgres exercised in CI.** The full suite runs against `postgres:16-alpine`
+  alongside the SQLite run. This also surfaced nine `ORDER BY` clauses with no
+  tiebreaker — including the one deciding who is honoured as *Faol qo'shni*.
+- **Scheduler locked.** It turned out three of the five sweep steps were not
+  idempotent at all: they SELECT for an existing notification and then insert, so
+  two instances would double-send reminders and the Monday digest. The sweep now
+  takes a lease.
+
 ## 🌍 Phase 7 — Scale & go-to-market
 
-- Diaspora follower mode (the future paid tier, free today)
 - Admin metrics dashboard (per-day, per-mahalla health)
 - Services commercial surface (views + contact-taps)
 - Free-tier deploy + investor demo kit
 
-### Launch prerequisites
+**Diaspora follower mode — designed, deliberately deferred.** Uzbeks abroad
+following the mahalla they left is the intended paid tier. The design is settled: a
+follower is a read-only spectator who sees `share` posts *and nothing else*, because
+`share` is the only post type whose author was told, in their own language and at the
+moment of writing, that it travels beyond the mahalla. Help requests, events, charity
+and family content were written for neighbours, and a remote audience for them is not
+something the authors consented to.
 
-Blocking the first deployment with real users, regardless of feature progress:
-
-- **Alembic migrations.** Development builds the schema from the models
-  (`Base.metadata.create_all`), which is fine while the schema moves weekly and no rows
-  matter. The moment real families have data, schema changes need to be versioned and
-  reversible. See [ARCHITECTURE.md §5](ARCHITECTURE.md#5-data--schema-evolution).
-- **Postgres exercised in CI**, not just configured — the engine reads `DATABASE_URL`,
-  but an untested swap is not a supported swap.
-- **Scheduler extracted or locked** before running more than one instance, since two
-  concurrent sweeps would double-send reminders and digests.
+It is not built yet because it is the one feature here whose failure mode is a privacy
+incident rather than a broken screen, and it wants a proper security review — plus an
+answer to a pre-existing gap it would put a product on: `GET /mahallas/{id}` currently
+returns any mahalla's name, member count and raisi to any signed-in account. A
+half-built follower mode with a leak is far worse than this paragraph.
 
 ---
 
