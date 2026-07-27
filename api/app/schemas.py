@@ -388,6 +388,14 @@ class FeedPage(BaseModel):
     next_cursor: str | None = None
 
 
+class SearchOut(BaseModel):
+    """In-mahalla search results, grouped by what they are."""
+
+    query: str = ""
+    posts: list[PostOut] = []
+    services: list["ServiceOut"] = []
+
+
 class BugunOut(BaseModel):
     """The daily briefing, counted across the whole mahalla rather than derived
     from whichever page of the feed happens to be loaded."""

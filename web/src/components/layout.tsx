@@ -140,6 +140,17 @@ export default function AppLayout() {
           </Link>
           {me && (
             <div className="flex items-center gap-2">
+              <Link
+                to="/app/search"
+                aria-label={s.searchLabel}
+                title={s.searchLabel}
+                className="p-1.5 text-sub hover:text-ink transition"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+              </Link>
               <NotificationBell />
               <Link to="/app/profile">
                 <Avatar name={me.user.full_name} src={me.user.photo_url} size={38} honor />

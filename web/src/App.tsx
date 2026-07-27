@@ -26,6 +26,7 @@ const CreateProposalScreen = lazy(() => import('@/screens/proposals/CreatePropos
 const ProposalDetailScreen = lazy(() => import('@/screens/proposals/ProposalDetailScreen'))
 const ServicesScreen = lazy(() => import('@/screens/services/ServicesScreen'))
 const AdminScreen = lazy(() => import('@/screens/admin/AdminScreen'))
+const SearchScreen = lazy(() => import('@/screens/search/SearchScreen'))
 const NotificationsScreen = lazy(() => import('@/screens/notifications/NotificationsScreen'))
 
 const queryClient = new QueryClient({
@@ -107,6 +108,7 @@ export default function App() {
               <Route path="posts/:id" element={<PostDetailScreen />} />
               <Route path="mahalla" element={<MahallaScreen />} />
               <Route path="contacts" element={<ContactsScreen />} />
+              <Route path="search" element={<SearchScreen />} />
               <Route path="raisi" element={<RaisiScreen />} />
               <Route path="u/:id" element={<PublicProfileScreen />} />
               <Route path="profile" element={<ProfileScreen />} />

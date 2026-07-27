@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
-from .. import images, models, notify, presenters, reputation, schemas, track
+from .. import images, lifecycle, models, notify, presenters, reputation, schemas, track
 from ..deps import get_current_user, get_db, require_member
 
 router = APIRouter(prefix="/posts", tags=["posts"])
@@ -200,6 +200,12 @@ def list_posts(
         q = q.filter_by(type=type)
     if status:
         q = q.filter_by(status=status)
+    else:
+        # Age old content off the default feed. Only when unfiltered: asking for
+        # `?type=help` or `?status=resolved` is asking for the history on purpose,
+        # and search is the other way back to anything that has aged out.
+        if not type:
+            q = q.filter(lifecycle.on_feed())
 
     # the raisi's pinned post floats to the top, whatever its date — but only on the
     # unfiltered feed, so a type/status filter still shows a clean filtered list
@@ -541,6 +547,10 @@ def close_post(
     if post.status != "open":
         raise HTTPException(status_code=400, detail="Bu e'lon yopilgan")
     post.status = "closed"
+    # stamp when it settled, the same as resolving does — the feed lifecycle ages a
+    # settled post from this moment, and without it an announcement closed today
+    # would fall back to its creation date and vanish instantly
+    post.resolved_at = models.utcnow()
     db.commit()
     return post_detail(db, post, user)
 

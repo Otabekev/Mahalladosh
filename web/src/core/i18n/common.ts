@@ -36,6 +36,7 @@ export const common = {
     en: "You're offline — showing recent data",
   },
   language: { uz: 'Til', uzc: 'Тил', ru: 'Язык', en: 'Language' },
+  searchLabel: { uz: 'Qidirish', uzc: 'Қидириш', ru: 'Искать', en: 'Search' },
   // image picker
   addPhoto: { uz: "Rasm qo'shish", uzc: 'Расм қўшиш', ru: 'Добавить фото', en: 'Add photo' },
   uploadFailed: { uz: 'Rasm yuklanmadi', uzc: 'Расм юкланмади', ru: 'Фото не загрузилось', en: 'Upload failed' },
