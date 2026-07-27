@@ -189,4 +189,18 @@ export const feedStrings = {
     ru: 'Жалоба отправлена. Спасибо.',
     en: 'Your report was sent. Thank you.',
   },
+
+  // ---------- paging (#19) ----------
+  showMore: {
+    uz: "Yana ko'rsatish",
+    uzc: 'Яна кўрсатиш',
+    ru: 'Показать ещё',
+    en: 'Show more',
+  },
+  feedEnd: {
+    uz: 'Hammasi shu',
+    uzc: 'Ҳаммаси шу',
+    ru: 'Это всё',
+    en: "That's everything",
+  },
 } satisfies Dict

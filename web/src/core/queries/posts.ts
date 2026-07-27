@@ -1,22 +1,64 @@
 /** TanStack Query hooks for the feed (posts + responses + discover). */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+  type QueryClient,
+} from '@tanstack/react-query'
 import { api } from '@/core/api/client'
-import type { DiscoverScope, Post, PostDetail, PostIn } from '@/core/api/types'
+import type { Bugun, DiscoverScope, FeedPage, Post, PostDetail, PostIn } from '@/core/api/types'
+
+/** Both feeds page the same way: the server hands back a cursor, and a null cursor
+ *  is what means "that's everything" — never an item count. */
+const pageOpts = {
+  initialPageParam: null as string | null,
+  getNextPageParam: (last: FeedPage) => last.next_cursor,
+}
+
+function withCursor(path: string, cursor: string | null) {
+  if (!cursor) return path
+  return `${path}${path.includes('?') ? '&' : '?'}cursor=${encodeURIComponent(cursor)}`
+}
 
 export function usePosts(type?: string) {
-  return useQuery({
+  const path = type ? `/posts?type=${encodeURIComponent(type)}` : '/posts'
+  return useInfiniteQuery({
     queryKey: ['posts', type ?? 'all'],
-    queryFn: () => api<Post[]>(type ? `/posts?type=${encodeURIComponent(type)}` : '/posts'),
+    queryFn: ({ pageParam }) => api<FeedPage>(withCursor(path, pageParam)),
+    ...pageOpts,
   })
 }
 
 /** People's share posts beyond the mahalla — the viewer picks the lens. */
 export function useDiscover(scope: DiscoverScope) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['discover', scope],
-    queryFn: () => api<Post[]>(`/posts/discover?scope=${scope}`),
+    queryFn: ({ pageParam }) => api<FeedPage>(withCursor(`/posts/discover?scope=${scope}`, pageParam)),
+    ...pageOpts,
   })
+}
+
+/** The daily briefing. Counted server-side across the whole mahalla — deriving it
+ *  from the loaded posts would quietly become "…on the first page". */
+export function useBugun() {
+  return useQuery({ queryKey: ['bugun'], queryFn: () => api<Bugun>('/posts/bugun') })
+}
+
+/** Flatten the pages a feed query returns into the list a screen renders. */
+export function feedItems(data: InfiniteData<FeedPage> | undefined): Post[] {
+  return data?.pages.flatMap((p) => p.items) ?? []
+}
+
+/** Anything that adds, resolves, closes or removes a post changes all three feed
+ *  surfaces. Kept in one place so the Bugun card can't be the one that gets
+ *  forgotten and goes on claiming help that is already handled. */
+function invalidateFeeds(qc: QueryClient) {
+  void qc.invalidateQueries({ queryKey: ['posts'] })
+  void qc.invalidateQueries({ queryKey: ['discover'] })
+  void qc.invalidateQueries({ queryKey: ['bugun'] })
 }
 
 export function usePost(id?: number) {
@@ -32,8 +74,7 @@ export function useCreatePost() {
   return useMutation({
     mutationFn: (input: PostIn) => api<Post>('/posts', { method: 'POST', body: input }),
     onSuccess: (post) => {
-      void qc.invalidateQueries({ queryKey: ['posts'] })
-      void qc.invalidateQueries({ queryKey: ['discover'] })
+      invalidateFeeds(qc)
       void qc.invalidateQueries({ queryKey: ['post', post.id] })
     },
   })
@@ -46,8 +87,11 @@ export function useToggleRahmat() {
 
   const write = (id: number, mine: boolean, count: number) => {
     const set = (p: Post) => (p.id === id ? { ...p, my_rahmat: mine, rahmat_count: count } : p)
-    qc.setQueriesData<Post[]>({ queryKey: ['posts'] }, (old) => old?.map(set))
-    qc.setQueriesData<Post[]>({ queryKey: ['discover'] }, (old) => old?.map(set))
+    // the feed caches hold pages, not a flat list, so patch inside each page
+    const patch = (old: InfiniteData<FeedPage> | undefined) =>
+      old && { ...old, pages: old.pages.map((pg) => ({ ...pg, items: pg.items.map(set) })) }
+    qc.setQueriesData<InfiniteData<FeedPage>>({ queryKey: ['posts'] }, patch)
+    qc.setQueriesData<InfiniteData<FeedPage>>({ queryKey: ['discover'] }, patch)
     qc.setQueryData<PostDetail>(['post', id], (old) =>
       old ? { ...old, my_rahmat: mine, rahmat_count: count } : old,
     )
@@ -61,8 +105,8 @@ export function useToggleRahmat() {
       // read current state from whichever cache has this post
       let current: Post | PostDetail | undefined = qc.getQueryData<PostDetail>(['post', id])
       if (!current) {
-        for (const [, list] of qc.getQueriesData<Post[]>({ queryKey: ['posts'] })) {
-          const found = list?.find((p) => p.id === id)
+        for (const [, feed] of qc.getQueriesData<InfiniteData<FeedPage>>({ queryKey: ['posts'] })) {
+          const found = feed?.pages.flatMap((pg) => pg.items).find((p) => p.id === id)
           if (found) {
             current = found
             break
@@ -77,8 +121,7 @@ export function useToggleRahmat() {
     onSuccess: (res, id) => write(id, res.mine, res.count),
     onError: (_err, id) => {
       // our optimistic guess may be wrong now — refetch the truth
-      void qc.invalidateQueries({ queryKey: ['posts'] })
-      void qc.invalidateQueries({ queryKey: ['discover'] })
+      invalidateFeeds(qc)
       void qc.invalidateQueries({ queryKey: ['post', id] })
     },
   })
@@ -90,8 +133,7 @@ export function useRespond(postId: number) {
     mutationFn: (input: { message?: string | null }) =>
       api<unknown>(`/posts/${postId}/respond`, { method: 'POST', body: input }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['posts'] })
-      void qc.invalidateQueries({ queryKey: ['discover'] })
+      invalidateFeeds(qc)
       void qc.invalidateQueries({ queryKey: ['post', postId] })
     },
   })
@@ -104,8 +146,7 @@ export function useUpdatePost(postId: number) {
       api<PostDetail>(`/posts/${postId}`, { method: 'PATCH', body }),
     onSuccess: (detail) => {
       qc.setQueryData(['post', postId], detail)
-      void qc.invalidateQueries({ queryKey: ['posts'] })
-      void qc.invalidateQueries({ queryKey: ['discover'] })
+      invalidateFeeds(qc)
     },
   })
 }
@@ -116,8 +157,7 @@ export function useDeletePost(postId: number) {
     mutationFn: () => api<void>(`/posts/${postId}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.removeQueries({ queryKey: ['post', postId] })
-      void qc.invalidateQueries({ queryKey: ['posts'] })
-      void qc.invalidateQueries({ queryKey: ['discover'] })
+      invalidateFeeds(qc)
     },
   })
 }
@@ -152,7 +192,7 @@ export function useResolve(postId: number) {
     mutationFn: (input: { helper_user_id?: number | null }) =>
       api<unknown>(`/posts/${postId}/resolve`, { method: 'POST', body: input }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['posts'] })
+      invalidateFeeds(qc)
       void qc.invalidateQueries({ queryKey: ['post', postId] })
     },
   })
@@ -163,8 +203,7 @@ export function useClosePost(postId: number) {
   return useMutation({
     mutationFn: () => api<unknown>(`/posts/${postId}/close`, { method: 'POST' }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['posts'] })
-      void qc.invalidateQueries({ queryKey: ['discover'] })
+      invalidateFeeds(qc)
       void qc.invalidateQueries({ queryKey: ['post', postId] })
     },
   })

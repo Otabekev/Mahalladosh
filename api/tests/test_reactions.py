@@ -37,12 +37,12 @@ def test_rahmat_shows_on_the_feed_for_the_giver(db, world, as_user):
     giver = as_user(world.neighbor)
     giver.post(f"/api/posts/{pid}/rahmat")
 
-    mine = next(p for p in giver.get("/api/posts").json() if p["id"] == pid)
+    mine = next(p for p in giver.get("/api/posts").json()["items"] if p["id"] == pid)
     assert mine["rahmat_count"] == 1
     assert mine["my_rahmat"] is True
 
     # someone who didn't react sees the count but not my_rahmat
-    other = next(p for p in as_user(world.voucher).get("/api/posts").json() if p["id"] == pid)
+    other = next(p for p in as_user(world.voucher).get("/api/posts").json()["items"] if p["id"] == pid)
     assert other["rahmat_count"] == 1
     assert other["my_rahmat"] is False
 

@@ -3,6 +3,7 @@
 
 import { useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Avatar,
   Button,
@@ -18,7 +19,8 @@ import { fmt, useStrings } from '@/core/i18n'
 import { feedStrings } from '@/core/i18n/feed'
 import { raisiStrings } from '@/core/i18n/raisi'
 import { RahmatButton } from '@/components/RahmatButton'
-import { useDiscover, usePosts } from '@/core/queries/posts'
+import { PullToRefresh } from '@/components/PullToRefresh'
+import { feedItems, useBugun, useDiscover, usePosts } from '@/core/queries/posts'
 import { useAuth } from '@/core/stores/auth'
 import type { DiscoverScope, Post } from '@/core/api/types'
 import { BugunCard } from './BugunCard'
@@ -229,25 +231,54 @@ function FeedCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
 
 // ---------- Mahallam lens — Bugun digest + composer + warm cards ----------
 
+/** The end of a paged feed: an explicit button rather than infinite scroll.
+ *  These are elders on village connections — a tap they chose is kinder than a
+ *  fetch that fires because they scrolled a little too far, and it leaves the
+ *  page length under their control. */
+function MoreButton({
+  hasMore,
+  loading,
+  onMore,
+  showEnd,
+}: {
+  hasMore: boolean
+  loading: boolean
+  onMore: () => void
+  showEnd: boolean
+}) {
+  const s = useStrings(feedStrings)
+  if (hasMore) {
+    return (
+      <Button full variant="secondary" size="lg" loading={loading} onClick={onMore}>
+        {s.showMore}
+      </Button>
+    )
+  }
+  if (!showEnd) return null
+  return <p className="py-4 text-center text-sm text-sub">{s.feedEnd}</p>
+}
+
 function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
   const navigate = useNavigate()
   const s = useStrings(feedStrings)
-  const { data: posts, isLoading, error } = usePosts()
+  const feed = usePosts()
+  const { data: bugun } = useBugun()
+  const posts = feedItems(feed.data)
 
   return (
     <div className="space-y-3.5">
       <OnboardingChecklistCard />
-      <BugunCard posts={posts ?? []} />
+      <BugunCard bugun={bugun} />
       <Composer />
 
-      {isLoading && (
+      {feed.isLoading && (
         <SkeletonList count={3}>
           <PostCardSkeleton />
         </SkeletonList>
       )}
-      {error && <ErrorNote message={error.message} />}
+      {feed.error && <ErrorNote message={feed.error.message} />}
 
-      {posts && posts.length === 0 && (
+      {!feed.isLoading && posts.length === 0 && (
         <EmptyState
           icon="📭"
           title={s.emptyFeedTitle}
@@ -255,7 +286,14 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
         />
       )}
 
-      {posts?.map((post) => <FeedCard key={post.id} post={post} onOpen={() => onOpen(post.id)} />)}
+      {posts.map((post) => <FeedCard key={post.id} post={post} onOpen={() => onOpen(post.id)} />)}
+
+      <MoreButton
+        hasMore={feed.hasNextPage}
+        loading={feed.isFetchingNextPage}
+        onMore={() => void feed.fetchNextPage()}
+        showEnd={posts.length > 0}
+      />
     </div>
   )
 }
@@ -264,28 +302,40 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
 
 function DiscoverFeed({ scope, onOpen }: { scope: DiscoverScope; onOpen: (id: number) => void }) {
   const s = useStrings(feedStrings)
-  const { data: posts, isLoading, error } = useDiscover(scope)
+  const feed = useDiscover(scope)
+  const posts = feedItems(feed.data)
 
   return (
     <div className="space-y-3.5">
-      {isLoading && (
+      {feed.isLoading && (
         <SkeletonList count={3}>
           <PostCardSkeleton />
         </SkeletonList>
       )}
-      {error && <ErrorNote message={error.message} />}
+      {feed.error && <ErrorNote message={feed.error.message} />}
 
-      {posts && posts.length === 0 && <EmptyState icon="🌅" title={s.emptyDiscoverTitle} text={s.emptyDiscoverText} />}
+      {!feed.isLoading && posts.length === 0 && (
+        <EmptyState icon="🌅" title={s.emptyDiscoverTitle} text={s.emptyDiscoverText} />
+      )}
 
-      {posts?.map((post) => <WarmCard key={post.id} post={post} onOpen={() => onOpen(post.id)} />)}
+      {posts.map((post) => <WarmCard key={post.id} post={post} onOpen={() => onOpen(post.id)} />)}
+
+      <MoreButton
+        hasMore={feed.hasNextPage}
+        loading={feed.isFetchingNextPage}
+        onMore={() => void feed.fetchNextPage()}
+        showEnd={posts.length > 0}
+      />
     </div>
   )
 }
 
 export default function FeedScreen() {
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const s = useStrings(feedStrings)
   const [tab, setTab] = useState<FeedTab>('mahalla')
+  const [refreshing, setRefreshing] = useState(false)
   const openPost = (id: number) => navigate(`/app/posts/${id}`)
 
   const feedTabs: { value: FeedTab; label: string }[] = [
@@ -294,8 +344,22 @@ export default function FeedScreen() {
     { value: 'country', label: s.tabCountry },
   ]
 
+  /** Refetching drops back to page one on purpose: after a pull-to-refresh you
+   *  want today's posts, not the twelfth page you had scrolled to. */
+  const refresh = async () => {
+    setRefreshing(true)
+    try {
+      await Promise.all([
+        qc.resetQueries({ queryKey: tab === 'mahalla' ? ['posts'] : ['discover'] }),
+        qc.invalidateQueries({ queryKey: ['bugun'] }),
+      ])
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   return (
-    <div>
+    <PullToRefresh onRefresh={() => void refresh()} refreshing={refreshing}>
       <div className="mb-3.5">
         <ScopeTabs tabs={feedTabs} value={tab} onChange={setTab} />
       </div>
@@ -309,6 +373,6 @@ export default function FeedScreen() {
       >
         +
       </button>
-    </div>
+    </PullToRefresh>
   )
 }

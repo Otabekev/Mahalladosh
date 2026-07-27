@@ -1,9 +1,10 @@
 """Structured post feed and the help loop with points (plan §8, §9-C).
 Posts are typed (help|announcement|charity|event|newcomer) — never free chat."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from .. import images, models, notify, presenters, reputation, schemas, track
@@ -14,6 +15,46 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 TYPE_EMOJI = {"help": "🤝", "announcement": "📢", "charity": "❤️", "event": "🎉", "share": "📷"}
 
 POST_PHOTO_CAP = 6
+
+# One screenful and a bit. Small enough that a village connection returns something
+# quickly, large enough that most people never need a second page.
+PAGE_SIZE = 15
+
+# An event stays "today's event" until the day is really over, so a to'y at 18:00
+# is still the answer to "what's on today" at 22:00.
+EVENT_STILL_TODAY = timedelta(hours=12)
+
+
+def _encode_cursor(p: models.Post) -> str:
+    return f"{p.created_at.isoformat()}|{p.id}"
+
+
+def _page(q, cursor: str | None, limit: int = PAGE_SIZE):
+    """Keyset pagination over (created_at, id), newest first.
+
+    Keyset rather than OFFSET because a community feed gains posts while someone is
+    reading it: with OFFSET, one new post at the top shifts every row down and page
+    two repeats the last item of page one. Anchoring to the last row seen instead
+    means new posts simply appear on the next refresh, never duplicated mid-scroll.
+    `id` is the tiebreaker because two posts can share a timestamp.
+    """
+    if cursor:
+        raw_at, _, raw_id = cursor.partition("|")
+        try:
+            at, last_id = datetime.fromisoformat(raw_at), int(raw_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Noto'g'ri kursor") from None
+        q = q.filter(
+            or_(
+                models.Post.created_at < at,
+                and_(models.Post.created_at == at, models.Post.id < last_id),
+            )
+        )
+    # ask for one more than we need: its existence is what says "there is more"
+    rows = q.order_by(models.Post.created_at.desc(), models.Post.id.desc()).limit(limit + 1).all()
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+    return rows, (_encode_cursor(rows[-1]) if has_more and rows else None)
 
 # Anti-gaming soft cap (plan §9-C): max thanked-awards per month from the same
 # requester to the same helper. Resolve still works past the cap — only the
@@ -146,10 +187,11 @@ def _get_post(db: Session, post_id: int, user: models.User) -> models.Post:
 # ---------- routes ----------
 
 
-@router.get("", response_model=list[schemas.PostOut])
+@router.get("", response_model=schemas.FeedPage)
 def list_posts(
     type: str | None = None,
     status: str | None = None,
+    cursor: str | None = None,
     user: models.User = Depends(require_member),
     db: Session = Depends(get_db),
 ):
@@ -158,15 +200,60 @@ def list_posts(
         q = q.filter_by(type=type)
     if status:
         q = q.filter_by(status=status)
-    posts = q.order_by(models.Post.created_at.desc()).limit(100).all()
 
     # the raisi's pinned post floats to the top, whatever its date — but only on the
     # unfiltered feed, so a type/status filter still shows a clean filtered list
     mahalla = db.get(models.Mahalla, user.mahalla_id)
     pinned_id = mahalla.pinned_post_id if mahalla and not type and not status else None
-    if pinned_id is not None and any(p.id == pinned_id for p in posts):
-        posts.sort(key=lambda p: p.id != pinned_id)  # False(0) sorts before True(1)
-    return [post_out(db, p, user, pinned_id) for p in posts]
+    if pinned_id is not None:
+        # keep it out of the paged query entirely: prepended to page one below, it
+        # would otherwise also turn up in whichever page its own date falls on
+        q = q.filter(models.Post.id != pinned_id)
+
+    rows, next_cursor = _page(q, cursor)
+
+    if pinned_id is not None and cursor is None:
+        pinned = db.get(models.Post, pinned_id)
+        if pinned is not None and pinned.mahalla_id == user.mahalla_id:
+            rows = [pinned, *rows]
+
+    return schemas.FeedPage(
+        items=[post_out(db, p, user, pinned_id) for p in rows], next_cursor=next_cursor
+    )
+
+
+@router.get("/bugun", response_model=schemas.BugunOut)
+def bugun(
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """The daily briefing's numbers, counted across the whole mahalla.
+
+    The card used to derive these from the posts the feed had already loaded, which
+    stopped being true the moment the feed was paged: "3 neighbours need help" would
+    silently mean "3 on the first page". It is the app's daily anchor, so it asks
+    the server."""
+    open_help = (
+        db.query(models.Post)
+        .filter_by(mahalla_id=user.mahalla_id, type="help", status="open")
+        .count()
+    )
+    next_event = (
+        db.query(models.Post)
+        .filter(
+            models.Post.mahalla_id == user.mahalla_id,
+            models.Post.type == "event",
+            models.Post.status == "open",
+            models.Post.event_date.isnot(None),
+            models.Post.event_date >= models.utcnow() - EVENT_STILL_TODAY,
+        )
+        .order_by(models.Post.event_date.asc())
+        .first()
+    )
+    return schemas.BugunOut(
+        open_help_count=open_help,
+        next_event=post_out(db, next_event, user) if next_event else None,
+    )
 
 
 @router.post("", response_model=schemas.PostOut)
@@ -232,9 +319,10 @@ def create_post(
     return post_out(db, post, user)
 
 
-@router.get("/discover", response_model=list[schemas.PostOut])
+@router.get("/discover", response_model=schemas.FeedPage)
 def discover(
     scope: str = "region",
+    cursor: str | None = None,
     user: models.User = Depends(require_member),
     db: Session = Depends(get_db),
 ):
@@ -246,7 +334,7 @@ def discover(
         my_mahalla = db.get(models.Mahalla, user.mahalla_id)
         my_district = db.get(models.District, my_mahalla.district_id) if my_mahalla else None
         if my_district is None:
-            return []
+            return schemas.FeedPage(items=[], next_cursor=None)
         region_district_ids = [
             did
             for (did,) in db.query(models.District.id).filter(
@@ -260,8 +348,10 @@ def discover(
             )
         ]
         q = q.filter(models.Post.mahalla_id.in_(region_mahalla_ids))
-    posts = q.order_by(models.Post.created_at.desc()).limit(100).all()
-    return [post_out(db, p, user) for p in posts]
+    rows, next_cursor = _page(q, cursor)
+    return schemas.FeedPage(
+        items=[post_out(db, p, user) for p in rows], next_cursor=next_cursor
+    )
 
 
 @router.get("/{post_id}", response_model=schemas.PostDetail)

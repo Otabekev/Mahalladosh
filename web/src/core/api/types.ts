@@ -157,6 +157,19 @@ export type HelpCategory = 'tool' | 'ride' | 'labor' | 'childcare' | 'other'
 export type PostStatus = 'open' | 'resolved' | 'closed'
 export type DiscoverScope = 'region' | 'country'
 
+/** One page of a feed. `next_cursor === null` means there is nothing after it —
+ *  that, not the item count, is how the client knows it has reached the end. */
+export interface FeedPage {
+  items: Post[]
+  next_cursor: string | null
+}
+
+/** The daily briefing, counted across the whole mahalla by the server. */
+export interface Bugun {
+  open_help_count: number
+  next_event: Post | null
+}
+
 export interface PostIn {
   type: PostType
   title?: string | null

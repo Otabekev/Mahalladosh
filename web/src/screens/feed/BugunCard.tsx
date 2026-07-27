@@ -1,11 +1,13 @@
-/** "BUGUN" briefing — a client-side daily digest for the Mahallam feed.
- *  No new API: it reads the already-loaded posts and surfaces open help + the next event.
+/** "BUGUN" briefing — the daily anchor on the Mahallam feed: open help and the next
+ *  event. The numbers come from the server (GET /posts/bugun) and count the whole
+ *  mahalla; deriving them from the loaded posts, as this once did, quietly became
+ *  "…on the first page" as soon as the feed was paged.
  *  Renders nothing when there is nothing worth briefing. */
 
 import type { ReactNode } from 'react'
 import { useLang, useStrings } from '@/core/i18n'
 import { feedStrings } from '@/core/i18n/feed'
-import type { Post } from '@/core/api/types'
+import type { Bugun } from '@/core/api/types'
 
 const DATE_LOCALE: Record<string, string> = { uz: 'uz', uzc: 'uz', ru: 'ru', en: 'en' }
 
@@ -47,17 +49,13 @@ function daysUntil(date: Date): number {
   return Math.round((target.getTime() - start.getTime()) / 86400000)
 }
 
-export function BugunCard({ posts }: { posts: Post[] }) {
+export function BugunCard({ bugun }: { bugun: Bugun | undefined }) {
   const s = useStrings(feedStrings)
   const lang = useLang((st) => st.lang)
 
-  const helpCount = posts.filter((p) => p.type === 'help' && p.status === 'open').length
-
-  const nextEvent = posts
-    .filter((p): p is Post & { event_date: string } => p.type === 'event' && !!p.event_date)
-    .map((p) => ({ post: p, date: parseDate(p.event_date) }))
-    .filter((e) => daysUntil(e.date) >= 0)
-    .sort((a, b) => a.date.getTime() - b.date.getTime())[0]
+  const helpCount = bugun?.open_help_count ?? 0
+  const event = bugun?.next_event
+  const nextEvent = event?.event_date ? { post: event, date: parseDate(event.event_date) } : null
 
   const rows: ReactNode[] = []
 

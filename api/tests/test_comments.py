@@ -28,7 +28,7 @@ def test_anyone_can_comment_including_the_author_repeatedly(db, world, as_user):
 def test_comment_count_shows_on_the_feed(db, world, as_user):
     pid = _post(db, world, world.founder_id)
     as_user(world.neighbor).post(f"/api/posts/{pid}/comments", json={"body": "Zo'r"})
-    feed = as_user(world.voucher).get("/api/posts").json()
+    feed = as_user(world.voucher).get("/api/posts").json()["items"]
     assert next(p for p in feed if p["id"] == pid)["comment_count"] == 1
 
 

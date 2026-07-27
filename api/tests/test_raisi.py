@@ -38,7 +38,7 @@ def test_raisi_can_pin_and_it_floats_to_the_top(db, world, as_user):
 
     # a plain member sees the pinned (older) post first, flagged
     member = as_user(world.neighbor)
-    feed = member.get("/api/posts").json()
+    feed = member.get("/api/posts").json()["items"]
     assert feed[0]["id"] == older
     assert feed[0]["pinned"] is True
     assert all(p["pinned"] is False for p in feed if p["id"] != older)
@@ -52,7 +52,7 @@ def test_unpin_clears_it(db, world, as_user):
     raisi.put(f"/api/raisi/pinned/{pid}")
 
     raisi.delete("/api/raisi/pinned")
-    feed = as_user(world.neighbor).get("/api/posts").json()
+    feed = as_user(world.neighbor).get("/api/posts").json()["items"]
     assert all(p["pinned"] is False for p in feed)
 
 
@@ -77,7 +77,7 @@ def test_a_type_filter_hides_the_pin(db, world, as_user):
     as_user(world.founder).put(f"/api/raisi/pinned/{pid}")
 
     member = as_user(world.neighbor)
-    filtered = member.get("/api/posts?type=help").json()
+    filtered = member.get("/api/posts?type=help").json()["items"]
     assert all(p["pinned"] is False for p in filtered)
 
 

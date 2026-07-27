@@ -327,7 +327,7 @@ def test_a_post_author_does_not_leak_language_or_dm_optout(as_user, world):
     assert created.status_code == 200, created.text
 
     reader = as_user(world.voucher)
-    feed = reader.get("/api/posts").json()
+    feed = reader.get("/api/posts").json()["items"]
     assert feed, "expected at least one post in the feed"
     author_obj = feed[0]["author"]
     assert "lang" not in author_obj

@@ -380,6 +380,22 @@ class PostDetail(PostOut):
     comments: list[CommentOut] = []
 
 
+class FeedPage(BaseModel):
+    """One page of a feed. `next_cursor` is null when there is nothing after this
+    page — that is what the client checks, not the item count."""
+
+    items: list[PostOut] = []
+    next_cursor: str | None = None
+
+
+class BugunOut(BaseModel):
+    """The daily briefing, counted across the whole mahalla rather than derived
+    from whichever page of the feed happens to be loaded."""
+
+    open_help_count: int = 0
+    next_event: PostOut | None = None
+
+
 class RahmatOut(BaseModel):
     """The reaction state after a toggle, so the tap updates without a refetch."""
 
