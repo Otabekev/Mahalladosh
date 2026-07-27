@@ -307,7 +307,8 @@ class PostIn(BaseModel):
     category: Literal["tool", "ride", "labor", "childcare", "other"] | None = None
     event_date: datetime | None = None
     goal: str | None = Field(default=None, max_length=200)
-    image_url: str | None = Field(default=None, max_length=300)
+    image_url: str | None = Field(default=None, max_length=300)  # legacy single image
+    image_urls: list[str] | None = Field(default=None, max_length=6)  # multi-photo
 
 
 class ResponseIn(BaseModel):
@@ -352,6 +353,7 @@ class PostOut(BaseModel):
     image_url: str | None = None
     status: str
     author: UserOut
+    image_urls: list[str] = []  # all photos (cover first); image_url stays the cover
     author_place: str = ""  # "Yoshlik, Pop" — shown on discover cards
     response_count: int = 0
     my_response: bool = False

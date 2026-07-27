@@ -248,6 +248,19 @@ class PostReaction(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class PostImage(Base):
+    """A photo attached to a post. A share post can carry several; `position` keeps
+    the order they were added. Post.image_path stays the cover (first image) so the
+    feed and older single-image posts keep working untouched."""
+
+    __tablename__ = "post_images"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), index=True)
+    path: Mapped[str] = mapped_column(String(300))
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class PostComment(Base):
     """Free-form discussion on a post — the comment thread, on every post type.
     Distinct from PostResponse, which is the structured 'I'll help / I'll come'

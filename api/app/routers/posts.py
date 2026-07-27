@@ -56,6 +56,14 @@ def post_out(
         is not None
     )
     comment_count = db.query(models.PostComment).filter_by(post_id=p.id).count()
+    image_rows = (
+        db.query(models.PostImage)
+        .filter_by(post_id=p.id)
+        .order_by(models.PostImage.position, models.PostImage.id)
+        .all()
+    )
+    # fall back to the single cover for posts created before multi-photo existed
+    image_urls = [im.path for im in image_rows] or ([p.image_path] if p.image_path else [])
     return schemas.PostOut(
         id=p.id,
         type=p.type,
@@ -74,6 +82,7 @@ def post_out(
         rahmat_count=rahmat_count,
         my_rahmat=my_rahmat,
         comment_count=comment_count,
+        image_urls=image_urls,
         created_at=p.created_at,
     )
 
@@ -175,20 +184,22 @@ def create_post(
     if data.type == "event" and data.event_date is None:
         raise HTTPException(status_code=400, detail="Sanani kiriting")
 
+    # collect photos: image_urls (multi) wins, image_url (legacy single) as fallback
+    images = list(data.image_urls) if data.image_urls else ([data.image_url] if data.image_url else [])
+    images = [u for u in images if u][:6]  # drop blanks, cap at 6
+    if any(not u.startswith("/api/uploads/") for u in images):
+        raise HTTPException(status_code=400, detail="Rasm avval yuklanishi kerak")
+
     if data.type == "share":
         # open people-post: needs text or a photo; title derives from the text
         body = (data.body or "").strip()
-        if not body and not data.image_url:
+        if not body and not images:
             raise HTTPException(status_code=400, detail="Matn yoki rasm qo'shing")
         title = body[:80] if body else "📷 Rasm"
-        image_url = data.image_url
-        if image_url and not image_url.startswith("/api/uploads/"):
-            raise HTTPException(status_code=400, detail="Rasm avval yuklanishi kerak")
     else:
         if not data.title or len(data.title.strip()) < 3:
             raise HTTPException(status_code=400, detail="Sarlavha kiriting")
         title = data.title.strip()
-        image_url = None
 
     post = models.Post(
         mahalla_id=user.mahalla_id,
@@ -199,10 +210,12 @@ def create_post(
         category=data.category,
         event_date=data.event_date,
         goal=data.goal,
-        image_path=image_url,
+        image_path=images[0] if images else None,  # cover = first
     )
     db.add(post)
     db.flush()
+    for i, path in enumerate(images):
+        db.add(models.PostImage(post_id=post.id, path=path, position=i))
     # share posts don't ping the whole mahalla — they're browse-content, not a
     # call to action; the structured types keep their fan-out
     if post.type != "share":
@@ -496,6 +509,7 @@ def delete_post(
     db.query(models.PostResponse).filter_by(post_id=post.id).delete()
     db.query(models.PostComment).filter_by(post_id=post.id).delete()
     db.query(models.PostReaction).filter_by(post_id=post.id).delete()
+    db.query(models.PostImage).filter_by(post_id=post.id).delete()
     track.log_event(
         db, user.id, "post_delete", entity_type="post", entity_id=post.id,
         mahalla_id=post.mahalla_id,
