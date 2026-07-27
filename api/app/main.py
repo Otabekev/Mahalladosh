@@ -7,7 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from . import models  # noqa: F401 — register tables
-from .db import Base, SessionLocal, engine
+from .config import settings
+from .db import SessionLocal
+from .migrate import upgrade_to_head
 from .routers import (
     admin,
     auth,
@@ -32,7 +34,10 @@ from .seed import seed
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    # Alembic owns the schema now; create_all would build the tables without an
+    # alembic_version row and the next upgrade would collide with them.
+    if settings.run_migrations_on_start:
+        upgrade_to_head()
     with SessionLocal() as db:
         seed(db)
     # catch up on overdue time-based work (votes past deadline, missed honors)

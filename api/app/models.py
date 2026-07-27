@@ -55,9 +55,18 @@ class Mahalla(Base):
     status: Mapped[str] = mapped_column(String(20), default="forming")  # forming|pending|active|rejected
     estimated_households: Mapped[int | None] = mapped_column(Integer)
     petition_threshold: Mapped[int | None] = mapped_column(Integer)  # None -> settings default
-    raisi_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    # use_alter: these two point *forward* to tables that themselves depend on
+    # mahallas, so the four-table cycle (households <-> mahallas <-> posts <-> users)
+    # cannot be ordered. Emitting them as a separate ALTER after the tables exist is
+    # what makes both create_all and a generated migration valid on Postgres, which
+    # (unlike SQLite) actually enforces foreign keys at creation time.
+    raisi_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", use_alter=True, name="fk_mahallas_raisi_user_id_users")
+    )
     # the one post the raisi has pinned to the top of the mahalla feed (or None)
-    pinned_post_id: Mapped[int | None] = mapped_column(ForeignKey("posts.id"))
+    pinned_post_id: Mapped[int | None] = mapped_column(
+        ForeignKey("posts.id", use_alter=True, name="fk_mahallas_pinned_post_id_posts")
+    )
     activated_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
@@ -72,7 +81,12 @@ class User(Base):
     photo_url: Mapped[str | None] = mapped_column(String(400))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     mahalla_id: Mapped[int | None] = mapped_column(ForeignKey("mahallas.id"), index=True)
-    household_id: Mapped[int | None] = mapped_column(ForeignKey("households.id"))
+    # use_alter for the same reason as Mahalla.raisi_user_id: users <-> households is
+    # mutually dependent. This is the nullable side of the pair, so it is the one to
+    # defer — households.created_by is NOT NULL and must exist at insert time.
+    household_id: Mapped[int | None] = mapped_column(
+        ForeignKey("households.id", use_alter=True, name="fk_users_household_id_households")
+    )
     rep_month: Mapped[int] = mapped_column(Integer, default=0)
     rep_alltime: Mapped[int] = mapped_column(Integer, default=0)
     rep_month_key: Mapped[str | None] = mapped_column(String(7))  # "2026-07"

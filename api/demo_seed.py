@@ -9,7 +9,8 @@ from datetime import timedelta
 from pathlib import Path
 
 from app import models
-from app.db import Base, SessionLocal, engine
+from app.db import SessionLocal
+from app.migrate import upgrade_to_head
 from app.routers.uploads import UPLOAD_DIR
 from app.seed import seed
 
@@ -54,7 +55,8 @@ def img(n):
 def run():
     global _AVAILABLE
     _AVAILABLE = install_assets()
-    Base.metadata.create_all(bind=engine)
+    # the same path production takes, so dev never diverges from it
+    upgrade_to_head()
     db = SessionLocal()
     seed(db)  # regions/districts + forming MFYs
 

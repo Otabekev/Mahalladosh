@@ -9,3 +9,5 @@ Pillow>=10.0
 # Postgres driver (v3). app/db.py rewrites a provider's postgres:// URL onto it,
 # so a pasted connection string works without the operator editing the scheme.
 psycopg[binary]>=3.2
+# Versioned schema. Runtime, not dev-only: the app applies migrations at startup.
+alembic>=1.13
