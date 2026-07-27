@@ -190,6 +190,63 @@ export const feedStrings = {
     en: 'Your report was sent. Thank you.',
   },
 
+  // ---------- quick polls (#16) ----------
+  pollDesc: {
+    uz: "Qisqa so'rovnoma — bir teginish",
+    uzc: 'Қисқа сўровнома — бир тегиниш',
+    ru: 'Быстрый опрос — одно касание',
+    en: 'A quick poll — one tap',
+  },
+  pollPlaceholder: {
+    uz: 'Qaysi kuni hashar qilamiz?',
+    uzc: 'Қайси куни ҳашар қиламиз?',
+    ru: 'В какой день сделаем хашар?',
+    en: 'Which day shall we do the hashar?',
+  },
+  pollOptionsLabel: { uz: 'Variantlar', uzc: 'Вариантлар', ru: 'Варианты', en: 'Options' },
+  pollOptionPlaceholder: {
+    uz: 'Variant {n}',
+    uzc: 'Вариант {n}',
+    ru: 'Вариант {n}',
+    en: 'Option {n}',
+  },
+  pollAddOption: {
+    uz: "Variant qo'shish",
+    uzc: 'Вариант қўшиш',
+    ru: 'Добавить вариант',
+    en: 'Add option',
+  },
+  pollNeedsTwo: {
+    uz: 'Kamida 2 ta variant kiriting',
+    uzc: 'Камида 2 та вариант киритинг',
+    ru: 'Нужно минимум 2 варианта',
+    en: 'Add at least 2 options',
+  },
+  pollVotes: {
+    uz: '{n} ta ovoz',
+    uzc: '{n} та овоз',
+    ru: 'Голосов: {n}',
+    en: '{n} votes',
+  },
+  pollNoVotes: {
+    uz: 'Hali hech kim ovoz bermadi',
+    uzc: 'Ҳали ҳеч ким овоз бермади',
+    ru: 'Пока никто не голосовал',
+    en: 'No votes yet',
+  },
+  pollTapToVote: {
+    uz: 'Tanlang',
+    uzc: 'Танланг',
+    ru: 'Выберите',
+    en: 'Choose',
+  },
+  pollClosed: {
+    uz: "So'rovnoma yopilgan",
+    uzc: 'Сўровнома ёпилган',
+    ru: 'Опрос закрыт',
+    en: 'This poll is closed',
+  },
+
   // ---------- paging (#19) ----------
   showMore: {
     uz: "Yana ko'rsatish",

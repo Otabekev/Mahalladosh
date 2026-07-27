@@ -9,7 +9,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query'
 import { api } from '@/core/api/client'
-import type { Bugun, DiscoverScope, FeedPage, Post, PostDetail, PostIn } from '@/core/api/types'
+import type { Bugun, DiscoverScope, FeedPage, Poll, Post, PostDetail, PostIn } from '@/core/api/types'
 
 /** Both feeds page the same way: the server hands back a cursor, and a null cursor
  *  is what means "that's everything" — never an item count. */
@@ -123,6 +123,50 @@ export function useToggleRahmat() {
       // our optimistic guess may be wrong now — refetch the truth
       invalidateFeeds(qc)
       void qc.invalidateQueries({ queryKey: ['post', id] })
+    },
+  })
+}
+
+/** Answer a quick poll. Optimistic, like Rahmat: the bars move on tap and the
+ *  server's authoritative tallies replace the guess a moment later. */
+export function useVote(postId: number) {
+  const qc = useQueryClient()
+
+  const write = (poll: Poll) => {
+    const set = (p: Post) => (p.id === postId ? { ...p, poll } : p)
+    const patch = (old: InfiniteData<FeedPage> | undefined) =>
+      old && { ...old, pages: old.pages.map((pg) => ({ ...pg, items: pg.items.map(set) })) }
+    qc.setQueriesData<InfiniteData<FeedPage>>({ queryKey: ['posts'] }, patch)
+    qc.setQueryData<PostDetail>(['post', postId], (old) => old && { ...old, poll })
+  }
+
+  return useMutation({
+    mutationFn: (optionId: number) =>
+      api<Poll>(`/posts/${postId}/vote`, { method: 'POST', body: { option_id: optionId } }),
+    onMutate: (optionId) => {
+      const current =
+        qc.getQueryData<PostDetail>(['post', postId])?.poll ??
+        qc
+          .getQueriesData<InfiniteData<FeedPage>>({ queryKey: ['posts'] })
+          .flatMap(([, feed]) => feed?.pages.flatMap((pg) => pg.items) ?? [])
+          .find((p) => p.id === postId)?.poll
+      if (!current) return
+      // moving a vote must not inflate the total — only a first vote adds to it
+      const had = current.my_option_id
+      write({
+        ...current,
+        my_option_id: optionId,
+        total_votes: current.total_votes + (had === null ? 1 : 0),
+        options: current.options.map((o) => ({
+          ...o,
+          votes: o.votes + (o.id === optionId ? 1 : 0) - (o.id === had ? 1 : 0),
+        })),
+      })
+    },
+    onSuccess: (poll) => write(poll),
+    onError: () => {
+      void qc.invalidateQueries({ queryKey: ['posts'] })
+      void qc.invalidateQueries({ queryKey: ['post', postId] })
     },
   })
 }

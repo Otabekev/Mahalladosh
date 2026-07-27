@@ -194,6 +194,7 @@ export const POST_TYPE_META: Record<string, { color: string; icon: string }> = {
   event: { color: 'violet', icon: '🎉' },
   newcomer: { color: 'green', icon: '👋' },
   share: { color: 'gray', icon: '📷' },
+  poll: { color: 'blue', icon: '📊' },
 }
 
 /** Returns a resolver for localized post-type labels (re-renders on language change). */

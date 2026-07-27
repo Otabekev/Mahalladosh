@@ -29,6 +29,7 @@ FEED_WINDOW = {
     "charity": timedelta(days=60),
     "newcomer": timedelta(days=30),
     "share": timedelta(days=60),
+    "poll": timedelta(days=14),  # a quick poll is stale quickly by definition
 }
 DEFAULT_WINDOW = timedelta(days=30)
 

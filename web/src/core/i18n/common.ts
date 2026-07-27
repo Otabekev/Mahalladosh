@@ -75,4 +75,5 @@ export const postTypeLabels: Record<string, Entry> = {
   event: { uz: "To'y-marosim", uzc: 'Тўй-маросим', ru: 'Торжество', en: 'Event' },
   newcomer: { uz: "Yangi qo'shni", uzc: 'Янги қўшни', ru: 'Новый сосед', en: 'New neighbor' },
   share: { uz: 'Ulashish', uzc: 'Улашиш', ru: 'Пост', en: 'Share' },
+  poll: { uz: "So'rovnoma", uzc: 'Сўровнома', ru: 'Опрос', en: 'Poll' },
 }

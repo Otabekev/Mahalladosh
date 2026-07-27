@@ -306,7 +306,10 @@ class DingDongOut(BaseModel):
 
 # ---------- posts ----------
 
-PostType = Literal["help", "announcement", "charity", "event", "newcomer", "share"]
+PostType = Literal["help", "announcement", "charity", "event", "newcomer", "share", "poll"]
+
+POLL_MIN_OPTIONS = 2
+POLL_MAX_OPTIONS = 5  # more than this stops being a *quick* poll
 
 
 class PostIn(BaseModel):
@@ -319,6 +322,26 @@ class PostIn(BaseModel):
     goal: str | None = Field(default=None, max_length=200)
     image_url: str | None = Field(default=None, max_length=300)  # legacy single image
     image_urls: list[str] | None = Field(default=None, max_length=6)  # multi-photo
+    # poll only: the question is the title, these are the answers
+    options: list[str] = Field(default_factory=list, max_length=POLL_MAX_OPTIONS)
+
+
+class PollOptionOut(BaseModel):
+    id: int
+    text: str
+    votes: int = 0
+
+
+class PollOut(BaseModel):
+    """A poll's live state, from the asking viewer's point of view."""
+
+    options: list[PollOptionOut] = []
+    total_votes: int = 0
+    my_option_id: int | None = None  # what this viewer chose, if anything
+
+
+class PollVoteIn(BaseModel):
+    option_id: int
 
 
 class ResponseIn(BaseModel):
@@ -371,6 +394,7 @@ class PostOut(BaseModel):
     rahmat_count: int = 0  # 🤲 one-tap acknowledgements
     my_rahmat: bool = False  # did the viewer give Rahmat
     comment_count: int = 0  # discussion-thread size
+    poll: PollOut | None = None  # poll posts only
     created_at: datetime
 
 

@@ -261,6 +261,36 @@ class PostImage(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class PollOption(Base):
+    """One choice in a quick poll. A poll IS a post (type="poll") whose title is the
+    question — that is what keeps it light: it inherits the feed, the comments, the
+    reactions, moderation and deletion for free. The heavy, binding path is a
+    Proposal (propose → second → time-boxed vote → supermajority); this is the
+    deliberately non-binding counterpart, for "which Saturday suits everyone?"."""
+
+    __tablename__ = "poll_options"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), index=True)
+    text: Mapped[str] = mapped_column(String(80))
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class PollVote(Base):
+    """One person's answer. Unique per (poll, person), so tapping a different option
+    moves the existing vote rather than adding a second — changing your mind is
+    normal and should not need an undo button."""
+
+    __tablename__ = "poll_votes"
+    __table_args__ = (UniqueConstraint("post_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), index=True)
+    option_id: Mapped[int] = mapped_column(ForeignKey("poll_options.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class PostComment(Base):
     """Free-form discussion on a post — the comment thread, on every post type.
     Distinct from PostResponse, which is the structured 'I'll help / I'll come'

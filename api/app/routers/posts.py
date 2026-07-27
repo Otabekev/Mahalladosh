@@ -4,7 +4,7 @@ Posts are typed (help|announcement|charity|event|newcomer) — never free chat."
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from .. import images, lifecycle, models, notify, presenters, reputation, schemas, track
@@ -12,7 +12,10 @@ from ..deps import get_current_user, get_db, require_member
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
-TYPE_EMOJI = {"help": "🤝", "announcement": "📢", "charity": "❤️", "event": "🎉", "share": "📷"}
+TYPE_EMOJI = {
+    "help": "🤝", "announcement": "📢", "charity": "❤️",
+    "event": "🎉", "share": "📷", "poll": "📊",
+}
 
 POST_PHOTO_CAP = 6
 
@@ -23,6 +26,34 @@ PAGE_SIZE = 15
 # An event stays "today's event" until the day is really over, so a to'y at 18:00
 # is still the answer to "what's on today" at 22:00.
 EVENT_STILL_TODAY = timedelta(hours=12)
+
+
+# Anti-gaming soft cap (plan §9-C): max thanked-awards per month from the same
+# requester to the same helper. Resolve still works past the cap — only the
+# points stop, so farming a friend is pointless but real help is never blocked.
+HELP_AWARD_PAIR_CAP = 3
+
+
+def _pair_awards_this_month(db: Session, author_id: int, helper_id: int) -> int:
+    entries = (
+        db.query(models.ReputationEntry)
+        .filter_by(
+            user_id=helper_id,
+            reason="help_fulfilled",
+            source_type="post",
+            month=reputation.current_month_key(),
+        )
+        .all()
+    )
+    count = 0
+    for e in entries:
+        src = db.get(models.Post, e.source_id) if e.source_id else None
+        if src is not None and src.author_id == author_id:
+            count += 1
+    return count
+
+
+# ---------- local builders ----------
 
 
 def _encode_cursor(p: models.Post) -> str:
@@ -56,32 +87,33 @@ def _page(q, cursor: str | None, limit: int = PAGE_SIZE):
     rows = rows[:limit]
     return rows, (_encode_cursor(rows[-1]) if has_more and rows else None)
 
-# Anti-gaming soft cap (plan §9-C): max thanked-awards per month from the same
-# requester to the same helper. Resolve still works past the cap — only the
-# points stop, so farming a friend is pointless but real help is never blocked.
-HELP_AWARD_PAIR_CAP = 3
 
 
-def _pair_awards_this_month(db: Session, author_id: int, helper_id: int) -> int:
-    entries = (
-        db.query(models.ReputationEntry)
-        .filter_by(
-            user_id=helper_id,
-            reason="help_fulfilled",
-            source_type="post",
-            month=reputation.current_month_key(),
-        )
+def poll_out(db: Session, p: models.Post, viewer: models.User) -> schemas.PollOut | None:
+    """A poll's live tallies. Returns None for every other post type, so this costs
+    nothing on the ordinary feed."""
+    if p.type != "poll":
+        return None
+    options = (
+        db.query(models.PollOption)
+        .filter_by(post_id=p.id)
+        .order_by(models.PollOption.position, models.PollOption.id)
         .all()
     )
-    count = 0
-    for e in entries:
-        src = db.get(models.Post, e.source_id) if e.source_id else None
-        if src is not None and src.author_id == author_id:
-            count += 1
-    return count
-
-
-# ---------- local builders ----------
+    counts = dict(
+        db.query(models.PollVote.option_id, func.count(models.PollVote.id))
+        .filter_by(post_id=p.id)
+        .group_by(models.PollVote.option_id)
+        .all()
+    )
+    mine = db.query(models.PollVote).filter_by(post_id=p.id, user_id=viewer.id).first()
+    return schemas.PollOut(
+        options=[
+            schemas.PollOptionOut(id=o.id, text=o.text, votes=counts.get(o.id, 0)) for o in options
+        ],
+        total_votes=sum(counts.values()),
+        my_option_id=mine.option_id if mine else None,
+    )
 
 
 def post_out(
@@ -122,6 +154,7 @@ def post_out(
         my_rahmat=my_rahmat,
         comment_count=comment_count,
         image_urls=image_urls,
+        poll=poll_out(db, p, viewer),
         created_at=p.created_at,
     )
 
@@ -275,6 +308,12 @@ def create_post(
     if data.type == "event" and data.event_date is None:
         raise HTTPException(status_code=400, detail="Sanani kiriting")
 
+    options: list[str] = []
+    if data.type == "poll":
+        options = [o.strip() for o in data.options if o and o.strip()][: schemas.POLL_MAX_OPTIONS]
+        if len(options) < schemas.POLL_MIN_OPTIONS:
+            raise HTTPException(status_code=400, detail="Kamida 2 ta variant kiriting")
+
     # collect photos: image_urls (multi) wins, image_url (legacy single) as fallback
     raw = list(data.image_urls) if data.image_urls else ([data.image_url] if data.image_url else [])
     photos = images.clean_urls(raw, POST_PHOTO_CAP)
@@ -304,6 +343,8 @@ def create_post(
     db.add(post)
     db.flush()
     images.replace(db, models.PostImage, "post_id", post.id, photos)
+    for position, text in enumerate(options):
+        db.add(models.PollOption(post_id=post.id, text=text[:80], position=position))
     # share posts don't ping the whole mahalla — they're browse-content, not a
     # call to action; the structured types keep their fan-out
     if post.type != "share":
@@ -427,6 +468,38 @@ def toggle_rahmat(
     db.commit()
     count = db.query(models.PostReaction).filter_by(post_id=post.id).count()
     return schemas.RahmatOut(count=count, mine=mine)
+
+
+@router.post("/{post_id}/vote", response_model=schemas.PollOut)
+def vote_on_poll(
+    post_id: int,
+    data: schemas.PollVoteIn,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Answer a quick poll — one tap, from the feed card.
+
+    Tapping a different option moves your existing vote instead of adding another
+    (unique on post+user), because changing your mind is normal and should not need
+    a separate undo. Deliberately non-binding: no points, no notification, no
+    quorum — a Proposal is the path when a decision has to stick."""
+    post = _get_post(db, post_id, user)
+    if post.type != "poll":
+        raise HTTPException(status_code=400, detail="Bu so'rovnoma emas")
+    if post.status != "open":
+        raise HTTPException(status_code=400, detail="So'rovnoma yopilgan")
+
+    option = db.get(models.PollOption, data.option_id)
+    if option is None or option.post_id != post.id:
+        raise HTTPException(status_code=404, detail="Variant topilmadi")
+
+    existing = db.query(models.PollVote).filter_by(post_id=post.id, user_id=user.id).first()
+    if existing:
+        existing.option_id = option.id
+    else:
+        db.add(models.PollVote(post_id=post.id, option_id=option.id, user_id=user.id))
+    db.commit()
+    return poll_out(db, post, user)
 
 
 @router.post("/{post_id}/comments", response_model=schemas.PostDetail)
@@ -605,6 +678,9 @@ def delete_post(
     db.query(models.PostComment).filter_by(post_id=post.id).delete()
     db.query(models.PostReaction).filter_by(post_id=post.id).delete()
     db.query(models.PostImage).filter_by(post_id=post.id).delete()
+    # votes before options: the votes reference the options
+    db.query(models.PollVote).filter_by(post_id=post.id).delete()
+    db.query(models.PollOption).filter_by(post_id=post.id).delete()
     track.log_event(
         db, user.id, "post_delete", entity_type="post", entity_id=post.id,
         mahalla_id=post.mahalla_id,

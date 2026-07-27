@@ -152,7 +152,7 @@ export interface HouseholdUpdate {
   visibility?: HouseholdVisibility
 }
 
-export type PostType = 'help' | 'announcement' | 'charity' | 'event' | 'newcomer' | 'share'
+export type PostType = 'help' | 'announcement' | 'charity' | 'event' | 'newcomer' | 'share' | 'poll'
 export type HelpCategory = 'tool' | 'ride' | 'labor' | 'childcare' | 'other'
 export type PostStatus = 'open' | 'resolved' | 'closed'
 export type DiscoverScope = 'region' | 'country'
@@ -179,6 +179,22 @@ export interface PostIn {
   goal?: string | null
   image_url?: string | null
   image_urls?: string[]
+  /** Poll only: the question is the title, these are the answers. */
+  options?: string[]
+}
+
+export interface PollOption {
+  id: number
+  text: string
+  votes: number
+}
+
+/** A poll's live state, from the asking viewer's point of view. */
+export interface Poll {
+  options: PollOption[]
+  total_votes: number
+  /** What this viewer chose, if anything. Other people's choices are never named. */
+  my_option_id: number | null
 }
 
 export interface Post {
@@ -204,6 +220,8 @@ export interface Post {
   my_rahmat: boolean
   /** Size of the discussion thread. */
   comment_count: number
+  /** Poll posts only; null on every other type. */
+  poll: Poll | null
   created_at: string
 }
 

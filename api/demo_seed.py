@@ -136,6 +136,20 @@ def run():
                   image_path=img("post_hashar.jpg"))
     db.add(models.PostResponse(post_id=hashar.id, user_id=users["otabek"].id, message="Ajoyib kun edi"))
 
+    # a quick poll, mid-vote — the light counterpart to a governance proposal
+    poll = post("malika", "poll", "Hasharni qaysi kuni qilamiz?", 180,
+                body="Ko'pchilikka qulay kunni tanlaymiz.")
+    poll_options = []
+    for i, text in enumerate(["Shanba ertalab", "Yakshanba ertalab", "Juma kechqurun"]):
+        opt = models.PollOption(post_id=poll.id, text=text, position=i)
+        db.add(opt)
+        poll_options.append(opt)
+    db.flush()
+    for who, opt in [("otabek", 0), ("bekzod", 0), ("gulnora", 0),
+                     ("sardor", 1), ("salima", 1), ("toshpolat", 2)]:
+        db.add(models.PollVote(post_id=poll.id, option_id=poll_options[opt].id,
+                               user_id=users[who].id))
+
     # ---- services (Xizmatlar directory, with photos of the work) ----
     def service(who, title, cat, price, contact, desc, photos=()):
         s = models.ServiceOffering(

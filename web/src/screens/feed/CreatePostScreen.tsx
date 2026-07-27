@@ -15,13 +15,17 @@ import {
   Textarea,
   usePostTypeLabel,
 } from '@/components/ui'
-import { useStrings } from '@/core/i18n'
+import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { feedStrings } from '@/core/i18n/feed'
 import { useCreatePost } from '@/core/queries/posts'
 import type { HelpCategory, PostIn, PostType } from '@/core/api/types'
 
 type CreatableType = Exclude<PostType, 'newcomer'>
+
+// Mirrors POLL_MIN_OPTIONS / POLL_MAX_OPTIONS in api/app/schemas.py.
+const POLL_MIN_OPTIONS = 2
+const POLL_MAX_OPTIONS = 5
 type FeedKey = keyof typeof feedStrings
 
 const TYPE_OPTIONS: { type: Exclude<CreatableType, 'share'>; descKey: FeedKey; placeholderKey: FeedKey }[] = [
@@ -29,6 +33,7 @@ const TYPE_OPTIONS: { type: Exclude<CreatableType, 'share'>; descKey: FeedKey; p
   { type: 'announcement', descKey: 'announcementDesc', placeholderKey: 'announcementPlaceholder' },
   { type: 'charity', descKey: 'charityDesc', placeholderKey: 'charityPlaceholder' },
   { type: 'event', descKey: 'eventDesc', placeholderKey: 'eventPlaceholder' },
+  { type: 'poll', descKey: 'pollDesc', placeholderKey: 'pollPlaceholder' },
 ]
 
 const HELP_CATEGORIES: { value: HelpCategory; labelKey: FeedKey }[] = [
@@ -53,6 +58,8 @@ export default function CreatePostScreen() {
   const [eventDate, setEventDate] = useState('')
   const [goal, setGoal] = useState('')
   const [images, setImages] = useState<string[]>([])
+  // a poll starts with the two empty rows it needs at minimum
+  const [options, setOptions] = useState<string[]>(['', ''])
   const [error, setError] = useState<string | null>(null)
 
   // ---- step 1: type picker ----
@@ -92,7 +99,13 @@ export default function CreatePostScreen() {
   // ---- step 2: form ----
   const meta = POST_TYPE_META[type]
   const option = TYPE_OPTIONS.find((o) => o.type === type)
-  const canSubmit = type === 'share' ? body.trim().length > 0 || images.length > 0 : title.trim().length >= 3
+  const filledOptions = options.map((o) => o.trim()).filter(Boolean)
+  const canSubmit =
+    type === 'share'
+      ? body.trim().length > 0 || images.length > 0
+      : type === 'poll'
+        ? title.trim().length >= 3 && filledOptions.length >= POLL_MIN_OPTIONS
+        : title.trim().length >= 3
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -105,6 +118,7 @@ export default function CreatePostScreen() {
       if (type === 'help') input.category = category
       if (type === 'event' && eventDate) input.event_date = new Date(eventDate).toISOString()
       if (type === 'charity' && goal.trim()) input.goal = goal.trim()
+      if (type === 'poll') input.options = filledOptions
     }
     create.mutate(input, {
       onSuccess: (post) => navigate(`/app/posts/${post.id}`, { replace: true }),
@@ -193,6 +207,36 @@ export default function CreatePostScreen() {
                     placeholder={s.goalPlaceholder}
                     maxLength={200}
                   />
+                </Field>
+              )}
+
+              {type === 'poll' && (
+                <Field
+                  label={s.pollOptionsLabel}
+                  hint={filledOptions.length < POLL_MIN_OPTIONS ? s.pollNeedsTwo : undefined}
+                >
+                  <div className="flex flex-col gap-2">
+                    {options.map((value, i) => (
+                      <Input
+                        key={i}
+                        value={value}
+                        onChange={(e) =>
+                          setOptions(options.map((o, j) => (j === i ? e.target.value : o)))
+                        }
+                        placeholder={fmt(s.pollOptionPlaceholder, { n: i + 1 })}
+                        maxLength={80}
+                      />
+                    ))}
+                  </div>
+                  {options.length < POLL_MAX_OPTIONS && (
+                    <button
+                      type="button"
+                      onClick={() => setOptions([...options, ''])}
+                      className="mt-2 min-h-[44px] text-sm font-semibold text-brand"
+                    >
+                      + {s.pollAddOption}
+                    </button>
+                  )}
                 </Field>
               )}
 
