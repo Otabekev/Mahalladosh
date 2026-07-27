@@ -34,6 +34,7 @@ import {
   useResolve,
   useRespond,
   useUpdatePost,
+  useWithdrawRsvp,
 } from '@/core/queries/posts'
 import { usePinPost } from '@/core/queries/raisi'
 import { useReport, type ReportReason } from '@/core/queries/reports'
@@ -339,6 +340,7 @@ export default function PostDetailScreen() {
 
   const { data: post, isLoading, error } = usePost(Number.isFinite(postId) ? postId : undefined)
   const respond = useRespond(postId)
+  const withdraw = useWithdrawRsvp(postId)
   const resolve = useResolve(postId)
   const closePost = useClosePost(postId)
   const pin = usePinPost()
@@ -373,9 +375,11 @@ export default function PostDetailScreen() {
 
   const isAuthor = me !== null && post.author.id === me.user.id
   const isShare = post.type === 'share'
-  // structured responses ("I'll help / I'll come / welcome") only make sense for
-  // these types; every other type discusses through comments instead of a second box
-  const RESPOND_TYPES: PostType[] = ['help', 'event', 'newcomer']
+  // structured responses ("I'll help / welcome") only make sense for these types;
+  // every other type discusses through comments instead of a second box. Events used
+  // to be here too, but they now have their own one-tap RSVP control below — showing
+  // both would be two ways to say the same thing.
+  const RESPOND_TYPES: PostType[] = ['help', 'newcomer']
   const canRespond =
     RESPOND_TYPES.includes(post.type) &&
     post.status === 'open' &&
@@ -588,6 +592,34 @@ export default function PostDetailScreen() {
         </Card>
       )}
       {post.responses.length === 0 && <p className="text-sm text-sub mb-3">{s.noResponsesYet}</p>}
+
+      {/* an event's own RSVP control — one tap either way */}
+      {post.type === 'event' && post.status === 'open' && me !== null && !isAuthor && (
+        <Card className="mb-3 p-4">
+          {withdraw.error && <ErrorNote message={withdraw.error.message} />}
+          {post.my_response ? (
+            <>
+              <Button full variant="secondary" disabled>
+                {s.imGoingYes}
+              </Button>
+              <button
+                onClick={() => withdraw.mutate()}
+                disabled={withdraw.isPending}
+                className="mt-2 min-h-[44px] w-full text-sm font-semibold text-sub"
+              >
+                {s.cantGo}
+              </button>
+            </>
+          ) : (
+            <Button full size="lg" onClick={sendResponse} loading={respond.isPending}>
+              🎉 {s.imGoing}
+            </Button>
+          )}
+          <p className="mt-2 text-center text-xs text-sub">
+            {post.response_count > 0 ? fmt(s.goingCount, { n: post.response_count }) : s.goingNobody}
+          </p>
+        </Card>
+      )}
 
       {/* respond box */}
       {canRespond && (

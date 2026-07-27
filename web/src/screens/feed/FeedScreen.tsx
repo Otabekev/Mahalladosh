@@ -27,6 +27,7 @@ import { useAuth } from '@/core/stores/auth'
 import type { DiscoverScope, Post } from '@/core/api/types'
 import { BugunCard } from './BugunCard'
 import { OnboardingChecklistCard } from './OnboardingChecklistCard'
+import { UpcomingStrip } from './UpcomingStrip'
 
 type FeedTab = 'mahalla' | DiscoverScope
 
@@ -274,6 +275,7 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
     <div className="space-y-3.5">
       <OnboardingChecklistCard />
       <BugunCard bugun={bugun} />
+      <UpcomingStrip />
       <Composer />
 
       {feed.isLoading && (

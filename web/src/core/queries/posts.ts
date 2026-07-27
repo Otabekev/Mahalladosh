@@ -59,6 +59,7 @@ function invalidateFeeds(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: ['posts'] })
   void qc.invalidateQueries({ queryKey: ['discover'] })
   void qc.invalidateQueries({ queryKey: ['bugun'] })
+  void qc.invalidateQueries({ queryKey: ['upcoming'] })
 }
 
 export function usePost(id?: number) {
@@ -167,6 +168,26 @@ export function useVote(postId: number) {
     onError: () => {
       void qc.invalidateQueries({ queryKey: ['posts'] })
       void qc.invalidateQueries({ queryKey: ['post', postId] })
+    },
+  })
+}
+
+/** What is coming up, soonest first. Events sink in a reverse-chronological feed,
+ *  which is backwards for the one post type whose value is that it hasn't happened. */
+export function useUpcoming() {
+  return useQuery({ queryKey: ['upcoming'], queryFn: () => api<Post[]>('/posts/upcoming') })
+}
+
+/** Take back "I'm coming". Events only — the server refuses on a help request,
+ *  where the same row is the offer that resolution reads. */
+export function useWithdrawRsvp(postId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<PostDetail>(`/posts/${postId}/respond`, { method: 'DELETE' }),
+    onSuccess: (detail) => {
+      qc.setQueryData(['post', postId], detail)
+      invalidateFeeds(qc)
+      void qc.invalidateQueries({ queryKey: ['upcoming'] })
     },
   })
 }

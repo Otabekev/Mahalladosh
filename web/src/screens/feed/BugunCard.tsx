@@ -7,13 +7,10 @@
 import type { ReactNode } from 'react'
 import { useLang, useStrings } from '@/core/i18n'
 import { feedStrings } from '@/core/i18n/feed'
+import { daysUntil, parseDate } from '@/components/ui'
 import type { Bugun } from '@/core/api/types'
 
 const DATE_LOCALE: Record<string, string> = { uz: 'uz', uzc: 'uz', ru: 'ru', en: 'en' }
-
-function parseDate(iso: string): Date {
-  return new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z')
-}
 
 function HeartIcon() {
   return (
@@ -40,22 +37,16 @@ function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   )
 }
 
-/** Days from local midnight-today to the local day of `date` (0 = today, 1 = tomorrow). */
-function daysUntil(date: Date): number {
-  const start = new Date()
-  start.setHours(0, 0, 0, 0)
-  const target = new Date(date)
-  target.setHours(0, 0, 0, 0)
-  return Math.round((target.getTime() - start.getTime()) / 86400000)
-}
-
 export function BugunCard({ bugun }: { bugun: Bugun | undefined }) {
   const s = useStrings(feedStrings)
   const lang = useLang((st) => st.lang)
 
   const helpCount = bugun?.open_help_count ?? 0
   const event = bugun?.next_event
-  const nextEvent = event?.event_date ? { post: event, date: parseDate(event.event_date) } : null
+  const nextEvent =
+    event?.event_date
+      ? { post: event, iso: event.event_date, date: parseDate(event.event_date) }
+      : null
 
   const rows: ReactNode[] = []
 
@@ -71,7 +62,7 @@ export function BugunCard({ bugun }: { bugun: Bugun | undefined }) {
   }
 
   if (nextEvent) {
-    const d = daysUntil(nextEvent.date)
+    const d = daysUntil(nextEvent.iso)
     const prefix =
       d === 0
         ? s.todayLabel

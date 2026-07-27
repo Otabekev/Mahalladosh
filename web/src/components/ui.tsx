@@ -525,6 +525,26 @@ function sameDay(a: Date, b: Date): boolean {
  * Language comes from the store via pick(), same as before, so it also works
  * outside React (the calling component re-renders on a language switch).
  */
+/** Parse a server timestamp. The API sends naive UTC, so a bare string would be
+ *  read as local time and land hours off. */
+export function parseDate(iso: string): Date {
+  return new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z')
+}
+
+/** Whole days from local midnight today to the local day of `iso`
+ *  (0 = today, 1 = tomorrow, negative = past).
+ *
+ *  Lives here because the Bugun card and the Upcoming strip both answer "is the
+ *  to'y today?" and must never answer it differently. Compare DAYS, not hours: an
+ *  event at 09:00 tomorrow is "tomorrow" even when it is 20 hours away. */
+export function daysUntil(iso: string): number {
+  const target = parseDate(iso)
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  target.setHours(0, 0, 0, 0)
+  return Math.round((target.getTime() - start.getTime()) / 86400000)
+}
+
 export function timeAgo(iso: string): string {
   const then = new Date(HAS_TZ.test(iso) ? iso : iso + 'Z')
   const ms = then.getTime()

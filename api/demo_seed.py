@@ -128,8 +128,13 @@ def run():
     share = post("bekzod", "share", "Guzarni tozaladik — rahmat hammaga! 🌿", 60,
                  body="Guzarni tozaladik — rahmat hammaga!", image_path=img("post_guzar.jpg"))
     db.add(models.PostResponse(post_id=share.id, user_id=users["malika"].id, message="Rahmat!"))
-    post("otabek", "event", "Karimovlarda to'y — barchamiz taklifdamiz", 240,
-         event_date=NOW + timedelta(days=1), body="Shanba kuni kechqurun. Xush kelibsiz!")
+    toy = post("otabek", "event", "Karimovlarda to'y — barchamiz taklifdamiz", 240,
+               event_date=NOW + timedelta(days=1), body="Shanba kuni kechqurun. Xush kelibsiz!")
+    for who in ["malika", "gulnora", "salima", "bekzod"]:
+        db.add(models.PostResponse(post_id=toy.id, user_id=users[who].id))
+    yigin = post("toshpolat", "event", "Mahalla yig'ini — yangi yil rejalari", 480,
+                 event_date=NOW + timedelta(days=6), body="Guzardagi choyxonada, 18:00 da.")
+    db.add(models.PostResponse(post_id=yigin.id, user_id=users["sardor"].id))
     post("toshpolat", "announcement", "Shanba kuni umumiy hashar — 8:00 da guzarda", 600,
          body="Ko'chani obodonlashtiriamiz. Barcha xonadonlardan bir kishi kutamiz.")
     hashar = post("gulnora", "share", "O'tgan hashardan xotira 💚", 1440, body="O'tgan hashardan xotira",

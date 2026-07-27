@@ -1,7 +1,7 @@
 """Structured post feed and the help loop with points (plan §8, §9-C).
 Posts are typed (help|announcement|charity|event|newcomer) — never free chat."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import and_, func, or_
@@ -23,9 +23,12 @@ POST_PHOTO_CAP = 6
 # quickly, large enough that most people never need a second page.
 PAGE_SIZE = 15
 
-# An event stays "today's event" until the day is really over, so a to'y at 18:00
-# is still the answer to "what's on today" at 22:00.
-EVENT_STILL_TODAY = timedelta(hours=12)
+# "Is this event over?" has ONE answer, in lifecycle.EVENT_GRACE. The feed's ageing,
+# the Bugun card and the Upcoming strip all read it, so an elder can never be told
+# the to'y is today on one card and gone from another.
+EVENT_GRACE = lifecycle.EVENT_GRACE
+
+UPCOMING_LIMIT = 5
 
 
 # Anti-gaming soft cap (plan §9-C): max thanked-awards per month from the same
@@ -86,7 +89,6 @@ def _page(q, cursor: str | None, limit: int = PAGE_SIZE):
     has_more = len(rows) > limit
     rows = rows[:limit]
     return rows, (_encode_cursor(rows[-1]) if has_more and rows else None)
-
 
 
 def _charity_percent(p: models.Post) -> int:
@@ -298,7 +300,7 @@ def bugun(
             models.Post.type == "event",
             models.Post.status == "open",
             models.Post.event_date.isnot(None),
-            models.Post.event_date >= models.utcnow() - EVENT_STILL_TODAY,
+            models.Post.event_date >= models.utcnow() - EVENT_GRACE,
         )
         .order_by(models.Post.event_date.asc())
         .first()
@@ -381,6 +383,32 @@ def create_post(
     return post_out(db, post, user)
 
 
+@router.get("/upcoming", response_model=list[schemas.PostOut])
+def upcoming_events(
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """What is coming up in the mahalla, soonest first.
+
+    Events sink into a reverse-chronological feed the moment anything else is
+    posted, which is backwards for the one post type whose whole value is that it
+    has not happened yet. This is the strip that keeps the to'y visible."""
+    rows = (
+        db.query(models.Post)
+        .filter(
+            models.Post.mahalla_id == user.mahalla_id,
+            models.Post.type == "event",
+            models.Post.status == "open",
+            models.Post.event_date.isnot(None),
+            models.Post.event_date >= models.utcnow() - EVENT_GRACE,
+        )
+        .order_by(models.Post.event_date.asc())
+        .limit(UPCOMING_LIMIT)
+        .all()
+    )
+    return [post_out(db, p, user) for p in rows]
+
+
 @router.get("/discover", response_model=schemas.FeedPage)
 def discover(
     scope: str = "region",
@@ -458,6 +486,31 @@ def respond_to_post(
         event="post_response",
         params={"name": user.full_name, "title": post.title},
     )
+    db.commit()
+    return post_detail(db, post, user)
+
+
+@router.delete("/{post_id}/respond", response_model=schemas.PostDetail)
+def withdraw_rsvp(
+    post_id: int,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Take back "I'm coming" on an event.
+
+    EVENTS ONLY, and that guard is load-bearing rather than tidiness. A PostResponse
+    on a help request is the structured offer that `resolve` reads to name the
+    helper and award the points; letting one be withdrawn would mean an author could
+    open the resolve dialog, see a name, tap confirm, and get told that person never
+    responded. Plans change for a to'y; an offer of help is not the same object.
+    """
+    post = _get_post(db, post_id, user)
+    if post.type != "event":
+        raise HTTPException(status_code=400, detail="Bu tadbir emas")
+    row = db.query(models.PostResponse).filter_by(post_id=post.id, user_id=user.id).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Siz javob bermagansiz")
+    db.delete(row)
     db.commit()
     return post_detail(db, post, user)
 

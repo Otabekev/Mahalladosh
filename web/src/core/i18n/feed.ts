@@ -190,6 +190,43 @@ export const feedStrings = {
     en: 'Your report was sent. Thank you.',
   },
 
+  // ---------- events (#14) ----------
+  upcomingHeading: {
+    uz: 'Yaqin kunlarda',
+    uzc: 'Яқин кунларда',
+    ru: 'Ближайшие события',
+    en: 'Coming up',
+  },
+  eventToday: { uz: 'Bugun', uzc: 'Бугун', ru: 'Сегодня', en: 'Today' },
+  eventTomorrow: { uz: 'Ertaga', uzc: 'Эртага', ru: 'Завтра', en: 'Tomorrow' },
+  eventInDays: {
+    uz: '{n} kundan keyin',
+    uzc: '{n} кундан кейин',
+    ru: 'Через {n} дн.',
+    en: 'In {n} days',
+  },
+  goingCount: {
+    uz: '{n} kishi boradi',
+    uzc: '{n} киши боради',
+    ru: 'Придут: {n}',
+    en: '{n} coming',
+  },
+  goingNobody: {
+    uz: 'Hali hech kim javob bermadi',
+    uzc: 'Ҳали ҳеч ким жавоб бермади',
+    ru: 'Пока никто не ответил',
+    en: 'Nobody has answered yet',
+  },
+  imGoing: { uz: 'Men boraman', uzc: 'Мен бораман', ru: 'Я приду', en: "I'm going" },
+  imGoingYes: { uz: 'Boraman ✓', uzc: 'Бораман ✓', ru: 'Приду ✓', en: 'Going ✓' },
+  cantGo: {
+    uz: 'Bora olmayman',
+    uzc: 'Бора олмайман',
+    ru: 'Не смогу прийти',
+    en: "I can't go",
+  },
+  whoIsComing: { uz: 'Kim boradi', uzc: 'Ким боради', ru: 'Кто придёт', en: 'Who is coming' },
+
   // ---------- charity progress (#15) ----------
   som: { uz: "so'm", uzc: 'сўм', ru: 'сум', en: 'soum' },
   fieldGoalAmount: {
