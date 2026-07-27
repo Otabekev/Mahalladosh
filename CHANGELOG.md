@@ -15,6 +15,22 @@ All notable changes to this project are documented here. The format is based on
   engine being supported. Connection strings in the `postgres://` form that hosts
   actually hand out are normalised rather than failing with a driver error.
 
+### Security
+- **A login could confer platform admin.** `/auth/dev-login` took `is_admin` from
+  the request body, and promoted an existing neighbour who was merely *named* in
+  the payload — no account of the attacker's own required. Both paths removed;
+  admin now comes from seeded data or another admin, never from a login. The
+  environment gate also fails closed: the default was `dev`, so a deploy that
+  forgot to set `ENVIRONMENT` exposed a login that reuses any seeded account by
+  name, including the admin one.
+- **Uploaded photos vanish on redeploy, silently.** `api/uploads` sits inside the
+  application directory, which container hosts wipe on every deploy while the
+  database rows still point at the files — a family's album becomes broken images
+  with nothing logged anywhere. `UPLOAD_DIR` is now configurable, and a production
+  start with an in-app upload path warns loudly instead of saying nothing. Still a
+  warning, not a refusal: ephemeral uploads are fine for a demo, they just have to
+  be a choice someone made.
+
 ### Fixed
 - **The scheduler was not safe for a second instance**, contrary to its own
   docstring. Three of five sweep steps check for an existing notification and then
