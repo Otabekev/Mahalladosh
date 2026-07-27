@@ -37,11 +37,11 @@ The reason to open it every morning.
 - Skeleton loaders on every list · installable-PWA prompt (elder-guided)
 - Mahalla contacts page (pulled forward from Phase 6)
 
-## 🤝 Phase 5 — Social layer (mostly shipped)
+## ✅ Phase 5 — Social layer
 
-- ✅ Comments on all post types · ✅ one-tap 🤲 Rahmat reactions
-- ✅ Tappable public profiles · ✅ edit/delete own content · ✅ invite link + QR
-- Remaining: multi-photo posts + lightbox · family albums
+- Comments on all post types · one-tap 🤲 Rahmat reactions
+- Tappable public profiles · edit/delete own content · invite link + QR
+- Multi-photo posts + fullscreen lightbox · opt-in family albums
 
 ## 📚 Phase 6 — Depth
 
