@@ -55,6 +55,7 @@ def _maybe_delete_orphan_household(db: Session, household_id: int, leaving_user_
     db.query(models.Vouch).filter_by(household_id=household_id).delete()
     db.query(models.HouseholdJoinRequest).filter_by(household_id=household_id).delete()
     db.query(models.ServiceOffering).filter_by(household_id=household_id).delete()
+    db.query(models.HouseholdImage).filter_by(household_id=household_id).delete()
     db.delete(household)  # cascades HouseholdMember rows (relationship cascade)
 
 

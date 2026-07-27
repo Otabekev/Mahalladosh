@@ -7,6 +7,7 @@ import math
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .. import models, notify, presenters, reputation, schemas, track
@@ -227,6 +228,49 @@ def set_location(
     household.lat = data.lat
     household.lng = data.lng
     db.commit()
+    return presenters.household_out(db, household, user)
+
+
+@router.post("/{household_id}/photos", response_model=schemas.HouseholdOut)
+def add_photos(
+    household_id: int,
+    data: schemas.PhotosIn,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    """Add photos to your own family's album. Only the household's account-holders,
+    and every url must be an uploaded /api/uploads/ path. Capped at 12 total."""
+    household = _get_own_household(db, household_id, user)
+    urls = [u for u in data.urls if u][:12]
+    if any(not u.startswith("/api/uploads/") for u in urls):
+        raise HTTPException(status_code=400, detail="Rasm avval yuklanishi kerak")
+    existing = db.query(models.HouseholdImage).filter_by(household_id=household.id).count()
+    start = (
+        db.query(func.coalesce(func.max(models.HouseholdImage.position), -1))
+        .filter_by(household_id=household.id)
+        .scalar()
+    ) + 1
+    for offset, url in enumerate(urls[: max(0, 12 - existing)]):
+        db.add(models.HouseholdImage(household_id=household.id, path=url, position=start + offset))
+    db.commit()
+    db.refresh(household)
+    return presenters.household_out(db, household, user)
+
+
+@router.delete("/{household_id}/photos/{image_id}", response_model=schemas.HouseholdOut)
+def delete_photo(
+    household_id: int,
+    image_id: int,
+    user: models.User = Depends(require_member),
+    db: Session = Depends(get_db),
+):
+    household = _get_own_household(db, household_id, user)
+    image = db.get(models.HouseholdImage, image_id)
+    if image is None or image.household_id != household.id:
+        raise HTTPException(status_code=404, detail="Rasm topilmadi")
+    db.delete(image)
+    db.commit()
+    db.refresh(household)
     return presenters.household_out(db, household, user)
 
 

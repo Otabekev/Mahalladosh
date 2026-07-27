@@ -257,8 +257,13 @@ class HouseholdOut(BaseModel):
     has_location: bool = False  # coordinates themselves are never exposed
     has_pending_join: bool = False  # viewer has an outstanding join request
     members: list[MemberOut] = []
+    photos: list[str] = []  # family album — gated to trusted neighbours
     created_by: int
     created_at: datetime
+
+
+class PhotosIn(BaseModel):
+    urls: list[str] = Field(min_length=1, max_length=12)
 
 
 class JoinRequestIn(BaseModel):

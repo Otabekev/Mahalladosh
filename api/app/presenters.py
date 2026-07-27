@@ -110,6 +110,12 @@ def household_out(db: Session, h: models.Household, viewer: models.User) -> sche
         is not None
     )
     members = db.query(models.HouseholdMember).filter_by(household_id=h.id).all()
+    photos = (
+        db.query(models.HouseholdImage)
+        .filter_by(household_id=h.id)
+        .order_by(models.HouseholdImage.position, models.HouseholdImage.id)
+        .all()
+    )
     # PRIVACY GATE (plan §6.4 — family/lineage data is opt-in and visible only to
     # VERIFIED neighbors). family_history + members[] are exposed only to a viewer
     # who is either (a) a member of THIS household, or (b) a trusted resident whose
@@ -152,6 +158,7 @@ def household_out(db: Session, h: models.Household, viewer: models.User) -> sche
         vouch_count=vouch_count,
         my_vouch=my_vouch,
         members=[] if hide else [schemas.MemberOut.model_validate(mb) for mb in members],
+        photos=[] if hide else [im.path for im in photos],
         created_by=h.created_by,
         created_at=h.created_at,
     )

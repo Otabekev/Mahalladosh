@@ -425,6 +425,20 @@ class BanRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class HouseholdImage(Base):
+    """A photo in a family's album (plan §9-B, opt-in). Only the household's own
+    account-holders add or remove them; who may *see* them follows the same privacy
+    gate as the family history — trusted neighbours only (see presenters)."""
+
+    __tablename__ = "household_images"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("households.id"), index=True)
+    path: Mapped[str] = mapped_column(String(300))
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class MahallaContact(Base):
     """A phone number the raisi curates for the whole mahalla — the raisi's own
     line, the clinic, emergency services, the gas/water utilities. Every member
