@@ -4,15 +4,19 @@ elder, real posts). Run once against a fresh DB:
     .venv/Scripts/python.exe demo_seed.py
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from app import models
 from app.db import Base, SessionLocal, engine
 from app.seed import seed
 
-NOW = datetime(2026, 7, 20, 9, 0, 0)
-THIS_MONTH = "2026-07"
-LAST_MONTH = "2026-06"
+# The demo has to be alive whenever it is opened, so everything is placed relative
+# to the moment it was seeded rather than to a frozen date. A pinned NOW meant the
+# to'y in the feed drifted into the past and the month keys silently stopped
+# matching the real month, so a judge opening the app saw an empty Bugun card.
+NOW = models.utcnow()
+THIS_MONTH = NOW.strftime("%Y-%m")
+LAST_MONTH = (NOW.replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
 UP = "/api/uploads/"
 
 
@@ -132,11 +136,40 @@ def run():
                   image_path=img("post_hashar.jpg"))
     db.add(models.PostResponse(post_id=hashar.id, user_id=users["otabek"].id, message="Ajoyib kun edi"))
 
+    # ---- services (Xizmatlar directory, with photos of the work) ----
+    def service(who, title, cat, price, contact, desc, photos=()):
+        s = models.ServiceOffering(
+            household_id=users[who].household_id, mahalla_id=yoshlik.id,
+            category=cat, title=title, price=price, contact=contact, description=desc,
+            created_by=users[who].id, created_at=NOW - timedelta(days=6),
+        )
+        db.add(s)
+        db.flush()
+        for i, name in enumerate(photos):
+            db.add(models.ServiceImage(service_id=s.id, path=img(name), position=i))
+        return s
+
+    service("malika", "Tikuvchilik — ko'ylak va nimcha", "skill", "150 000 so'mdan",
+            "+998 90 123 45 67", "Uy sharoitida tikaman. O'lchov olib, 3 kunda tayyor.",
+            ["svc_tikuv1.jpg", "svc_tikuv2.jpg"])
+    service("dilnoza", "Uyda pishirilgan somsa va non", "food", "6 000 so'm / dona",
+            "+998 91 234 56 78", "Har kuni ertalab tandirdan. Buyurtma kechqurun.",
+            ["svc_somsa.jpg"])
+    service("bekzod", "Santexnika — kran, quvur, isitish", "service", "Kelishilgan holda",
+            "+998 93 345 67 89", "Tez va kafolat bilan. Qo'ng'iroq qiling.")
+    service("sardor", "Traktor va tirkama ijaraga", "rental", "200 000 so'm / kun",
+            "+998 94 456 78 90", "Yer haydash, yuk tashish. Hafta oxiri band bo'ladi.",
+            ["svc_traktor.jpg"])
+
     db.commit()
     n_users = db.query(models.User).count()
     n_posts = db.query(models.Post).count()
+    n_svc = db.query(models.ServiceOffering).count()
     db.close()
-    print(f"demo seeded: {n_users} users, {n_posts} posts, Yoshlik active, Malika = Faol qo'shni")
+    print(
+        f"demo seeded: {n_users} users, {n_posts} posts, {n_svc} services, "
+        "Yoshlik active, Malika = Faol qo'shni"
+    )
 
 
 if __name__ == "__main__":
