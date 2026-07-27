@@ -37,7 +37,9 @@ def _get_household_in_mahalla(
     if household is None:
         raise HTTPException(status_code=404, detail="Xonadon topilmadi")
     if household.mahalla_id != user.mahalla_id:
-        raise HTTPException(status_code=403, detail="Bu xonadon sizning mahallangizda emas")
+        # 404, not 403: a 403 confirms the id exists and turns household ids into a
+        # platform-wide existence oracle. Outside your mahalla it simply is not there.
+        raise HTTPException(status_code=404, detail="Xonadon topilmadi")
     return household
 
 

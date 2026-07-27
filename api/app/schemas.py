@@ -542,6 +542,23 @@ class ServiceOut(BaseModel):
     active: bool = True
     image_urls: list[str] = []  # photos of the work, cover first
     created_at: datetime
+    # NOTE: no view/contact counts here, deliberately. ServiceOut is the single
+    # serializer for the directory AND for search results (routers/search.py imports
+    # service_out), so one count field added here would appear on two public
+    # surfaces at once — and publishing "3 views" under a neighbour's offering
+    # advertises that nobody wanted it. Counts live on the owner-only stats route.
+
+
+class ServiceViewsIn(BaseModel):
+    """Which offerings were actually on the viewer's screen."""
+
+    ids: list[int] = Field(default_factory=list, max_length=20)
+
+
+class ServiceStatsOut(BaseModel):
+    service_id: int
+    views: int = 0  # distinct people per day, not raw impressions
+    contacts: int = 0
 
 
 # ---------- admin ----------

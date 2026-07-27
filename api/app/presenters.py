@@ -10,10 +10,17 @@ from . import models, schemas
 from .config import settings
 
 
-def _is_raisi(db: Session, user: models.User) -> bool:
-    if not user.mahalla_id:
+def _is_raisi(db: Session, user: models.User, mahalla_id: int | None = None) -> bool:
+    """Is this person the raisi of `mahalla_id` (default: their own mahalla)?
+
+    Pass the mahalla of the thing being acted on whenever that can differ from the
+    viewer's — share posts are readable across mahallas, so an unscoped check let a
+    raisi moderate content belonging to a mahalla they have no authority over.
+    """
+    target = mahalla_id if mahalla_id is not None else user.mahalla_id
+    if not target:
         return False
-    m = db.get(models.Mahalla, user.mahalla_id)
+    m = db.get(models.Mahalla, target)
     return bool(m and m.raisi_user_id == user.id)
 
 

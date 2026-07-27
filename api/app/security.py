@@ -10,6 +10,35 @@ from .config import settings
 ALGORITHM = "HS256"
 COOKIE_NAME = "md_session"
 
+# The shipped placeholder. It is in a public repository, so anyone can read it.
+DEFAULT_SECRET = "change-me"
+MIN_SECRET_LENGTH = 32
+
+
+def check_secret_key() -> None:
+    """Refuse to serve production traffic with a guessable session secret.
+
+    Sessions are HS256 JWTs signed with settings.secret_key. If that key is the
+    committed placeholder, anyone who has read this repository can mint a cookie
+    for any user id — including id 1, which the seed makes a platform admin. There
+    is no partial version of this failure: a forgeable session is every account.
+
+    This raises rather than warns, unlike the uploads check. Ephemeral uploads are
+    a reasonable trade for a demo; a public signing key never is, and there is no
+    legitimate production use of "change-me" to preserve.
+    """
+    if settings.is_dev:
+        return
+    key = settings.secret_key
+    if key == DEFAULT_SECRET or len(key) < MIN_SECRET_LENGTH:
+        raise RuntimeError(
+            "SECRET_KEY is unset, still the committed placeholder, or shorter than "
+            f"{MIN_SECRET_LENGTH} characters. Session cookies are signed with it, so a "
+            "guessable value lets anyone forge a session for any account, including an "
+            "admin. Generate one and set it in the environment:\n"
+            '  python -c "import secrets; print(secrets.token_urlsafe(48))"'
+        )
+
 
 def create_session_token(user_id: int) -> str:
     payload = {

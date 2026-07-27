@@ -195,7 +195,7 @@ def post_detail(db: Session, p: models.Post, viewer: models.User) -> schemas.Pos
             )
         )
     helper = db.get(models.User, p.resolved_helper_id) if p.resolved_helper_id else None
-    is_raisi = presenters._is_raisi(db, viewer)
+    is_raisi = presenters._is_raisi(db, viewer, p.mahalla_id)
     comment_rows = (
         db.query(models.PostComment)
         .filter_by(post_id=p.id)
@@ -647,7 +647,9 @@ def delete_comment(
     allowed = (
         comment.user_id == user.id
         or post.author_id == user.id
-        or presenters._is_raisi(db, user)
+        # scoped to the POST's mahalla: a share post is visible across mahallas,
+        # so an unscoped check made every raisi a moderator of the whole country
+        or presenters._is_raisi(db, user, post.mahalla_id)
     )
     if not allowed:
         raise HTTPException(status_code=403, detail="Buni o'chira olmaysiz")

@@ -29,6 +29,7 @@ from .routers import (
 )
 from .routers.uploads import UPLOAD_DIR, check_uploads_durable
 from .scheduler import run_sweep, scheduler_loop
+from .security import check_secret_key
 from .seed import seed
 
 
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI):
     # alembic_version row and the next upgrade would collide with them.
     if settings.run_migrations_on_start:
         upgrade_to_head()
+    check_secret_key()
     check_uploads_durable()
     with SessionLocal() as db:
         seed(db)

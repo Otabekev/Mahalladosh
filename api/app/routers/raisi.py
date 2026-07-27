@@ -229,6 +229,10 @@ def ban_member(
     mahalla = db.get(models.Mahalla, user.mahalla_id)
     if mahalla and target.id == mahalla.raisi_user_id:
         raise HTTPException(status_code=400, detail="Raisini chetlatib bo'lmaydi")
+    if target.is_admin:
+        # a raisi banning the platform operator locks out the only account that can
+        # undo it — there is no recovery route, so this door stays shut
+        raise HTTPException(status_code=400, detail="Bu foydalanuvchini chetlatib bo'lmaydi")
 
     moderation.apply_ban(db, target, reason="Raisi", source="raisi", created_by=user.id)
     track.log_event(
