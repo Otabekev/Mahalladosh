@@ -94,13 +94,12 @@ def client():
     return TestClient(app)
 
 
-def login(full_name: str, is_admin: bool = False) -> TestClient:
+def login(full_name: str) -> TestClient:
     """A logged-in client (its own cookie jar) for the given user. dev-login
-    reuses an existing user by name, so this authenticates the seeded world."""
+    reuses an existing user by name, so this authenticates the seeded world.
+    It cannot confer admin — a test needing one sets User.is_admin directly."""
     client = TestClient(app)
-    r = client.post(
-        "/api/auth/dev-login", json={"full_name": full_name, "is_admin": is_admin}
-    )
+    r = client.post("/api/auth/dev-login", json={"full_name": full_name})
     assert r.status_code == 200, r.text
     return client
 

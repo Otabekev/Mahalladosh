@@ -81,7 +81,6 @@ export default function LoginScreen() {
   const { me, status } = useAuth()
   const navigate = useNavigate()
   const [fullName, setFullName] = useState('')
-  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -107,7 +106,7 @@ export default function LoginScreen() {
     setLoading(true)
     setError('')
     try {
-      await api<User>('/auth/dev-login', { method: 'POST', body: { full_name: name, is_admin: isAdmin } })
+      await api<User>('/auth/dev-login', { method: 'POST', body: { full_name: name } })
       await useAuth.getState().refresh()
       navigate('/')
     } catch (err) {
@@ -213,15 +212,6 @@ export default function LoginScreen() {
                     onChange={(e) => setFullName(e.target.value)}
                     autoFocus
                   />
-                  <label className="flex items-center gap-2 mt-3 mb-1 min-h-[44px] text-sm text-sub cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isAdmin}
-                      onChange={(e) => setIsAdmin(e.target.checked)}
-                      className="w-4 h-4 accent-brand"
-                    />
-                    {s.adminCheckbox}
-                  </label>
                   <button
                     type="submit"
                     disabled={loading}

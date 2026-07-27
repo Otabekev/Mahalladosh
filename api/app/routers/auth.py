@@ -34,7 +34,15 @@ def _set_session(response: Response, user_id: int) -> None:
 
 @router.post("/dev-login", response_model=schemas.SelfUserOut)
 def dev_login(data: schemas.DevLoginIn, response: Response, db: Session = Depends(get_db)):
-    """Local-development login. Disabled outside dev."""
+    """Local-development login. Disabled outside dev.
+
+    Two escalation paths used to live here: the endpoint created a user with
+    `is_admin` taken straight from the request body, and it PROMOTED an existing
+    non-admin who happened to be named in the payload. Both are gone — a dev login
+    can no longer confer admin on anyone. It still reuses a seeded account by name,
+    which is the whole point in development and precisely why the environment gate
+    below must fail closed (see settings.environment).
+    """
     if not settings.is_dev:
         raise HTTPException(status_code=404)
     # dev convenience: reuse any existing user with this exact name (so demo
@@ -47,11 +55,10 @@ def dev_login(data: schemas.DevLoginIn, response: Response, db: Session = Depend
         .first()
     )
     if user is None:
-        user = models.User(full_name=data.full_name, is_admin=data.is_admin)
+        # never is_admin: a fresh dev account is always an ordinary neighbour
+        user = models.User(full_name=data.full_name)
         db.add(user)
         db.flush()  # autoflush=False — the login event below needs user.id
-    elif data.is_admin and not user.is_admin:
-        user.is_admin = True
     track.log_event(db, user.id, "login")
     db.commit()
     db.refresh(user)

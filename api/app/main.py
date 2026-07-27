@@ -27,7 +27,7 @@ from .routers import (
     uploads,
     users,
 )
-from .routers.uploads import UPLOAD_DIR
+from .routers.uploads import UPLOAD_DIR, check_uploads_durable
 from .scheduler import run_sweep, scheduler_loop
 from .seed import seed
 
@@ -38,6 +38,7 @@ async def lifespan(app: FastAPI):
     # alembic_version row and the next upgrade would collide with them.
     if settings.run_migrations_on_start:
         upgrade_to_head()
+    check_uploads_durable()
     with SessionLocal() as db:
         seed(db)
     # catch up on overdue time-based work (votes past deadline, missed honors)

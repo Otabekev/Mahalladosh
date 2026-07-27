@@ -8,7 +8,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent  # api/
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=str(BASE_DIR / ".env"), extra="ignore")
 
-    environment: str = "dev"
+    # Defaults to production so a deploy that forgets to configure anything is
+    # LOCKED, not open. is_dev unlocks /auth/dev-login, which reuses an existing
+    # account by name — including the seeded admin — so a fail-open default would
+    # hand the platform to anyone who found the URL. Dev machines opt in via .env.
+    environment: str = "production"
     secret_key: str = "change-me"
     database_url: str = f"sqlite:///{BASE_DIR / 'mahalladosh.db'}"
     telegram_bot_token: str = ""
@@ -27,6 +31,13 @@ class Settings(BaseSettings):
     proposal_seconds_punitive: int = 5
     proposal_window_hours: int = 48
     proposal_quorum: int = 3
+    # Where uploaded images are written. Empty = api/uploads, which is INSIDE the
+    # application directory and therefore wiped on every redeploy of a container.
+    # Point this at a mounted volume in production; see check_uploads_durable().
+    upload_dir: str = ""
+    # Acknowledges that losing uploads on redeploy is fine here (a throwaway demo).
+    # Without it, a production start with an in-app upload path logs a loud warning.
+    uploads_may_be_ephemeral: bool = False
     session_days: int = 30
     # Migrations run at startup, which is right for one instance and wrong for
     # several — N processes would race the same DDL. Set false and run

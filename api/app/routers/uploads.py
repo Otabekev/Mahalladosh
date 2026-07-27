@@ -2,6 +2,7 @@
 validates it's a real image, strips EXIF (incl. GPS — privacy), caps dimensions."""
 
 import io
+import logging
 import uuid
 from pathlib import Path
 
@@ -9,12 +10,44 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from PIL import Image
 
 from .. import models
+from ..config import settings
 from ..deps import require_member
+
+logger = logging.getLogger("mahalladosh.uploads")
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
+DEFAULT_UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
+UPLOAD_DIR = Path(settings.upload_dir).expanduser().resolve() if settings.upload_dir else DEFAULT_UPLOAD_DIR
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def check_uploads_durable() -> None:
+    """Say out loud, at startup, where uploads go and whether they will survive.
+
+    The default directory lives inside the application tree. On a container host
+    that is wiped on every redeploy — and the failure is completely silent: the
+    Post and HouseholdImage rows still hold /api/uploads/<uuid>.jpg, the files are
+    simply gone, so a family's album turns into broken images with nothing in the
+    logs and no error anywhere. Silence is the actual bug; this makes it loud.
+
+    A warning rather than a refusal, because ephemeral uploads are perfectly fine
+    for a throwaway demo — that case just has to be a decision someone made
+    (UPLOADS_MAY_BE_EPHEMERAL=true) instead of something nobody noticed.
+    """
+    logger.info("Uploads directory: %s", UPLOAD_DIR)
+    if settings.is_dev or settings.uploads_may_be_ephemeral:
+        return
+    app_dir = DEFAULT_UPLOAD_DIR.parent
+    inside_app = UPLOAD_DIR == DEFAULT_UPLOAD_DIR or app_dir in UPLOAD_DIR.parents
+    if inside_app:
+        logger.warning(
+            "UPLOADS ARE NOT DURABLE: %s is inside the application directory, so on a "
+            "container host every uploaded photo is lost on the next redeploy while the "
+            "database rows still point at it. Set UPLOAD_DIR to a mounted volume, or set "
+            "UPLOADS_MAY_BE_EPHEMERAL=true to say this is a demo and you accept it.",
+            UPLOAD_DIR,
+        )
 
 MAX_BYTES = 6 * 1024 * 1024  # 6 MB raw upload cap
 MAX_DIM = 1600

@@ -57,7 +57,6 @@ export const onboardingStrings = {
   // ---------- login: form ----------
   namePlaceholder: { uz: 'Ismingiz', uzc: 'Исмингиз', ru: 'Ваше имя', en: 'Your name' },
   nameRequired: { uz: 'Ismingizni yozing', uzc: 'Исмингизни ёзинг', ru: 'Введите ваше имя', en: 'Enter your name' },
-  adminCheckbox: { uz: 'Admin sifatida kirish', uzc: 'Админ сифатида кириш', ru: 'Войти как администратор', en: 'Log in as admin' },
   tgLoginError: { uz: 'Telegram kirish xatosi', uzc: 'Телеграм кириш хатоси', ru: 'Ошибка входа через Telegram', en: 'Telegram login error' },
   loginUnavailable: {
     uz: "Kirish hozircha sozlanmoqda — keyinroq urinib ko'ring.",

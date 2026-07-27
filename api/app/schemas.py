@@ -42,8 +42,11 @@ class SelfUserOut(UserOut):
 
 
 class DevLoginIn(BaseModel):
+    """Local-development login. Deliberately carries NO is_admin: the endpoint used
+    to mint an admin from the request body, and to promote an existing user who was
+    not one. Admin comes from seeded data or another admin, never from a login."""
+
     full_name: str = Field(min_length=2, max_length=150)
-    is_admin: bool = False
 
 
 class MeUpdate(BaseModel):
