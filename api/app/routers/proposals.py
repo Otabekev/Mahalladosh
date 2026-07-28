@@ -43,7 +43,17 @@ def _apply_action(db: Session, p: models.Proposal) -> None:
     """Apply the proposal's action once it has passed."""
     if p.action == "set_raisi" and p.target_user_id:
         mahalla = db.get(models.Mahalla, p.mahalla_id)
-        if mahalla:
+        target = db.get(models.User, p.target_user_id)
+        # Re-check at APPLY time, not just at proposal time: a vote runs for days,
+        # and in that window the nominee can leave the mahalla, be banned, or delete
+        # their account. Installing a departed or banned person as head would leave
+        # the mahalla led by someone who cannot even sign in.
+        still_eligible = (
+            target is not None
+            and target.mahalla_id == p.mahalla_id
+            and not (target.banned_until and target.banned_until > datetime.utcnow())
+        )
+        if mahalla and still_eligible:
             mahalla.raisi_user_id = p.target_user_id
     elif p.action == "ban_user" and p.target_user_id:
         target = db.get(models.User, p.target_user_id)
@@ -245,9 +255,13 @@ def create_proposal(
             raise HTTPException(status_code=400, detail="O'zingizni chetlata olmaysiz")
         target_user_id = target.id
 
-    # punitive governance is verified-residents-only (plan §6.4 / §10); coordination
-    # proposals stay open to every member.
-    if data.action == "ban_user" and not _is_verified_member(db, user):
+    # Governance that CHANGES WHO HOLDS POWER is verified-residents-only (plan §6.4
+    # / §10); ordinary coordination proposals stay open to every member.
+    # set_raisi belongs on this list as much as ban_user does: the raisi can ban
+    # members unilaterally, so proposing one was a way around the very gate — an
+    # unvouched account could nominate itself and inherit the power the gate
+    # protects. Only "none" (pure coordination) is open to everyone.
+    if data.action in ("ban_user", "set_raisi") and not _is_verified_member(db, user):
         raise HTTPException(
             status_code=403,
             detail="Bu amal uchun tasdiqlangan xonadon a'zosi bo'lishingiz kerak",

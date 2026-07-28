@@ -51,7 +51,12 @@ def check_uploads_durable() -> None:
 
 MAX_BYTES = 6 * 1024 * 1024  # 6 MB raw upload cap
 MAX_DIM = 1600
-MAX_PIXELS = 40_000_000  # decompression-bomb guard on top of Pillow's default
+# Decompression budget. Pillow allocates ~4 bytes per pixel while decoding, so the
+# old 40 MP ceiling let a ~0.6 MB JPEG claim ~230 MB and a handful of concurrent
+# uploads exhaust a small instance. 24 MP covers every phone camera anyone in the
+# mahalla is holding while capping one decode near 100 MB — and the output is
+# thumbnailed to 1600px regardless, so the extra pixels were never used.
+MAX_PIXELS = 24_000_000
 
 
 @router.post("")

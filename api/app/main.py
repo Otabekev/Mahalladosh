@@ -2,8 +2,9 @@ import asyncio
 import contextlib
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import models  # noqa: F401 — register tables
@@ -54,6 +55,22 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Mahalladosh API", lifespan=lifespan)
+
+# Cap the request body before anything else looks at it. Without this, an
+# unauthenticated caller could stream an arbitrarily large body and the server would
+# buffer it while the route's require_member dependency had not run yet — the cost is
+# paid before the gate. Content-Length is a claim, so the streaming read below
+# enforces the real thing too.
+MAX_BODY_BYTES = 8 * 1024 * 1024  # a little over the 6 MB upload cap
+
+
+@app.middleware("http")
+async def limit_body_size(request: Request, call_next):
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > MAX_BODY_BYTES:
+        return JSONResponse({"detail": "So'rov juda katta"}, status_code=413)
+    return await call_next(request)
+
 
 app.add_middleware(
     CORSMiddleware,
