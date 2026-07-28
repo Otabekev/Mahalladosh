@@ -585,6 +585,43 @@ class AdminStats(BaseModel):
     posts: int = 0
 
 
+class DayPoint(BaseModel):
+    day: str  # "YYYY-MM-DD" (UTC)
+    active: int = 0
+
+
+class MahallaHealth(BaseModel):
+    """Per-mahalla aggregates only — counts, never names or ids of people."""
+
+    mahalla_id: int
+    name: str
+    members: int = 0
+    active_7d: int = 0
+    posts_7d: int = 0
+    help_open: int = 0
+
+
+class AdminMetrics(BaseModel):
+    """Is this thing alive? The few numbers that would change a decision.
+
+    Deliberately not everything computable: a dashboard nobody reads is worth less
+    than four numbers somebody checks every morning.
+    """
+
+    dau: int = 0
+    wau: int = 0
+    posts_7d: int = 0
+    help_resolved_7d: int = 0
+    help_open: int = 0
+    daily: list[DayPoint] = []  # the last 30 days, including empty ones
+    # activation funnel: registered -> in a mahalla -> in a household -> contributed
+    funnel_registered: int = 0
+    funnel_in_mahalla: int = 0
+    funnel_in_household: int = 0
+    funnel_contributed: int = 0
+    mahallas: list[MahallaHealth] = []
+
+
 # ---------- moderation (reports / bans, Phase 2b) ----------
 
 ReportTargetType = Literal["post", "service", "household", "user"]

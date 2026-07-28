@@ -22,6 +22,7 @@ import {
 import {
   useAddMfy,
   useAdminPetitions,
+  useAdminMetrics,
   useAdminStats,
   useApprove,
   useBanUser,
@@ -226,14 +227,128 @@ function StatsTab() {
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {items.map((it) => (
-        <Card key={it.label} className="p-4 text-center">
-          <div className="text-2xl font-extrabold text-ink">{it.value}</div>
-          <div className="text-xs text-sub mt-1">{it.label}</div>
-        </Card>
-      ))}
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        {items.map((it) => (
+          <Card key={it.label} className="p-4 text-center">
+            <div className="text-2xl font-extrabold text-ink">{it.value}</div>
+            <div className="text-xs text-sub mt-1">{it.label}</div>
+          </Card>
+        ))}
+      </div>
+      <HealthPanel />
     </div>
+  )
+}
+
+/** Is this thing alive? Four pulse numbers, thirty days of daily actives, the
+ *  activation funnel, and one row per mahalla.
+ *
+ *  The bars are hand-rolled divs on purpose: a charting library is a large
+ *  dependency and a slower first paint for one admin-only screen, and thirty
+ *  values in a row do not need axes to be read. */
+function HealthPanel() {
+  const s = useStrings(servicesStrings)
+  const { data, isPending, error } = useAdminMetrics()
+
+  if (isPending) return <Spinner />
+  if (error) return <ErrorNote message={error.message} />
+  if (!data) return null
+
+  const peak = Math.max(1, ...data.daily.map((d) => d.active))
+  const pulse = [
+    { label: s.mDau, value: data.dau },
+    { label: s.mWau, value: data.wau },
+    { label: s.mPosts7d, value: data.posts_7d },
+    { label: s.mHelpOpen, value: data.help_open },
+  ]
+  const funnel = [
+    { label: s.mFunnelRegistered, value: data.funnel_registered },
+    { label: s.mFunnelMahalla, value: data.funnel_in_mahalla },
+    { label: s.mFunnelHousehold, value: data.funnel_in_household },
+    { label: s.mFunnelContributed, value: data.funnel_contributed },
+  ]
+  const widest = Math.max(1, data.funnel_registered)
+
+  return (
+    <>
+      <div className="grid grid-cols-4 gap-2">
+        {pulse.map((p) => (
+          <Card key={p.label} className="p-3 text-center">
+            <div className="text-xl font-extrabold text-accent">{p.value}</div>
+            <div className="mt-0.5 text-[11px] leading-tight text-sub">{p.label}</div>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="p-4">
+        <h3 className="mb-2 text-sm font-bold text-ink">{s.mDailyActive}</h3>
+        <div className="flex h-20 items-end gap-[3px]" role="img" aria-label={s.mDailyActive}>
+          {data.daily.map((d) => (
+            <div
+              key={d.day}
+              title={`${d.day}: ${d.active}`}
+              className="flex-1 rounded-t bg-accent/70"
+              // a zero still shows a hairline, so a quiet day reads as a quiet day
+              // rather than as missing data
+              style={{ height: `${Math.max(2, (d.active / peak) * 100)}%` }}
+            />
+          ))}
+        </div>
+        <div className="mt-1 flex justify-between text-[11px] text-sub">
+          <span>{data.daily[0]?.day}</span>
+          <span>{data.daily[data.daily.length - 1]?.day}</span>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="mb-2 text-sm font-bold text-ink">{s.mFunnel}</h3>
+        <div className="space-y-1.5">
+          {funnel.map((f) => (
+            <div key={f.label} className="flex items-center gap-2">
+              <span className="w-28 shrink-0 text-xs text-sub">{f.label}</span>
+              <div className="h-5 flex-1 overflow-hidden rounded bg-line/50">
+                <div
+                  className="h-full rounded bg-brand/70"
+                  style={{ width: `${(f.value / widest) * 100}%` }}
+                />
+              </div>
+              <span className="w-8 shrink-0 text-right text-xs font-bold text-ink">{f.value}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {data.mahallas.length > 0 && (
+        <Card className="p-4">
+          <h3 className="mb-2 text-sm font-bold text-ink">{s.mPerMahalla}</h3>
+          <div className="-mx-4 overflow-x-auto px-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wide text-sub">
+                  <th className="pb-1 font-semibold">{s.mMahalla}</th>
+                  <th className="pb-1 text-right font-semibold">{s.mMembers}</th>
+                  <th className="pb-1 text-right font-semibold">{s.mActive7d}</th>
+                  <th className="pb-1 text-right font-semibold">{s.mPosts}</th>
+                  <th className="pb-1 text-right font-semibold">{s.mHelp}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {data.mahallas.map((m) => (
+                  <tr key={m.mahalla_id}>
+                    <td className="py-1.5 font-semibold text-ink">{m.name}</td>
+                    <td className="py-1.5 text-right text-sub">{m.members}</td>
+                    <td className="py-1.5 text-right text-sub">{m.active_7d}</td>
+                    <td className="py-1.5 text-right text-sub">{m.posts_7d}</td>
+                    <td className="py-1.5 text-right text-sub">{m.help_open}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+    </>
   )
 }
 

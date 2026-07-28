@@ -2,10 +2,11 @@
 platform stats, and moderation (report queue + takedown/ban). Every route
 requires admin."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .. import models, moderation, notify, presenters, reputation, schemas, track
@@ -204,6 +205,117 @@ def stats(
         mahallas_forming=mahallas_with("forming"),
         households=db.query(models.Household).count(),
         posts=db.query(models.Post).count(),
+    )
+
+
+@router.get("/metrics", response_model=schemas.AdminMetrics)
+def metrics(
+    days: int = 30,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(require_admin),
+):
+    """Per-day and per-mahalla health, for the operator.
+
+    Only aggregates — counts of people, never people. Nothing here names a user or
+    exposes one mahalla's content to another; it is a platform-operator view, so it
+    is 403 for a non-admin rather than 404 (there is no resource to hide).
+
+    DAU counts UserActivity rows, which `track.touch` writes once per account per UTC
+    day. It is deliberately restricted to accounts that are IN a mahalla: a signed-in
+    person who never joined one is not an active neighbour, and counting them would
+    flatter the headline number on the one screen that exists to tell the truth.
+    """
+    days = max(1, min(days, 90))
+    today = datetime.utcnow().date()
+    since_day = (today - timedelta(days=days - 1)).strftime("%Y-%m-%d")
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago_day = (today - timedelta(days=6)).strftime("%Y-%m-%d")
+
+    member_ids = db.query(models.User.id).filter(models.User.mahalla_id.isnot(None))
+
+    def actives_since(day: str) -> int:
+        return (
+            db.query(func.count(func.distinct(models.UserActivity.user_id)))
+            .filter(
+                models.UserActivity.day >= day,
+                models.UserActivity.user_id.in_(member_ids),
+            )
+            .scalar()
+            or 0
+        )
+
+    # one grouped query for the whole series, then fill the gaps — a day with nobody
+    # on it must appear as a zero, not vanish and make the chart lie
+    rows = dict(
+        db.query(models.UserActivity.day, func.count(func.distinct(models.UserActivity.user_id)))
+        .filter(
+            models.UserActivity.day >= since_day,
+            models.UserActivity.user_id.in_(member_ids),
+        )
+        .group_by(models.UserActivity.day)
+        .all()
+    )
+    daily = [
+        schemas.DayPoint(
+            day=(today - timedelta(days=n)).strftime("%Y-%m-%d"),
+            active=rows.get((today - timedelta(days=n)).strftime("%Y-%m-%d"), 0),
+        )
+        for n in range(days - 1, -1, -1)
+    ]
+
+    contributed = (
+        db.query(func.count(func.distinct(models.Post.author_id)))
+        .filter(models.Post.type != "newcomer")  # the auto-post is not a contribution
+        .scalar()
+        or 0
+    )
+
+    health = []
+    for m in db.query(models.Mahalla).filter_by(status="active").order_by(models.Mahalla.name):
+        ids = db.query(models.User.id).filter(models.User.mahalla_id == m.id)
+        health.append(
+            schemas.MahallaHealth(
+                mahalla_id=m.id,
+                name=m.name,
+                members=db.query(models.User).filter_by(mahalla_id=m.id).count(),
+                active_7d=(
+                    db.query(func.count(func.distinct(models.UserActivity.user_id)))
+                    .filter(
+                        models.UserActivity.day >= week_ago_day,
+                        models.UserActivity.user_id.in_(ids),
+                    )
+                    .scalar()
+                    or 0
+                ),
+                posts_7d=db.query(models.Post)
+                .filter(models.Post.mahalla_id == m.id, models.Post.created_at >= week_ago)
+                .count(),
+                help_open=db.query(models.Post)
+                .filter_by(mahalla_id=m.id, type="help", status="open")
+                .count(),
+            )
+        )
+
+    return schemas.AdminMetrics(
+        dau=actives_since(today.strftime("%Y-%m-%d")),
+        wau=actives_since(week_ago_day),
+        posts_7d=db.query(models.Post).filter(models.Post.created_at >= week_ago).count(),
+        help_resolved_7d=db.query(models.Post)
+        .filter(
+            models.Post.type == "help",
+            models.Post.status == "resolved",
+            models.Post.resolved_at >= week_ago,
+        )
+        .count(),
+        help_open=db.query(models.Post).filter_by(type="help", status="open").count(),
+        daily=daily,
+        funnel_registered=db.query(models.User).count(),
+        funnel_in_mahalla=db.query(models.User).filter(models.User.mahalla_id.isnot(None)).count(),
+        funnel_in_household=db.query(models.User)
+        .filter(models.User.household_id.isnot(None))
+        .count(),
+        funnel_contributed=contributed,
+        mahallas=health,
     )
 
 

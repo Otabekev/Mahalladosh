@@ -127,3 +127,40 @@ export function useUnbanUser() {
     },
   })
 }
+
+// ---------- operator health view (#41) ----------
+
+export interface DayPoint {
+  day: string
+  active: number
+}
+
+export interface MahallaHealth {
+  mahalla_id: number
+  name: string
+  members: number
+  active_7d: number
+  posts_7d: number
+  help_open: number
+}
+
+export interface AdminMetrics {
+  dau: number
+  wau: number
+  posts_7d: number
+  help_resolved_7d: number
+  help_open: number
+  daily: DayPoint[]
+  funnel_registered: number
+  funnel_in_mahalla: number
+  funnel_in_household: number
+  funnel_contributed: number
+  mahallas: MahallaHealth[]
+}
+
+export function useAdminMetrics() {
+  return useQuery({
+    queryKey: ['admin', 'metrics'],
+    queryFn: () => api<AdminMetrics>('/admin/metrics'),
+  })
+}
