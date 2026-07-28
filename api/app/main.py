@@ -1,10 +1,11 @@
 import asyncio
 import contextlib
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import models  # noqa: F401 — register tables
@@ -89,3 +90,34 @@ app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads"
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+# ---------- serve the built PWA from the same origin ----------
+
+# One service, one origin. The frontend already calls `/api/...` relatively, so
+# serving it from here means no CORS in production, no second host to configure, and
+# a session cookie that is simply first-party rather than needing SameSite=None.
+#
+# Absent in development: vite serves the frontend on :5174 and proxies /api here, so
+# there is no dist/ to find and this block does nothing.
+WEB_DIST = Path(__file__).resolve().parent.parent.parent / "web" / "dist"
+
+if WEB_DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(WEB_DIST / "assets")), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa(full_path: str):
+        """Return index.html for any non-API path, so a deep link works.
+
+        Registered last, and it must stay last: it matches everything, so any route
+        declared after it would be unreachable. /api is excluded explicitly rather
+        than by ordering — an unmatched /api/... must 404 as JSON, not hand the
+        caller an HTML page a client would then fail to parse.
+        """
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        # a real file (favicon, manifest, service worker) wins over the SPA shell
+        candidate = WEB_DIST / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(WEB_DIST / "index.html")

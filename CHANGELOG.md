@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Added
+- **Deployable as one container** — FastAPI serves the API and the built PWA from a
+  single origin, so production needs no CORS, no second host, and no third-party
+  cookie. Render blueprint and deploy guide included; the SPA catch-all deliberately
+  lets `/api/...` 404 as JSON rather than answering with the HTML shell.
+- **Operator health view** — DAU/WAU, thirty days of daily actives, the activation
+  funnel and per-mahalla rows. Aggregates only, and DAU counts only people who
+  actually joined a mahalla.
+- **Service impressions and contact taps**, visible to the offering's owner alone.
 - **Versioned schema (Alembic).** Migrations replace `create_all` everywhere, and a
   drift-guard test fails CI if a model changes without one. Landing it meant naming
   eleven anonymous constraints and breaking a real foreign-key cycle that would have

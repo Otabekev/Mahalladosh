@@ -71,11 +71,16 @@ These blocked the first deployment with real users, regardless of feature progre
   two instances would double-send reminders and the Monday digest. The sweep now
   takes a lease.
 
-## 🌍 Phase 7 — Scale & go-to-market
+## ✅ Phase 7 — Scale & go-to-market
 
-- Admin metrics dashboard (per-day, per-mahalla health)
-- Services commercial surface (views + contact-taps)
-- Free-tier deploy + investor demo kit
+- Admin metrics — DAU/WAU, a 30-day activity series, the activation funnel and
+  per-mahalla health; aggregates only, never names
+- Services commercial surface — impressions and contact taps, visible to the
+  offering's owner and to nobody else
+- Free-tier deploy — one container serving the API and the PWA from one origin,
+  with a Render blueprint and a deploy guide ([DEPLOY.md](DEPLOY.md))
+- Privilege audit — 11 findings fixed, the rest triaged
+  ([SECURITY-AUDIT.md](SECURITY-AUDIT.md))
 
 **Diaspora follower mode — designed, deliberately deferred.** Uzbeks abroad
 following the mahalla they left is the intended paid tier. The design is settled: a
