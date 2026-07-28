@@ -5,7 +5,7 @@ deployment. Six auditors covered admin/raisi granting, ownership checks, cross-m
 scoping, session and ban handling, the family privacy gate, and input/resource abuse.
 They produced **27 findings**.
 
-**Status: 4 fixed, 23 triaged but NOT independently verified.** The adversarial
+**Status: 7 fixed, 20 triaged but NOT independently verified.** The adversarial
 verification pass did not complete, so everything in the second table is a *claim* with a
 file:line, not a confirmed vulnerability. Some are certainly false positives. Do not treat
 an unverified row as either safe or exploitable until someone reads the code.
@@ -22,21 +22,22 @@ Regression tests for the fixed items: `api/tests/test_privilege_audit.py`,
 | HIGH | Raisi authority was not scoped to a mahalla — `_is_raisi(db, user)` checked the viewer's own mahalla, so every raisi could moderate every cross-mahalla share post in the country. | `app/presenters.py`, `app/routers/posts.py` |
 | HIGH | A raisi could ban the platform admin, with no recovery route (the admin is the only account that could undo it). | `app/routers/raisi.py` |
 | MEDIUM | Cross-mahalla household/service reads returned 403, confirming the id exists — a platform-wide enumeration oracle. Now 404, byte-identical to a missing row. | `app/routers/households.py`, `app/routers/services.py` |
+| MEDIUM | A banned account could still log in via `POST /auth/telegram` and rewrite its name and photo — community-wide, on every post it ever wrote. The ban lockout lives in `get_current_user`, which a login route never runs. | `app/routers/auth.py` |
+| MEDIUM | The family privacy gate checked that the viewer's household was *verified* but not that it was in the **same mahalla**. Not reachable through today's routes (they 404 across mahallas), fixed in the gate itself so a future route cannot reopen it. | `app/presenters.py` |
+| MEDIUM | DingDong throttled successful rings only, so out-of-range probes were unlimited — each answering "is this house within 100m of this point?". Attempts are now rate-limited. **Partly refuted:** the reply already withheld the distance, so the oracle was narrower than reported. | `app/routers/households.py` |
 
 ## Triaged, not verified
 
 Ordered by the severity the auditor assigned. **Each needs confirming before it is
-believed.** The three most worth reading first are marked ★ — they concern the family
-privacy gate and the ban lockout, which are the app's actual moat.
+believed.** The three starred as most important were verified in a second pass and have
+moved to the Fixed table; one of them (DingDong) was partly a false alarm, which is a fair
+sample of what to expect from the rest.
 
 | Sev | Claim | Where |
 |---|---|---|
-| HIGH | ★ DingDong is an un-rate-limited proximity oracle: repeated rings with varied coordinates recover a household's home location to within metres, defeating the rule that `lat`/`lng` are never exposed. | `app/routers/households.py` (dingdong) |
 | HIGH | An unauthenticated caller can make the server buffer an unbounded request body — `require_member` runs only after the cost is paid. | `app/main.py`, `app/routers/uploads.py` |
 | HIGH | `MAX_PIXELS = 40_000_000` means a ~0.6 MB JPEG can allocate ~230 MB; a handful of concurrent uploads could exhaust a small instance. | `app/routers/uploads.py` |
 | HIGH | `set_raisi` proposals skip the verified-resident gate that `ban_user` proposals apply, so an unvouched account could reach the raisi powers that gate exists to protect. | `app/routers/proposals.py` |
-| MEDIUM | ★ A banned account can still write via `POST /auth/telegram`, which updates name/username/photo before any ban check. | `app/routers/auth.py` |
-| MEDIUM | ★ Household verification earned in one mahalla may unlock family history in another. | `app/presenters.py` |
 | MEDIUM | `GET /mahallas/{id}` gives any signed-in account the raisi's identity for every mahalla on the platform. (Already noted in ROADMAP as the gap blocking diaspora mode.) | `app/routers/mahallas.py` |
 | MEDIUM | `_apply_action` installs a raisi without re-checking the target is still a member, or still an account. | `app/routers/proposals.py` |
 | MEDIUM | `approve_join` grants household stewardship without re-checking the requester is still in the household's mahalla. | `app/routers/households.py` |

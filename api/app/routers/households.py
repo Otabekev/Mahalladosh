@@ -18,6 +18,10 @@ router = APIRouter(prefix="/households", tags=["households"])
 ALBUM_CAP = 12
 DINGDONG_RADIUS_M = 100  # generous — phone GPS in a courtyard is noisy
 DINGDONG_COOLDOWN_S = 60
+# Attempts (not just successful rings) per household per window. A real caller
+# standing at a door needs two or three; a prober needs hundreds.
+DINGDONG_PROBE_LIMIT = 8
+DINGDONG_PROBE_WINDOW_S = 3600
 
 
 def _distance_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -283,6 +287,32 @@ def dingdong(
         raise HTTPException(
             status_code=400, detail="Bu xonadon uy joylashuvini hali belgilamagan"
         )
+
+    # Rate-limit ATTEMPTS, not just successful rings. The cooldown below only fires
+    # once a ring lands, so out-of-range probes were unlimited — and each one answers
+    # "is the house within 100m of this point?", which is enough to search out a
+    # family's home coordinates a query at a time. The reply already omits the
+    # distance for the same reason; this closes the other half.
+    probes = (
+        db.query(models.EventLog)
+        .filter(
+            models.EventLog.user_id == user.id,
+            models.EventLog.event == "dingdong_try",
+            models.EventLog.entity_id == household.id,
+            models.EventLog.created_at
+            > datetime.utcnow() - timedelta(seconds=DINGDONG_PROBE_WINDOW_S),
+        )
+        .count()
+    )
+    if probes >= DINGDONG_PROBE_LIMIT:
+        raise HTTPException(
+            status_code=429, detail="Juda ko'p urinish — biroz kuting"
+        )
+    track.log_event(
+        db, user.id, "dingdong_try",
+        entity_type="household", entity_id=household.id, mahalla_id=household.mahalla_id,
+    )
+    db.commit()
 
     dist = _distance_m(data.lat, data.lng, household.lat, household.lng)
     if dist > DINGDONG_RADIUS_M:

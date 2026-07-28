@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
@@ -81,6 +83,12 @@ def telegram_login(data: schemas.TelegramLoginIn, response: Response, db: Sessio
         db.add(user)
         db.flush()  # autoflush=False — the login event below needs user.id
     else:
+        # The ban lockout lives in get_current_user, which a LOGIN route never runs.
+        # Without this check a banned account could still rename itself and change
+        # its photo — community-wide, on every post it ever wrote — and be handed a
+        # fresh session cookie while doing it.
+        if user.banned_until and user.banned_until > datetime.utcnow():
+            raise HTTPException(status_code=403, detail="Hisobingiz chetlatilgan")
         user.full_name = full_name
         user.username = data.username
         user.photo_url = data.photo_url

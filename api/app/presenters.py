@@ -135,7 +135,16 @@ def household_out(db: Session, h: models.Household, viewer: models.User) -> sche
     viewer_hh = (
         db.get(models.Household, viewer.household_id) if viewer.household_id else None
     )
-    viewer_verified = viewer_hh is not None and viewer_hh.verification_status == "verified"
+    # Trust is earned in ONE mahalla and does not travel: the viewer's own household
+    # must be verified AND in the same mahalla as the one being read. The routes
+    # already 404 across mahallas, so this is defence in depth — but it belongs in
+    # the gate itself, so a future route that reaches household_out cannot quietly
+    # hand another mahalla's family history to whoever got verified elsewhere.
+    viewer_verified = (
+        viewer_hh is not None
+        and viewer_hh.verification_status == "verified"
+        and viewer_hh.mahalla_id == h.mahalla_id
+    )
     if h.visibility == "family_only":
         hide = not is_mine  # stricter family_only rule kept
     else:  # neighbors: trusted (own household verified) or a member of this one
