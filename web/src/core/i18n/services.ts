@@ -287,4 +287,14 @@ export const servicesStrings = {
     en: 'Photos of the work',
   },
   photoCount: { uz: '{n} ta rasm', uzc: '{n} та расм', ru: '{n} фото', en: '{n} photos' },
+
+  // ---------- how your offering is doing (#42) ----------
+  svcStatsViews: { uz: "ko'rildi", uzc: 'кўрилди', ru: 'просмотров', en: 'views' },
+  svcStatsContacts: { uz: "qo'ng'iroq", uzc: 'қўнғироқ', ru: 'звонков', en: 'calls' },
+  svcStatsHint: {
+    uz: "Bu raqamlarni faqat siz ko'rasiz",
+    uzc: 'Бу рақамларни фақат сиз кўрасиз',
+    ru: 'Эти цифры видите только вы',
+    en: 'Only you can see these numbers',
+  },
 } satisfies Dict

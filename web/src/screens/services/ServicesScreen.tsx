@@ -1,6 +1,6 @@
 /** Xizmatlar — neighbor services directory. Discovery only: contact, no booking (plan §9-G). */
 
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/core/stores/auth'
 import {
@@ -22,6 +22,10 @@ import {
 import { Lightbox } from '@/components/Lightbox'
 import {
   useCreateService,
+  useMyServiceStats,
+  useRecordContact,
+  useRecordViews,
+  type ServiceStats,
   useDeleteService,
   useMyServices,
   useServices,
@@ -160,14 +164,18 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 
 // ---------- contact button: tel: link for phones, clipboard copy otherwise ----------
 
-function ContactButton({ contact }: { contact: string }) {
+function ContactButton({ contact, serviceId }: { contact: string; serviceId: number }) {
   const s = useStrings(servicesStrings)
+  const record = useRecordContact()
   const [copied, setCopied] = useState(false)
   const trimmed = contact.trim()
+  // fire-and-forget: a failed count must never interrupt someone placing a call
+  const tapped = () => record.mutate(serviceId)
 
   if (/^[+\d]/.test(trimmed)) {
     return (
       <a
+        onClick={tapped}
         href={`tel:${trimmed.replace(/[^+\d]/g, '')}`}
         className="inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all bg-white text-ink border border-line hover:bg-gray-50 active:scale-[0.98] px-3 py-1.5 text-sm"
       >
@@ -180,6 +188,7 @@ function ContactButton({ contact }: { contact: string }) {
       size="sm"
       variant="secondary"
       onClick={() => {
+        tapped()
         navigator.clipboard.writeText(trimmed).catch(() => undefined)
         setCopied(true)
         window.setTimeout(() => setCopied(false), 1500)
@@ -188,6 +197,62 @@ function ContactButton({ contact }: { contact: string }) {
       {copied ? s.copied : s.contact}
     </Button>
   )
+}
+
+/** Report an offering as SEEN once its card is genuinely on screen.
+ *
+ *  A listing that returned twenty offerings nobody scrolled to is not twenty views,
+ *  so this observes the card rather than counting what the API served. Ids are
+ *  collected and flushed as one batch: a request per card would be a request per
+ *  scroll on a village connection. The server dedupes per person per day anyway,
+ *  so a repeat flush is harmless.
+ */
+function useViewReporter() {
+  const record = useRecordViews()
+  const pending = useRef<Set<number>>(new Set())
+  const timer = useRef<number | null>(null)
+
+  const flush = useCallback(() => {
+    const ids = [...pending.current].slice(0, 20)
+    pending.current.clear()
+    if (ids.length) record.mutate(ids)
+  }, [record])
+
+  useEffect(() => () => {
+    if (timer.current != null) window.clearTimeout(timer.current)
+  }, [])
+
+  return useCallback(
+    (id: number) => {
+      pending.current.add(id)
+      if (timer.current != null) window.clearTimeout(timer.current)
+      timer.current = window.setTimeout(flush, 1200)
+    },
+    [flush],
+  )
+}
+
+/** Calls `onSeen` once, when at least half the card has been on screen. */
+function useSeen(id: number, onSeen: (id: number) => void) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const fired = useRef(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || fired.current || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting) && !fired.current) {
+          fired.current = true
+          onSeen(id)
+          io.disconnect()
+        }
+      },
+      { threshold: 0.5 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [id, onSeen])
+  return ref
 }
 
 // ---------- directory card ----------
@@ -220,14 +285,18 @@ function ServicePhotos({ urls, title }: { urls: string[]; title: string }) {
   )
 }
 
-function ServiceCard({ service }: { service: Service }) {
+function ServiceCard({ service, onSeen }: { service: Service; onSeen: (id: number) => void }) {
   const s = useStrings(servicesStrings)
   const myHouseholdId = useAuth((st) => st.me?.user.household_id ?? null)
   const [reportOpen, setReportOpen] = useState(false)
   const meta = categoryMeta(service.category)
   // you don't report your own household's listing
   const canReport = myHouseholdId === null || service.household_id !== myHouseholdId
+  // a plain wrapper carries the observer ref — Card is used everywhere and does not
+  // need forwardRef for one screen's telemetry
+  const seenRef = useSeen(service.id, onSeen)
   return (
+    <div ref={seenRef}>
     <Card className="p-4 mb-3">
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-[15px] font-bold text-ink line-clamp-2 min-w-0">{service.title}</h3>
@@ -245,7 +314,7 @@ function ServiceCard({ service }: { service: Service }) {
       {(service.price || service.contact) && (
         <div className="flex items-center justify-between gap-2 mt-3">
           <span className="font-semibold text-good text-sm">{service.price ?? ''}</span>
-          {service.contact && <ContactButton contact={service.contact} />}
+          {service.contact && <ContactButton contact={service.contact} serviceId={service.id} />}
         </div>
       )}
       {canReport && (
@@ -260,6 +329,7 @@ function ServiceCard({ service }: { service: Service }) {
       )}
       <ReportServiceModal open={reportOpen} onClose={() => setReportOpen(false)} serviceId={service.id} />
     </Card>
+    </div>
   )
 }
 
@@ -303,7 +373,7 @@ function EditPhotosModal({
   )
 }
 
-function MyServiceRow({ service }: { service: Service }) {
+function MyServiceRow({ service, stats }: { service: Service; stats?: ServiceStats }) {
   const s = useStrings(servicesStrings)
   const c = useStrings(common)
   const confirm = useConfirm()
@@ -318,6 +388,14 @@ function MyServiceRow({ service }: { service: Service }) {
         {!service.active && <span className="text-xs font-normal text-sub"> · {s.hiddenTag}</span>}
         <span className="block text-xs font-normal text-sub">
           {fmt(s.photoCount, { n: service.image_urls.length })}
+          {stats && (
+            <>
+              {' · '}
+              {stats.views} {s.svcStatsViews}
+              {' · '}
+              {stats.contacts} {s.svcStatsContacts}
+            </>
+          )}
         </span>
       </div>
       <div className="flex items-center gap-1 shrink-0">
@@ -436,6 +514,9 @@ export default function ServicesScreen() {
 
   const services = useServices(category === 'all' ? undefined : category)
   const mine = useMyServices()
+  const stats = useMyServiceStats()
+  const statsById = new Map((stats.data ?? []).map((r) => [r.service_id, r]))
+  const reportSeen = useViewReporter()
 
   const openAdd = () => {
     if (!me?.user.household_id) setNoHouseholdOpen(true)
@@ -459,9 +540,10 @@ export default function ServicesScreen() {
           <h2 className="text-[15px] font-bold text-ink mb-2">{s.myServices}</h2>
           <Card className="px-4 divide-y divide-line">
             {mine.data.map((sv) => (
-              <MyServiceRow key={sv.id} service={sv} />
+              <MyServiceRow key={sv.id} service={sv} stats={statsById.get(sv.id)} />
             ))}
           </Card>
+          <p className="mt-1.5 text-xs text-sub">{s.svcStatsHint}</p>
         </div>
       )}
 
@@ -486,7 +568,7 @@ export default function ServicesScreen() {
         <EmptyState icon="🧺" title={s.svcEmptyTitle} text={s.svcEmptyText} />
       )}
       {services.data?.map((sv) => (
-        <ServiceCard key={sv.id} service={sv} />
+        <ServiceCard key={sv.id} service={sv} onSeen={reportSeen} />
       ))}
 
       <CreateServiceModal open={createOpen} onClose={() => setCreateOpen(false)} />
