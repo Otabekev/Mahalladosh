@@ -341,6 +341,21 @@ export const feedStrings = {
     en: 'This poll is closed',
   },
 
+  // ---------- share card (#47) ----------
+  shareCard: { uz: 'Ulashish', uzc: 'Улашиш', ru: 'Поделиться', en: 'Share' },
+  shareCardFooter: {
+    uz: "Mahallangiz ilovasi — qo'shiling",
+    uzc: 'Маҳаллангиз иловаси — қўшилинг',
+    ru: 'Приложение вашей махалли — присоединяйтесь',
+    en: 'Your mahalla, in one app — join us',
+  },
+  shareCardFailed: {
+    uz: 'Rasm tayyorlanmadi',
+    uzc: 'Расм тайёрланмади',
+    ru: 'Не удалось создать картинку',
+    en: "Couldn't make the image",
+  },
+
   // ---------- paging (#19) ----------
   showMore: {
     uz: "Yana ko'rsatish",

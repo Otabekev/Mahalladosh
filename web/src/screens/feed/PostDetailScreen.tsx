@@ -21,6 +21,7 @@ import { raisiStrings } from '@/core/i18n/raisi'
 import { useConfirm } from '@/components/confirm'
 import { useBack } from '@/components/useBack'
 import { RahmatButton } from '@/components/RahmatButton'
+import { sharePostCard } from '@/core/card'
 import { Lightbox } from '@/components/Lightbox'
 import { PollCard } from '@/components/PollCard'
 import { CharityBar } from '@/components/CharityBar'
@@ -351,6 +352,7 @@ export default function PostDetailScreen() {
   const [lightbox, setLightbox] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [shareError, setShareError] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -514,7 +516,34 @@ export default function PostDetailScreen() {
       {/* 🤲 Rahmat — a light acknowledgement, on every post type */}
       <div className="mb-3">
         <RahmatButton post={post} />
+
+        {/* Share as an image, not a link.
+            Every mahalla already has a Telegram group, and a link into an app
+            nobody has installed is a dead end. A picture is not: it renders in
+            the group, it carries the mahalla's name, and it is the whole answer
+            to "why not just use Telegram" — the app feeds the group instead of
+            competing with it. The bytes are drawn on-device and never leave it
+            unless this neighbour chooses to send them. */}
+        <button
+          onClick={async () => {
+            setShareError(null)
+            try {
+              await sharePostCard({
+                title: post.title,
+                author: post.author.full_name,
+                mahalla: me?.mahalla?.name ?? '',
+                footer: s.shareCardFooter,
+              })
+            } catch {
+              setShareError(s.shareCardFailed)
+            }
+          }}
+          className="ml-auto inline-flex min-h-[44px] items-center gap-1.5 px-2 text-[15px] font-semibold text-sub transition hover:text-ink"
+        >
+          <span aria-hidden>↗</span> {s.shareCard}
+        </button>
       </div>
+      {shareError && <ErrorNote message={shareError} />}
 
       {/* report — neighbors flag bad content; not shown on your own post */}
       {me !== null && !isAuthor && (
