@@ -9,7 +9,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from PIL import Image
 
-from .. import models
+from .. import models, ratelimit
 from ..config import settings
 from ..deps import require_member
 
@@ -62,8 +62,11 @@ MAX_PIXELS = 24_000_000
 @router.post("")
 def upload_image(
     file: UploadFile,
-    _: models.User = Depends(require_member),
+    user: models.User = Depends(require_member),
 ):
+    # each upload re-encodes an image through Pillow, so this is CPU a caller
+    # can spend on the server's behalf
+    ratelimit.check("upload", user.id)
     # sync endpoint on purpose: Pillow work is CPU-bound and must run in the
     # threadpool, not on the event loop
     raw = file.file.read(MAX_BYTES + 1)

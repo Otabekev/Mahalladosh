@@ -20,10 +20,24 @@ export type Resolved<D extends Dict> = { [K in keyof D]: string }
 
 const STORAGE_KEY = 'md_lang'
 
+/** `core/` is the UI-free layer a native rewrite is meant to reuse, so nothing in
+ *  it may ASSUME a browser. These two guards are what let the module be imported
+ *  by a test runner, a server renderer, or anything else without a DOM — it used
+ *  to throw at import time on `localStorage`, which is a poor property for the
+ *  layer that exists to be portable. */
+const hasWindow = typeof window !== 'undefined'
+
 function initialLang(): Lang {
-  const saved = localStorage.getItem(STORAGE_KEY)
+  if (!hasWindow) return 'uz'
+  const saved = window.localStorage.getItem(STORAGE_KEY)
   if (saved === 'uz' || saved === 'uzc' || saved === 'ru' || saved === 'en') return saved
   return 'uz'
+}
+
+function rememberLang(lang: Lang) {
+  if (!hasWindow) return
+  window.localStorage.setItem(STORAGE_KEY, lang)
+  document.documentElement.lang = lang === 'uzc' ? 'uz-Cyrl' : lang
 }
 
 interface LangState {
@@ -34,13 +48,12 @@ interface LangState {
 export const useLang = create<LangState>((set) => ({
   lang: initialLang(),
   setLang: (lang) => {
-    localStorage.setItem(STORAGE_KEY, lang)
-    document.documentElement.lang = lang === 'uzc' ? 'uz-Cyrl' : lang
+    rememberLang(lang)
     set({ lang })
   },
 }))
 
-document.documentElement.lang = initialLang() === 'uzc' ? 'uz-Cyrl' : initialLang()
+if (hasWindow) rememberLang(initialLang())
 
 /** Resolve a dictionary into plain strings for the active language. */
 export function useStrings<D extends Dict>(dict: D): Resolved<D> {

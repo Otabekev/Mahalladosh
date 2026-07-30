@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
-from .. import images, lifecycle, models, notify, presenters, reputation, schemas, track
+from .. import images, lifecycle, models, notify, presenters, ratelimit, reputation, schemas, track
 from ..deps import get_current_user, get_db, require_member
 
 router = APIRouter(prefix="/posts", tags=["posts"])
@@ -317,6 +317,9 @@ def create_post(
     user: models.User = Depends(require_member),
     db: Session = Depends(get_db),
 ):
+    # a post notifies the whole mahalla in-app and by Telegram DM, so this is the
+    # one write worth throttling even from an honest account
+    ratelimit.check("post", user.id)
     if data.type == "newcomer":
         raise HTTPException(status_code=400, detail="Yangi qo'shni e'loni avtomatik yaratiladi")
     if data.type == "help" and not data.category:
@@ -612,6 +615,7 @@ def add_comment(
 ):
     """Leave a comment. Unlike a help response, anyone who can see the post may
     comment, the author included, as many times as they like."""
+    ratelimit.check("comment", user.id)
     post = _get_post(db, post_id, user)
     body = data.body.strip()
     if not body:

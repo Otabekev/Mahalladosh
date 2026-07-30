@@ -52,6 +52,32 @@ export function feedItems(data: InfiniteData<FeedPage> | undefined): Post[] {
   return data?.pages.flatMap((p) => p.items) ?? []
 }
 
+/** Move a vote to `optionId` and return the poll as it will look.
+ *
+ *  Extracted and pure so it can be tested. The subtle rule is that CHANGING a vote
+ *  must not raise total_votes — only a first vote does — and it was wrong here once
+ *  in a way nothing would have caught: the tallies simply drifted upward and the
+ *  bars still looked plausible. */
+export function applyVote(poll: Poll, optionId: number): Poll {
+  const had = poll.my_option_id
+  return {
+    ...poll,
+    my_option_id: optionId,
+    total_votes: poll.total_votes + (had === null ? 1 : 0),
+    options: poll.options.map((o) => ({
+      ...o,
+      votes: o.votes + (o.id === optionId ? 1 : 0) - (o.id === had ? 1 : 0),
+    })),
+  }
+}
+
+/** The Rahmat toggle's next state. Clamped at zero: an optimistic decrement on a
+ *  count the client has stale would otherwise render "-1 rahmat". */
+export function nextRahmat(mine: boolean, count: number): { mine: boolean; count: number } {
+  const next = !mine
+  return { mine: next, count: Math.max(0, count + (next ? 1 : -1)) }
+}
+
 /** Anything that adds, resolves, closes or removes a post changes all three feed
  *  surfaces. Kept in one place so the Bugun card can't be the one that gets
  *  forgotten and goes on claiming help that is already handled. */
@@ -114,9 +140,8 @@ export function useToggleRahmat() {
           }
         }
       }
-      const mine = !(current?.my_rahmat ?? false)
-      const count = Math.max(0, (current?.rahmat_count ?? 0) + (mine ? 1 : -1))
-      write(id, mine, count)
+      const next = nextRahmat(current?.my_rahmat ?? false, current?.rahmat_count ?? 0)
+      write(id, next.mine, next.count)
     },
     // the server is the source of truth for the exact count (concurrent givers)
     onSuccess: (res, id) => write(id, res.mine, res.count),
@@ -152,17 +177,7 @@ export function useVote(postId: number) {
           .flatMap(([, feed]) => feed?.pages.flatMap((pg) => pg.items) ?? [])
           .find((p) => p.id === postId)?.poll
       if (!current) return
-      // moving a vote must not inflate the total — only a first vote adds to it
-      const had = current.my_option_id
-      write({
-        ...current,
-        my_option_id: optionId,
-        total_votes: current.total_votes + (had === null ? 1 : 0),
-        options: current.options.map((o) => ({
-          ...o,
-          votes: o.votes + (o.id === optionId ? 1 : 0) - (o.id === had ? 1 : 0),
-        })),
-      })
+      write(applyVote(current, optionId))
     },
     onSuccess: (poll) => write(poll),
     onError: () => {

@@ -21,7 +21,7 @@ is the entire point.
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from .. import models, schemas, search_text
+from .. import models, ratelimit, schemas, search_text
 from ..deps import get_db, require_member
 from .posts import post_out
 from .services import service_out
@@ -38,6 +38,7 @@ def search(
     user: models.User = Depends(require_member),
     db: Session = Depends(get_db),
 ):
+    ratelimit.check("search", user.id)  # folding scans the mahalla's posts in Python
     needle = search_text.fold(q)
     if len(needle) < 2:
         # one character matches most of the mahalla; not worth the scan

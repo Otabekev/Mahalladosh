@@ -22,7 +22,7 @@ from types import SimpleNamespace  # noqa: E402
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app import models  # noqa: E402
+from app import models, ratelimit  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 
@@ -68,6 +68,9 @@ def _clean():
     keep climbing after a DELETE while SQLite's rowids do not — without it the two
     engines would hand out different ids and any test naming one would diverge.
     """
+    # counters live in process memory, so emptying tables does not reset them —
+    # without this one test's posts would rate-limit an unrelated later test
+    ratelimit.reset()
     with engine.begin() as conn:
         if IS_POSTGRES:
             names = ", ".join(f'"{t}"' for t in Base.metadata.tables)
