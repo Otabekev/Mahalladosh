@@ -30,6 +30,7 @@ import { BugunCard } from './BugunCard'
 import { OnboardingChecklistCard } from './OnboardingChecklistCard'
 import { WhyCard } from './WhyCard'
 import { ChiroqCard } from './ChiroqCard'
+import { NarxStrip } from './NarxStrip'
 import { UpcomingStrip } from './UpcomingStrip'
 
 type FeedTab = 'mahalla' | DiscoverScope
@@ -288,6 +289,7 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
           useful on day one with no posts in the mahalla at all. */}
       <ChiroqCard />
       <BugunCard bugun={bugun} />
+      <NarxStrip />
       <UpcomingStrip />
       <Composer />
 

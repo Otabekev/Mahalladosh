@@ -286,6 +286,39 @@ def run():
         note="Quvur ta'mirlash ishlari", created_by=users["toshpolat"].id,
     ))
 
+    # ---- «Narx»: a believable Pop bazaar week, with last week to compare against ----
+    # Several reporters per item on purpose: one number is a claim, three is a price.
+    # The meat and petrol rows carry a rise, which is what the trend arrow is for.
+    def price(username, item, som, days_ago, market="Pop bozori"):
+        when = NOW - timedelta(days=days_ago)
+        db.add(models.PriceReport(
+            district_id=yoshlik.district_id, mahalla_id=yoshlik.id,
+            user_id=users[username].id, item=item, som=som, market=market,
+            day=when.strftime("%Y-%m-%d"), created_at=when,
+        ))
+
+    # (item, last week's three, this week's three)
+    basket = [
+        ("non",        [3800, 4000, 4000], [4000, 4000, 4200]),
+        ("un",         [7000, 7200, 7500], [7200, 7500, 7500]),
+        ("guruch",     [18000, 19000, 19000], [19000, 19000, 20000]),
+        ("yog",        [24000, 25000, 25000], [25000, 26000, 26000]),
+        ("tuxum",      [16000, 17000, 17000], [17000, 17000, 18000]),
+        ("kartoshka",  [6000, 6500, 7000], [5000, 5500, 5500]),
+        ("piyoz",      [4000, 4500, 4500], [4000, 4000, 4500]),
+        ("pomidor",    [12000, 13000, 14000], [9000, 10000, 11000]),
+        ("gosht_mol",  [92000, 95000, 95000], [98000, 100000, 105000]),
+        ("gosht_qoy",  [110000, 115000, 115000], [118000, 120000, 120000]),
+        ("benzin",     [11500, 11500, 12000], [12500, 13000, 13000]),
+        ("gaz_ballon", [95000, 100000, 100000], [100000, 105000, 110000]),
+    ]
+    reporters = ["malika", "gulnora", "salima"]
+    for item, before, after in basket:
+        for who, som in zip(reporters, before, strict=True):
+            price(who, item, som, 9)
+        for who, som in zip(reporters, after, strict=True):
+            price(who, item, som, 2)
+
     db.commit()
     n_users = db.query(models.User).count()
     n_posts = db.query(models.Post).count()

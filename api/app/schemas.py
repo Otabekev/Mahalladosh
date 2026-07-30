@@ -769,3 +769,43 @@ class UtilityLog(BaseModel):
     cuts: int = 0
     hours: float = 0.0
     sessions: list[OutageSession] = []
+
+
+# ---------- prices: «Narx» ----------
+
+
+class PriceIn(BaseModel):
+    item: str = Field(max_length=20)
+    # Whole so'm, never a float. Only the sign is enforced here: the real bounds
+    # are MIN_SOM/MAX_SOM in routers/prices.py, so the "that is certainly a typo"
+    # rule lives in exactly one place and answers with a message rather than a 422.
+    som: int = Field(ge=0)
+    market: str | None = Field(default=None, max_length=80)
+
+
+class PriceRow(BaseModel):
+    item: str
+    # None when nobody has answered this week — deliberately NOT 0, which a client
+    # would render as "free"
+    som: int | None = None
+    reports: int = 0
+    was: int | None = None  # last week's median, when there is one
+    trend_pct: int | None = None  # only set when BOTH weeks have data
+    my_som: int | None = None  # what this viewer reported, if they did
+
+
+class PriceBoard(BaseModel):
+    district_id: int
+    items: list[PriceRow] = []
+
+
+class PriceReportOut(BaseModel):
+    som: int
+    market: str | None = None
+    by_name: str
+    created_at: datetime
+
+
+class PriceDetail(BaseModel):
+    item: str
+    reports: list[PriceReportOut] = []

@@ -26,6 +26,7 @@ const CreateProposalScreen = lazy(() => import('@/screens/proposals/CreatePropos
 const ProposalDetailScreen = lazy(() => import('@/screens/proposals/ProposalDetailScreen'))
 const ServicesScreen = lazy(() => import('@/screens/services/ServicesScreen'))
 const UtilityScreen = lazy(() => import('@/screens/utility/UtilityScreen'))
+const PricesScreen = lazy(() => import('@/screens/prices/PricesScreen'))
 const AdminScreen = lazy(() => import('@/screens/admin/AdminScreen'))
 const SearchScreen = lazy(() => import('@/screens/search/SearchScreen'))
 const NotificationsScreen = lazy(() => import('@/screens/notifications/NotificationsScreen'))
@@ -121,6 +122,7 @@ export default function App() {
               <Route path="proposals/:id" element={<ProposalDetailScreen />} />
               <Route path="services" element={<ServicesScreen />} />
               <Route path="utility" element={<UtilityScreen />} />
+              <Route path="prices" element={<PricesScreen />} />
               <Route path="admin" element={<AdminScreen />} />
               <Route path="notifications" element={<NotificationsScreen />} />
             </Route>

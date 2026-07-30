@@ -408,3 +408,33 @@ export interface UtilityLog {
   hours: number
   sessions: OutageSession[]
 }
+
+// ---------- prices: «Narx» ----------
+
+export interface PriceRow {
+  item: string
+  /** null when nobody has answered this week — never 0, which would read as free */
+  som: number | null
+  reports: number
+  was: number | null
+  /** only set when BOTH weeks have data */
+  trend_pct: number | null
+  my_som: number | null
+}
+
+export interface PriceBoard {
+  district_id: number
+  items: PriceRow[]
+}
+
+export interface PriceReportOut {
+  som: number
+  market: string | null
+  by_name: string
+  created_at: string
+}
+
+export interface PriceDetail {
+  item: string
+  reports: PriceReportOut[]
+}

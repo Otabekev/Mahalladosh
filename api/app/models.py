@@ -545,6 +545,39 @@ class ServiceImage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class PriceReport(Base):
+    """One neighbour's answer to "what does bread cost this week?".
+
+    SCOPED TO THE DISTRICT, not the mahalla. A price is a fact about a bazaar, and
+    the bazaar serves the whole tuman — scoping it to one mahalla would both be
+    wrong and leave the sample far too thin to mean anything. It is also the one
+    surface here with a cross-mahalla network effect: every new mahalla in Pop makes
+    the Pop price board better for the ones already there.
+
+    Amounts are whole so'm as INTEGERS, for the same reason charity amounts are:
+    binary floating point cannot hold 1 200 000.10 exactly and money must not drift.
+
+    One row per person per item per day, enforced by the unique constraint. That is
+    both the idempotency guard and the anti-skew guard — without it one person could
+    report the same price forty times and drag the median wherever they liked. A
+    same-day repeat UPDATES the row, because correcting a price you mistyped must
+    always work.
+    """
+
+    __tablename__ = "price_reports"
+    __table_args__ = (UniqueConstraint("user_id", "item", "day"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    district_id: Mapped[int] = mapped_column(ForeignKey("districts.id"), index=True)
+    mahalla_id: Mapped[int | None] = mapped_column(ForeignKey("mahallas.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    item: Mapped[str] = mapped_column(String(20), index=True)  # see routers/prices.ITEMS
+    som: Mapped[int] = mapped_column(Integer)  # whole so'm
+    market: Mapped[str | None] = mapped_column(String(80))  # which bazaar
+    day: Mapped[str] = mapped_column(String(10))  # "YYYY-MM-DD" (UTC)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
+
 class UtilityReport(Base):
     """One neighbour answering "is your light on?" at a moment in time.
 
