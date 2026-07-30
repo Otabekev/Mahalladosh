@@ -319,6 +319,21 @@ def run():
         for who, som in zip(reporters, after, strict=True):
             price(who, item, som, 2)
 
+    # ---- one relative abroad, so the away view is demonstrable ----
+    # Aziz is already an Ergashaliyev household member; giving him a second account
+    # with NO mahalla is exactly the shape an away member has in production.
+    aziz_away = models.User(
+        tg_id=100900, username="aziz_moskva", full_name="Aziz aka (Moskvada)",
+        created_at=NOW - timedelta(days=12),
+    )
+    db.add(aziz_away)
+    db.flush()
+    db.add(models.AwayMember(
+        user_id=aziz_away.id, household_id=erg.id, mahalla_id=yoshlik.id,
+        country="Rossiya", status="active", approved_by=users["otabek"].id,
+        created_at=NOW - timedelta(days=12),
+    ))
+
     db.commit()
     n_users = db.query(models.User).count()
     n_posts = db.query(models.Post).count()

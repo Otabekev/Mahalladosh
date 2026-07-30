@@ -15,6 +15,7 @@ from .migrate import upgrade_to_head
 from .routers import (
     admin,
     auth,
+    away,
     geo,
     households,
     mahallas,
@@ -83,7 +84,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for module in (auth, geo, mahallas, households, posts, proposals, services, admin, notifications, uploads, me, reports, raisi, users, search, utility, prices):
+for module in (auth, geo, mahallas, households, posts, proposals, services, admin, notifications, uploads, me, reports, raisi, users, search, utility, prices, away):
     app.include_router(module.router, prefix="/api")
 
 app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")

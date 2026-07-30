@@ -102,6 +102,10 @@ export interface Me {
   mahalla: MahallaDetail | null
   petition: PetitionStatus | null
   household: Household | null
+  /** Set for a family member abroad, so a cold start routes them to their own
+   *  screen rather than pushing them through onboarding for a mahalla they do not
+   *  live in. See core/api/types AwayStatus. */
+  away_status: 'none' | 'pending' | 'active' | 'revoked'
 }
 
 export interface HouseholdMember {
@@ -437,4 +441,44 @@ export interface PriceReportOut {
 export interface PriceDetail {
   item: string
   reports: PriceReportOut[]
+}
+
+// ---------- away members (family abroad) ----------
+
+export type AwayStatus = 'none' | 'pending' | 'active' | 'revoked'
+
+export interface AwayMemberRow {
+  full_name: string
+  is_elder: boolean
+}
+
+/** A post as seen from abroad. No author, no reactions, no counts — the news, not
+ *  the people. The missing author is deliberate: a feed of names is a directory. */
+export interface AwayPost {
+  id: number
+  type: string
+  title: string
+  body: string | null
+  place: string | null
+  event_date: string | null
+  created_at: string
+}
+
+export interface AwayHome {
+  mahalla_name: string
+  family_name: string
+  family_history: string | null
+  generations_here: number | null
+  photo_urls: string[]
+  members: AwayMemberRow[]
+  country: string | null
+  news: AwayPost[]
+}
+
+export interface AwayRequest {
+  id: number
+  user: User
+  country: string | null
+  status: AwayStatus
+  created_at: string
 }

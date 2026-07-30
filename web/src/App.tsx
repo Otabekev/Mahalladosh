@@ -27,6 +27,10 @@ const ProposalDetailScreen = lazy(() => import('@/screens/proposals/ProposalDeta
 const ServicesScreen = lazy(() => import('@/screens/services/ServicesScreen'))
 const UtilityScreen = lazy(() => import('@/screens/utility/UtilityScreen'))
 const PricesScreen = lazy(() => import('@/screens/prices/PricesScreen'))
+const AwayScreen = lazy(() => import('@/screens/away/AwayScreen'))
+const AwayJoinScreen = lazy(() =>
+  import('@/screens/away/AwayScreen').then((m) => ({ default: m.AwayJoinScreen })),
+)
 const AdminScreen = lazy(() => import('@/screens/admin/AdminScreen'))
 const SearchScreen = lazy(() => import('@/screens/search/SearchScreen'))
 const NotificationsScreen = lazy(() => import('@/screens/notifications/NotificationsScreen'))
@@ -44,6 +48,11 @@ function RootRedirect() {
   if (me.user.mahalla_id == null) {
     const pending = localStorage.getItem('md_pending_join')
     if (pending) return <Navigate to={`/join/${pending}`} replace />
+    // someone abroad is not on their way to becoming a member — pushing them into
+    // onboarding for a mahalla they do not live in would be the wrong door
+    if (me.away_status === 'pending' || me.away_status === 'active') {
+      return <Navigate to="/away" replace />
+    }
   }
   if (me.mahalla && me.mahalla.status === 'active') return <Navigate to="/app" replace />
   if (me.petition) return <Navigate to="/waiting" replace />
@@ -81,6 +90,22 @@ export default function App() {
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginScreen />} />
             <Route path="/join/:id" element={<JoinScreen />} />
+            <Route
+              path="/away/join/:token"
+              element={
+                <RequireUser>
+                  <AwayJoinScreen />
+                </RequireUser>
+              }
+            />
+            <Route
+              path="/away"
+              element={
+                <RequireUser>
+                  <AwayScreen />
+                </RequireUser>
+              }
+            />
             <Route
               path="/onboarding"
               element={

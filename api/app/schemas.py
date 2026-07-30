@@ -220,6 +220,10 @@ class MeOut(BaseModel):
     mahalla: MahallaDetail | None = None  # set when user is a member
     petition: PetitionStatus | None = None  # set while waiting
     household: Optional["HouseholdOut"] = None
+    # "none" | "pending" | "active" — lets the client route someone abroad to their
+    # own screen instead of pushing them through onboarding for a mahalla they do
+    # not live in. Cheap to compute and it saves a second request on every cold start.
+    away_status: str = "none"
 
 
 # ---------- households ----------
@@ -809,3 +813,63 @@ class PriceReportOut(BaseModel):
 class PriceDetail(BaseModel):
     item: str
     reports: list[PriceReportOut] = []
+
+
+# ---------- away members (family abroad) ----------
+
+
+class AwayInviteOut(BaseModel):
+    token: str
+    expires_hours: int
+
+
+class AwayJoinIn(BaseModel):
+    token: str = Field(max_length=800)
+    country: str | None = Field(default=None, max_length=60)
+
+
+class AwayStatusOut(BaseModel):
+    status: str  # none|pending|active|revoked
+
+
+class AwayRequestOut(BaseModel):
+    id: int
+    user: UserOut
+    country: str | None = None
+    status: str
+    created_at: datetime
+
+
+class AwayMemberRow(BaseModel):
+    """A name in the family list. Deliberately NOT a UserOut — an away member has no
+    business receiving account ids, photos or reputation for anyone."""
+
+    full_name: str
+    is_elder: bool = False
+
+
+class AwayPost(BaseModel):
+    """A post as seen from abroad. No author, no reactions, no response counts: the
+    news, not the people. Stripping the author is not an oversight — a feed of names
+    IS the directory this feature exists to withhold."""
+
+    id: int
+    type: str
+    title: str
+    body: str | None = None
+    place: str | None = None
+    event_date: datetime | None = None
+    created_at: datetime
+
+
+class AwayHome(BaseModel):
+    """The complete readable surface of an away account, in one model."""
+
+    mahalla_name: str
+    family_name: str
+    family_history: str | None = None
+    generations_here: int | None = None
+    photo_urls: list[str] = []
+    members: list[AwayMemberRow] = []
+    country: str | None = None
+    news: list[AwayPost] = []

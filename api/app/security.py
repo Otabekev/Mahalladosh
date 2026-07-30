@@ -70,3 +70,39 @@ def verify_telegram_auth(data: dict) -> bool:
     secret = hashlib.sha256(settings.telegram_bot_token.encode()).digest()
     computed = hmac.new(secret, data_check_string.encode(), hashlib.sha256).hexdigest()
     return hmac.compare_digest(computed, received_hash)
+
+
+# ---------- away-member invite tokens ----------
+
+# Short-lived on purpose. The link is sent over Telegram to a son in Moscow and used
+# within minutes; a token that stayed valid for a month would sit in a chat history
+# forever, and a forwarded chat history is exactly the leak this feature has to avoid.
+AWAY_INVITE_HOURS = 48
+
+
+def create_away_invite(household_id: int) -> str:
+    """A signed, expiring claim that a household's steward issued this invite.
+
+    Signed rather than stored so there is no invite table to leak, expire, or clean
+    up — and possession alone is still not enough: a steward must approve the link
+    afterwards (see routers/away.py)."""
+    payload = {
+        "h": household_id,
+        "kind": "away",
+        "exp": datetime.utcnow() + timedelta(hours=AWAY_INVITE_HOURS),
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
+
+
+def decode_away_invite(token: str) -> int | None:
+    """The household id this invite is for, or None if it is invalid or expired."""
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
+    except Exception:
+        return None
+    # `kind` matters: without it a session token would decode here too, and any
+    # logged-in user could mint themselves an invite out of their own cookie
+    if payload.get("kind") != "away":
+        return None
+    household_id = payload.get("h")
+    return int(household_id) if isinstance(household_id, int) else None

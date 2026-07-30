@@ -14,6 +14,7 @@ import { Lightbox } from '@/components/Lightbox'
 import { fmt, useLang, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { householdStrings } from '@/core/i18n/household'
+import { AwayFamilyCard } from './AwayFamilyCard'
 import {
   Avatar,
   Badge,
@@ -545,6 +546,11 @@ function EditMode({ household, onDone }: { household: Household; onDone: () => v
       <HistoryCard household={household} />
       <MembersCard household={household} />
       <DingDongCard household={household} />
+      {/* Inviting a relative abroad is a family decision, so it lives on the family
+          page and nowhere in the mahalla UI. */}
+      <div className="mb-4">
+        <AwayFamilyCard />
+      </div>
       <PrivacyCard household={household} />
 
       <Button full onClick={onDone}>

@@ -185,6 +185,19 @@ CATALOG: dict[str, dict[str, str]] = {
         "ru": "📬 На этой неделе в махалле: {posts} объявл. · {helped} помощь · {neighbours} новых соседей",
         "en": "📬 This week in your mahalla: {posts} posts · {helped} helped · {neighbours} new neighbours",
     },
+    # ---------- away members (family abroad) ----------
+    "away_request": {
+        "uz": "✈️ {name} chetdan xonadoningizga bog'lanmoqchi",
+        "uzc": "✈️ {name} четдан хонадонингизга боғланмоқчи",
+        "ru": "✈️ {name} хочет связаться с вашим домом из-за границы",
+        "en": "✈️ {name} wants to link to your household from abroad",
+    },
+    "away_approved": {
+        "uz": "✅ {family} oilasi sizni ulab qo'ydi — mahalla xabarlari endi sizda",
+        "uzc": "✅ {family} оиласи сизни улаб қўйди — маҳалла хабарлари энди сизда",
+        "ru": "✅ Семья {family} подтвердила связь — новости махалли теперь у вас",
+        "en": "✅ The {family} family linked you — news from the mahalla now reaches you",
+    },
     # ---------- «Xabar bering»: the obligation-grade broadcasts ----------
     # A ta'ziya is not an invitation, so the copy does not read like one — no author
     # byline, no "posted". The janoza time rides in the message itself because that

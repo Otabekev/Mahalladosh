@@ -545,6 +545,40 @@ class ServiceImage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class AwayMember(Base):
+    """A family member working abroad, linked to their own household — and to
+    nothing else.
+
+    WHY THIS IS A SEPARATE TABLE AND NOT A FLAG ON User. The obvious design is
+    `User.is_away` plus a check inside every scoped endpoint, and that design is why
+    this feature sat deferred: it fails OPEN. One route that forgets the check hands
+    someone abroad the directory of an entire village, and there is no way to be sure
+    every present and future route remembers.
+
+    So an away member is deliberately NOT a mahalla member. `User.mahalla_id` stays
+    null, `require_member` rejects them, and every existing endpoint in the app
+    therefore refuses them without knowing this feature exists. Their entire reachable
+    surface is the one narrow router written for them (routers/away.py). New features
+    are safe by default: an unaudited route is a closed one.
+
+    Linking takes two steps on purpose — a steward-issued token AND a steward approval —
+    which mirrors HouseholdJoinRequest's rule that nobody attaches themselves to a
+    family unilaterally. The token can be forwarded; the approval cannot.
+    """
+
+    __tablename__ = "away_members"
+    __table_args__ = (UniqueConstraint("user_id", "household_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("households.id"), index=True)
+    mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
+    country: Mapped[str | None] = mapped_column(String(60))  # "Rossiya", "Qozog'iston"
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending|active|revoked
+    approved_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class PriceReport(Base):
     """One neighbour's answer to "what does bread cost this week?".
 

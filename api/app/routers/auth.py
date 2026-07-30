@@ -121,11 +121,19 @@ def me(user: models.User = Depends(get_current_user), db: Session = Depends(get_
         if h:
             household = presenters.household_out(db, h, user)
 
+    away_link = (
+        db.query(models.AwayMember)
+        .filter(models.AwayMember.user_id == user.id, models.AwayMember.status != "revoked")
+        .order_by(models.AwayMember.created_at.desc())
+        .first()
+    )
+
     return schemas.MeOut(
         user=presenters.self_user_out(db, user),
         mahalla=mahalla,
         petition=petition,
         household=household,
+        away_status=away_link.status if away_link else "none",
     )
 
 
