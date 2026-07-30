@@ -125,28 +125,33 @@ export default function LoginScreen() {
         </div>
 
         {/* card: golden-hour hero + cream body */}
-        <div className="rounded-[28px] bg-paper border border-line shadow-pop overflow-hidden">
+        <div className="rounded-[30px] rounded-b-[20px] bg-paper border border-line shadow-pop overflow-hidden">
           {/* ===== HERO — mahalla street at golden hour ===== */}
           <div
             className="relative h-[200px] overflow-hidden"
             style={{ background: 'linear-gradient(180deg,#E9A94A 0%,#D98A3A 42%,#B96B37 74%,#9A5A34 100%)' }}
           >
             {/* suzani ikat strip across the very top */}
-            <div className="ikat-border absolute top-0 inset-x-0 h-3 z-20" />
+            <div className="ikat-border absolute top-0 inset-x-0 h-[7px] z-20" />
 
-            {/* mud-brick wall */}
+            {/* Girih lattice instead of a literal street.
+                Hand-built CSS scenery — a brick wall from repeating gradients, a
+                bush from a radial blob — is the fastest way to make a careful app
+                look amateur. Geometry is not: a khatam lattice over the golden hour
+                is unmistakably Samarkand AND unmistakably modern, which is the
+                whole brief. The arch below carries the place; this carries the craft. */}
+            <div className="girih-gold absolute inset-0" aria-hidden />
+
+            {/* horizon — one hairline where the light meets the ground */}
             <div
-              className="absolute bottom-0 inset-x-0 h-[52px]"
-              style={{
-                background:
-                  'repeating-linear-gradient(0deg, transparent 0 18px, rgba(0,0,0,.12) 18px 20px), repeating-linear-gradient(90deg, #9A5A34 0 40px, #8A4E2E 40px 42px)',
-              }}
+              className="absolute inset-x-0 bottom-[52px] h-px"
+              style={{ background: 'rgba(94,48,22,.35)' }}
+              aria-hidden
             />
-
-            {/* soft tree / bush */}
             <div
-              className="absolute bottom-9 left-6 w-11 h-16 opacity-50"
-              style={{ background: 'radial-gradient(circle at 50% 30%, #6D5A2E 0 40%, transparent 42%)' }}
+              className="absolute inset-x-0 bottom-0 h-[52px]"
+              style={{ background: 'linear-gradient(180deg,#9A5A34 0%,#7A4327 100%)' }}
+              aria-hidden
             />
 
             {/* peshtoq arch silhouette (path from the mockup) */}
