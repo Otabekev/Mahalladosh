@@ -28,6 +28,7 @@ import type { DiscoverScope, Post } from '@/core/api/types'
 import { BugunCard } from './BugunCard'
 import { OnboardingChecklistCard } from './OnboardingChecklistCard'
 import { WhyCard } from './WhyCard'
+import { ChiroqCard } from './ChiroqCard'
 import { UpcomingStrip } from './UpcomingStrip'
 
 type FeedTab = 'mahalla' | DiscoverScope
@@ -275,6 +276,10 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
   return (
     <div className="space-y-3.5">
       <OnboardingChecklistCard />
+      {/* Above Bugun on purpose: "is the light out?" beats "here is your day"
+          when someone opens the app in the dark, and it is the one card that is
+          useful on day one with no posts in the mahalla at all. */}
+      <ChiroqCard />
       <BugunCard bugun={bugun} />
       <UpcomingStrip />
       <Composer />

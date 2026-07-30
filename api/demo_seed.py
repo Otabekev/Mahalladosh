@@ -238,6 +238,39 @@ def run():
             "+998 94 456 78 90", "Yer haydash, yuk tashish. Hafta oxiri band bo'ladi.",
             ["svc_traktor.jpg"])
 
+    # ---- «Chiroq bormi?»: a live evening outage on two of the four streets ----
+    # The demo is worthless if the board is empty, and the interesting state is the
+    # one the feature exists for: SOME of the mahalla is dark, not all of it. Two
+    # streets out and one street fine is what makes the street breakdown mean
+    # something at a glance.
+    def outage(username, kind, is_out, minutes_ago):
+        u = users[username]
+        h = db.get(models.Household, u.household_id) if u.household_id else None
+        db.add(models.UtilityReport(
+            mahalla_id=yoshlik.id, user_id=u.id,
+            household_id=h.id if h else None, street=h.street if h else None,
+            kind=kind, is_out=is_out,
+            created_at=NOW - timedelta(minutes=minutes_ago),
+        ))
+
+    for un, mins in [("otabek", 42), ("malika", 38), ("bekzod", 25)]:
+        outage(un, "light", True, mins)
+    outage("sardor", "light", False, 20)  # 3-ko'cha still has power
+
+    # last night's cut, closed — so Otabek's personal log is not empty on day one
+    outage("otabek", "light", True, 60 * 21)
+    outage("otabek", "light", False, 60 * 18)
+    outage("otabek", "gas", True, 60 * 50)
+    outage("otabek", "gas", False, 60 * 46)
+
+    # and a cut the raisi announced for tomorrow evening
+    tomorrow = (NOW + timedelta(days=1)).replace(minute=0, second=0, microsecond=0)
+    db.add(models.UtilityWindow(
+        mahalla_id=yoshlik.id, kind="gas",
+        starts_at=tomorrow.replace(hour=9), ends_at=tomorrow.replace(hour=15),
+        note="Quvur ta'mirlash ishlari", created_by=users["toshpolat"].id,
+    ))
+
     db.commit()
     n_users = db.query(models.User).count()
     n_posts = db.query(models.Post).count()

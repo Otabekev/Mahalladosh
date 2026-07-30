@@ -34,6 +34,11 @@ LIMITS: dict[str, tuple[int, int]] = {
     "search": (60, 300),
     # writes rows nobody asked for if abused
     "comment": (60, 3600),
+    # tapping "is your light on?" IS the feature, so this is deliberately loose —
+    # it exists only to stop a jammed button, not to ration answers
+    "utility": (120, 3600),
+    # a price is a fact, and correcting one you mistyped must never be refused
+    "price": (60, 3600),
 }
 
 _hits: dict[tuple[str, int], deque[float]] = {}

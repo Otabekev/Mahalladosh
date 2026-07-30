@@ -540,6 +540,73 @@ class ServiceImage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class UtilityReport(Base):
+    """One neighbour answering "is your light on?" at a moment in time.
+
+    Point-in-time state, not a session: a person taps "menda yo'q" when the power
+    goes and "menda bor" when it returns, and an outage is the gap between the two.
+    Deriving sessions from these rows rather than storing them is deliberate — a
+    second table would be a second source of truth that can disagree with the first,
+    and at pilot scale the derivation is a single ordered scan (see routers/utility).
+
+    household_id is copied in at write time rather than joined at read time so that
+    the street breakdown survives someone later leaving or changing household. It is
+    nullable because a member without a household still deserves to answer.
+    """
+
+    __tablename__ = "utility_reports"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    household_id: Mapped[int | None] = mapped_column(ForeignKey("households.id"))
+    street: Mapped[str | None] = mapped_column(String(200))
+    kind: Mapped[str] = mapped_column(String(10), index=True)  # light|gas|water
+    is_out: Mapped[bool] = mapped_column(Boolean)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
+
+class UtilityWindow(Base):
+    """A known outage the raisi has announced ahead of time — "tomorrow 09:00-15:00,
+    no gas". The official utility channels publish these per *region*, which is why
+    they get re-typed here at mahalla scope: a Navoiy-wide announcement does not tell
+    anyone whether it covers their street.
+
+    Free date ranges rather than a weekly grid, because the real announcements are
+    irregular and a grid would force a lie."""
+
+    __tablename__ = "utility_windows"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))  # light|gas|water
+    starts_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime)
+    note: Mapped[str | None] = mapped_column(String(200))
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class UtilityAlert(Base):
+    """Claim-before-you-shout marker for the "several houses are dark" fan-out.
+
+    The obvious implementation — look for a recent alert notification, and send one
+    if there isn't — is check-then-act, and two neighbours tapping at the same second
+    would each find nothing and each notify the whole mahalla. So the hour bucket is
+    claimed first and the unique constraint settles the race, exactly as MonthHonor
+    does for the monthly honour. Whoever loses the insert skips the fan-out."""
+
+    __tablename__ = "utility_alerts"
+    __table_args__ = (UniqueConstraint("mahalla_id", "kind", "bucket"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mahalla_id: Mapped[int] = mapped_column(ForeignKey("mahallas.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))
+    bucket: Mapped[str] = mapped_column(String(13))  # "2026-07-30T18" (UTC hour)
+    households: Mapped[int] = mapped_column(Integer, default=0)  # how many were out
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class MahallaContact(Base):
     """A phone number the raisi curates for the whole mahalla — the raisi's own
     line, the clinic, emergency services, the gas/water utilities. Every member

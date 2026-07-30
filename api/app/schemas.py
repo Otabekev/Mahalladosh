@@ -678,3 +678,78 @@ class OnboardingOut(BaseModel):
 
 
 MeOut.model_rebuild()
+
+
+# ---------- utilities: "Chiroq bormi?" ----------
+
+UtilityKind = Literal["light", "gas", "water"]
+
+
+class UtilityReportIn(BaseModel):
+    kind: UtilityKind
+    is_out: bool
+
+
+class StreetStatus(BaseModel):
+    """Per-street tally. This is the whole point of the feature: the regional
+    utility channels can say "Navoiy region", only a neighbour can say "our street"."""
+
+    street: str
+    out: int = 0
+    on: int = 0
+
+
+class UtilityStatus(BaseModel):
+    kind: str
+    out: int = 0
+    on: int = 0
+    # how many neighbours answered at all in the fresh window — `out + on`, kept
+    # explicit so the client never has to guess whether silence means "fine"
+    answered: int = 0
+    my_state: str | None = None  # "out" | "on" | None (I haven't said)
+    my_reported_at: datetime | None = None
+    since: datetime | None = None  # start of the current outage episode, if any
+    streets: list[StreetStatus] = []
+
+
+class UtilityWindowOut(BaseModel):
+    id: int
+    kind: str
+    starts_at: datetime
+    ends_at: datetime
+    note: str | None = None
+
+
+class UtilityWindowIn(BaseModel):
+    kind: UtilityKind
+    starts_at: datetime
+    ends_at: datetime
+    note: str | None = Field(default=None, max_length=200)
+
+
+class UtilityBoard(BaseModel):
+    """Everything the Chiroq screen needs in one request — three live tallies plus
+    the announced windows. One round trip because this screen is opened in the dark,
+    on a village connection, by someone who wants an answer in two seconds."""
+
+    statuses: list[UtilityStatus] = []
+    windows: list[UtilityWindowOut] = []
+
+
+class OutageSession(BaseModel):
+    start: datetime
+    end: datetime
+    minutes: int
+    # True when no "it's back" report ever arrived and the end is the 12-hour cap
+    estimated: bool = False
+
+
+class UtilityLog(BaseModel):
+    """The solo-value half: your own outage history, which is worth something with
+    zero neighbours on the app and is the thing people screenshot into Telegram."""
+
+    kind: str
+    month: str  # "2026-07"
+    cuts: int = 0
+    hours: float = 0.0
+    sessions: list[OutageSession] = []

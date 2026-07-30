@@ -15,8 +15,9 @@
 
 import { describe, expect, it } from 'vitest'
 import { applyVote, feedItems, nextRahmat } from './queries/posts'
+import { applyMyReport, statusFor } from './queries/utility'
 import { fmt } from './i18n'
-import type { FeedPage, Poll, Post } from './api/types'
+import type { FeedPage, Poll, Post, UtilityBoard, UtilityStatus } from './api/types'
 
 const post = (id: number) => ({ id }) as Post
 const page = (ids: number[], next: string | null = null): FeedPage => ({
@@ -112,5 +113,79 @@ describe('fmt', () => {
 
   it('handles a string with no placeholders', () => {
     expect(fmt('Assalomu alaykum', { n: 1 })).toBe('Assalomu alaykum')
+  })
+})
+
+describe('applyMyReport', () => {
+  const base: UtilityStatus = {
+    kind: 'light',
+    out: 2,
+    on: 3,
+    answered: 5,
+    my_state: null,
+    my_reported_at: null,
+    since: null,
+    streets: [],
+  }
+
+  it('a first answer joins the tally', () => {
+    const out = applyMyReport(base, true)
+    expect(out.out).toBe(3)
+    expect(out.on).toBe(3)
+    expect(out.answered).toBe(6)
+    expect(out.my_state).toBe('out')
+  })
+
+  it('CHANGING your answer moves it instead of adding a second', () => {
+    // the power came back. Without the move, the board would claim one more house
+    // than exists and the count would drift upward all evening
+    const said = applyMyReport(base, true)
+    const moved = applyMyReport(said, false)
+    expect(moved.out).toBe(2)
+    expect(moved.on).toBe(4)
+    expect(moved.answered).toBe(6) // still one person, not two
+    expect(moved.my_state).toBe('on')
+  })
+
+  it('re-tapping what you already said changes nothing', () => {
+    const said = applyMyReport(base, true)
+    expect(applyMyReport(said, true)).toBe(said)
+  })
+
+  it('never renders a negative count from a stale board', () => {
+    const stale: UtilityStatus = { ...base, out: 0, on: 0, answered: 0, my_state: 'out' }
+    expect(applyMyReport(stale, false).out).toBe(0)
+  })
+
+  it('does not mutate the status it was given', () => {
+    applyMyReport(base, true)
+    expect(base.out).toBe(2)
+    expect(base.my_state).toBeNull()
+  })
+})
+
+describe('statusFor', () => {
+  it('returns an empty status before the board loads', () => {
+    // the screen renders tallies straight from this; undefined here would crash it
+    const s = statusFor(undefined, 'gas')
+    expect(s.kind).toBe('gas')
+    expect(s.answered).toBe(0)
+    expect(s.streets).toEqual([])
+  })
+
+  it('picks the requested utility out of the board', () => {
+    const board = {
+      statuses: [
+        { ...({ kind: 'light', out: 1, on: 0, answered: 1 } as UtilityStatus) },
+        { ...({ kind: 'water', out: 4, on: 0, answered: 4 } as UtilityStatus) },
+      ],
+      windows: [],
+    } as unknown as UtilityBoard
+    expect(statusFor(board, 'water').out).toBe(4)
+  })
+
+  it('falls back rather than throwing when a utility is absent', () => {
+    const board = { statuses: [], windows: [] } as unknown as UtilityBoard
+    expect(statusFor(board, 'light').out).toBe(0)
   })
 })

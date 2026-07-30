@@ -341,3 +341,55 @@ export interface AdminStats {
   households: number
   posts: number
 }
+
+// ---------- utilities: "Chiroq bormi?" ----------
+
+export type UtilityKind = 'light' | 'gas' | 'water'
+
+export interface StreetStatus {
+  street: string
+  out: number
+  on: number
+}
+
+export interface UtilityStatus {
+  kind: UtilityKind
+  out: number
+  on: number
+  /** how many neighbours answered at all — silence is not the same as "fine" */
+  answered: number
+  my_state: 'out' | 'on' | null
+  my_reported_at: string | null
+  /** when the current episode began, or null if nothing is out */
+  since: string | null
+  streets: StreetStatus[]
+}
+
+export interface UtilityWindow {
+  id: number
+  kind: UtilityKind
+  starts_at: string
+  ends_at: string
+  note: string | null
+}
+
+export interface UtilityBoard {
+  statuses: UtilityStatus[]
+  windows: UtilityWindow[]
+}
+
+export interface OutageSession {
+  start: string
+  end: string
+  minutes: number
+  /** no "it's back" report ever arrived; the end is the 12-hour cap */
+  estimated: boolean
+}
+
+export interface UtilityLog {
+  kind: UtilityKind
+  month: string
+  cuts: number
+  hours: number
+  sessions: OutageSession[]
+}

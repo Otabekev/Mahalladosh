@@ -28,6 +28,7 @@ from .routers import (
     services,
     uploads,
     users,
+    utility,
 )
 from .routers.uploads import UPLOAD_DIR, check_uploads_durable
 from .scheduler import run_sweep, scheduler_loop
@@ -81,7 +82,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for module in (auth, geo, mahallas, households, posts, proposals, services, admin, notifications, uploads, me, reports, raisi, users, search):
+for module in (auth, geo, mahallas, households, posts, proposals, services, admin, notifications, uploads, me, reports, raisi, users, search, utility):
     app.include_router(module.router, prefix="/api")
 
 app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")

@@ -185,6 +185,46 @@ CATALOG: dict[str, dict[str, str]] = {
         "ru": "📬 На этой неделе в махалле: {posts} объявл. · {helped} помощь · {neighbours} новых соседей",
         "en": "📬 This week in your mahalla: {posts} posts · {helped} helped · {neighbours} new neighbours",
     },
+    # ---------- utilities («Chiroq bormi?») ----------
+    # The unplanned alerts say how many HOUSEHOLDS are dark, not how many people
+    # tapped: a family of four on four phones is one dark house, and a count that
+    # said "4" would quietly turn a fuse into a street-wide failure.
+    "utility_out_light": {
+        "uz": "💡 {count} xonadonda yorug'lik yo'q",
+        "uzc": "💡 {count} хонадонда ёруғлик йўқ",
+        "ru": "💡 В {count} домах нет света",
+        "en": "💡 {count} households have no electricity",
+    },
+    "utility_out_gas": {
+        "uz": "🔥 {count} xonadonda gaz yo'q",
+        "uzc": "🔥 {count} хонадонда газ йўқ",
+        "ru": "🔥 В {count} домах нет газа",
+        "en": "🔥 {count} households have no gas",
+    },
+    "utility_out_water": {
+        "uz": "💧 {count} xonadonda suv yo'q",
+        "uzc": "💧 {count} хонадонда сув йўқ",
+        "ru": "💧 В {count} домах нет воды",
+        "en": "💧 {count} households have no water",
+    },
+    "utility_planned_light": {
+        "uz": "💡 {date} kuni {from}–{to} yorug'lik o'chiriladi",
+        "uzc": "💡 {date} куни {from}–{to} ёруғлик ўчирилади",
+        "ru": "💡 {date} с {from} до {to} отключат свет",
+        "en": "💡 Power off on {date}, {from}–{to}",
+    },
+    "utility_planned_gas": {
+        "uz": "🔥 {date} kuni {from}–{to} gaz bo'lmaydi",
+        "uzc": "🔥 {date} куни {from}–{to} газ бўлмайди",
+        "ru": "🔥 {date} с {from} до {to} не будет газа",
+        "en": "🔥 No gas on {date}, {from}–{to}",
+    },
+    "utility_planned_water": {
+        "uz": "💧 {date} kuni {from}–{to} suv bo'lmaydi",
+        "uzc": "💧 {date} куни {from}–{to} сув бўлмайди",
+        "ru": "💧 {date} с {from} до {to} не будет воды",
+        "en": "💧 No water on {date}, {from}–{to}",
+    },
 }
 
 _PLACEHOLDER = re.compile(r"\{(\w+)\}")
