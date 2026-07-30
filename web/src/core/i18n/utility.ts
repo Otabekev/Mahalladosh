@@ -124,7 +124,7 @@ export const utilityStrings = {
 
   // the solo half — works with nobody else on the app
   logTitle: {
-    uz: 'Sizning tariximgiz',
+    uz: 'Sizning tarixingiz',
     uzc: 'Сизнинг тарихингиз',
     ru: 'Ваша история',
     en: 'Your record',

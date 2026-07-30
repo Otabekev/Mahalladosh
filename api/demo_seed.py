@@ -189,7 +189,7 @@ def run():
     post("otabek", "taziya", "Rustam ota Ergashaliyev", 60 * 24 * 9,
          event_date=NOW - timedelta(days=9) + timedelta(hours=4),
          place="Yoshlik masjidi",
-         body="Uch kun eshik ochiq. Alloh rahmat qilsin.")
+         body="Uch kun eshik ochiq — barcha qo'shnilar kutamiz.")
     # and a resolved emergency, which shows the lifecycle rather than just the siren
     post("sardor", "shoshilinch", "Qora sigir yo'qoldi — 3-ko'cha tomonda",
          60 * 24 * 2, category="livestock", status="closed",

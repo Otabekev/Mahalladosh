@@ -82,19 +82,28 @@ These blocked the first deployment with real users, regardless of feature progre
 - Privilege audit — 11 findings fixed, the rest triaged
   ([SECURITY-AUDIT.md](SECURITY-AUDIT.md))
 
-**Diaspora follower mode — designed, deliberately deferred.** Uzbeks abroad
-following the mahalla they left is the intended paid tier. The design is settled: a
-follower is a read-only spectator who sees `share` posts *and nothing else*, because
-`share` is the only post type whose author was told, in their own language and at the
-moment of writing, that it travels beyond the mahalla. Help requests, events, charity
-and family content were written for neighbours, and a remote audience for them is not
-something the authors consented to.
+**Away members — built, and built differently than planned.** Uzbeks abroad
+following the mahalla they left was the intended paid tier, and it sat deferred
+because its failure mode is a privacy incident rather than a broken screen.
 
-It is not built yet because it is the one feature here whose failure mode is a privacy
-incident rather than a broken screen, and it wants a proper security review — plus an
-answer to a pre-existing gap it would put a product on: `GET /mahallas/{id}` currently
-returns any mahalla's name, member count and raisi to any signed-in account. A
-half-built follower mode with a leak is far worse than this paragraph.
+The original design was a read-only spectator who sees `share` posts and nothing
+else. Building it inverted that on both axes. `share` posts turned out to be the
+WORST candidate to send abroad — they are photographs of neighbours' faces and
+courtyards, and a photo directory is still a directory. What actually belongs outside
+the mahalla is the structured news a family needs: announcements, ta'ziya, events and
+charity, with the author stripped, because a feed of names is a directory too.
+
+The bigger change is structural. A "read-only spectator" implemented as a flag on the
+user fails OPEN: one route that forgets to check it hands someone abroad the whole
+village. So an away member is not a mahalla member at all — `User.mahalla_id` stays
+null, `require_member` rejects them, and every endpoint in the app refuses them
+without knowing the feature exists. Their entire reachable surface is one small
+router. Verified in practice: two features built *after* it (the price board and the
+utility board) return 403 to an away account without a line of code being written for
+them.
+
+Still open, and unrelated to this: `GET /mahallas/{id}` returns any mahalla's name,
+member count and raisi to any signed-in account.
 
 ---
 
