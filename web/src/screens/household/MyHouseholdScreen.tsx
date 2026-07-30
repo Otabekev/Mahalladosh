@@ -250,24 +250,82 @@ export function HistoryProse({
 }
 
 /** Xonadon a'zolari — member rows on cream cards; elders get the honour ring. */
-export function MembersRead({ members }: { members: HouseholdMember[] }) {
+/** Shajara — the family laid out as a lineage rather than a list.
+ *
+ *  A flat stack of cards says "these people share an address". A spine with the
+ *  elders at its head says "this is a line of a family", which is the thing this
+ *  app is actually about and the reason someone photographs this screen.
+ *
+ *  HONEST LIMIT: the model stores no parent/child edges — a HouseholdMember has a
+ *  name and an is_elder flag, nothing more. So this is not a genealogical tree and
+ *  does not pretend to be one. It is a spine ordered elders-first, with the years
+ *  on the street marked at its head. Inventing edges the data does not have would
+ *  look richer and be a lie.
+ *
+ *  Kept modern by drawing a DIAGRAM, not a tree: hairline spine, no leaves, no
+ *  wood, no scrollwork. The ornament is a girih wash at 5% and nothing else.
+ */
+export function MembersRead({
+  members,
+  generations,
+}: {
+  members: HouseholdMember[]
+  generations?: number | null
+}) {
   const s = useStrings(householdStrings)
   if (members.length === 0) return null
+  // elders head the line; everyone else keeps the order the family entered them
+  const ordered = [...members].sort((a, b) => Number(b.is_elder) - Number(a.is_elder))
+
   return (
     <div>
       <h2 className="mb-3 font-display text-[21px] font-bold text-ink">{s.membersTitle}</h2>
-      <div className="space-y-2.5">
-        {members.map((m) => (
-          <div key={m.id} className="flex items-center gap-3.5 rounded-2xl border border-line bg-card px-3.5 py-3">
-            <Avatar name={m.full_name} size={m.is_elder ? 58 : 52} honor={m.is_elder} />
-            <div className="min-w-0 flex-1">
-              <div className="truncate font-bold text-ink" style={{ fontSize: m.is_elder ? 19 : 18 }}>
-                {m.full_name}
-              </div>
-              {m.is_elder && <div className="text-[15px] font-semibold text-honor-deep">{s.elderBadge}</div>}
+
+      <div className="relative overflow-hidden rounded-2xl rounded-t-[26px] border border-line bg-card">
+        <div className="girih pointer-events-none absolute inset-0" aria-hidden />
+
+        <div className="relative px-4 py-4">
+          {generations != null && generations > 0 && (
+            <div className="mb-3 flex items-center gap-2.5 pl-[26px]">
+              <span className="rounded-full bg-gold-soft px-2.5 py-1 text-[13px] font-bold text-honor-deep">
+                {fmt(s.generationsBadge, { n: generations })}
+              </span>
             </div>
-          </div>
-        ))}
+          )}
+
+          <ul className="relative space-y-3">
+            {/* the spine — one hairline the whole family hangs from */}
+            <span
+              className="absolute left-[7px] top-2 bottom-2 w-px bg-line"
+              aria-hidden
+            />
+            {ordered.map((m) => (
+              <li key={m.id} className="relative flex items-center gap-3.5 pl-[26px]">
+                {/* node + branch */}
+                <span
+                  aria-hidden
+                  className={`absolute left-0 top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full border-2 ${
+                    m.is_elder ? 'border-honor bg-gold-soft' : 'border-line bg-card'
+                  }`}
+                />
+                <span className="absolute left-[15px] top-1/2 h-px w-[11px] bg-line" aria-hidden />
+
+                <Avatar name={m.full_name} size={m.is_elder ? 56 : 48} honor={m.is_elder} />
+                <div className="min-w-0 flex-1">
+                  <div
+                    className="truncate font-bold text-ink"
+                    style={{ fontSize: m.is_elder ? 19 : 17 }}
+                  >
+                    {m.full_name}
+                  </div>
+                  {m.is_elder && (
+                    <div className="text-[14px] font-semibold text-honor-deep">{s.elderBadge}</div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   )
@@ -451,7 +509,7 @@ function ReadMode({ household, onEdit }: { household: Household; onEdit: () => v
       <div className="mt-6 space-y-7">
         <AlbumStrip household={household} editable />
         <HistoryProse history={household.family_history} verified={verified} own />
-        <MembersRead members={household.members} />
+        <MembersRead members={household.members} generations={household.generations_here} />
         <JoinRequestsSection id={household.id} />
 
         {!verified && (

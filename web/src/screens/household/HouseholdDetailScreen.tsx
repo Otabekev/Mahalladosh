@@ -70,7 +70,7 @@ export default function HouseholdDetailScreen() {
       <div className="mt-6 space-y-7">
         <AlbumStrip household={household} />
         <HistoryProse history={household.family_history} verified={verified} own={false} />
-        <MembersRead members={household.members} />
+        <MembersRead members={household.members} generations={household.generations_here} />
 
         {!isMine && me != null && me.user.household_id == null && (
           <JoinClaimCard household={household} />

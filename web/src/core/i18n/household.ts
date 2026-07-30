@@ -319,4 +319,10 @@ export const householdStrings = {
     ru: 'Выберите себя из списка',
     en: 'Pick yourself from the list',
   },
+  generationsBadge: {
+    uz: '{n} avlod shu ostonada',
+    uzc: '{n} авлод шу остонада',
+    ru: '{n} поколения на этом пороге',
+    en: '{n} generations on this doorstep',
+  },
 } satisfies Dict

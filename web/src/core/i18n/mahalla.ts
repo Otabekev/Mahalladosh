@@ -168,4 +168,10 @@ export const mahallaStrings = {
     ru: 'Баллы — это знак уважения. В конце месяца самого активного соседа чествуют.',
     en: 'Points are a mark of respect. At the end of the month, the most active neighbor is honored.',
   },
+  mahallaSuffixShort: {
+    uz: '{name} mahallasi',
+    uzc: '{name} маҳалласи',
+    ru: 'махалля {name}',
+    en: '{name} mahalla',
+  },
 } satisfies Dict

@@ -97,7 +97,18 @@ function MahallaHeader({ data }: { data: MahallaDetail }) {
 }
 
 /** Gold medallion award card, overlapping the header. */
-function FaolQoshniHero({ entry }: { entry: LeaderboardEntry }) {
+/** The month's honoured neighbour, as a CERTIFICATE rather than a banner.
+ *
+ *  A podium is a Western sports metaphor. Uzbek culture takes formal honour
+ *  seriously — a diploma on the wall, a name read out — so the surface that says
+ *  "the mahalla noticed what you did" should carry that register.
+ *
+ *  Three things do the work, and none of them is more ornament: an inset double
+ *  hairline frame (the diploma convention, drawn at 1px so it reads as restraint),
+ *  the name set in the display serif instead of the UI sans, and the mahalla's own
+ *  name beneath it. Formality comes from typography and framing; adding scrollwork
+ *  would tip it straight into kitsch. */
+function FaolQoshniHero({ entry, mahallaName }: { entry: LeaderboardEntry; mahallaName?: string }) {
   const s = useStrings(mahallaStrings)
   return (
     <div
@@ -112,7 +123,19 @@ function FaolQoshniHero({ entry }: { entry: LeaderboardEntry }) {
         style={{ backgroundImage: WHITE_GIRIH }}
         aria-hidden
       />
-      <div className="relative text-center px-6 py-5" style={{ color: '#4a2e05' }}>
+      {/* the certificate frame — two hairlines inset from the card edge */}
+      <div
+        className="pointer-events-none absolute inset-[10px] rounded-[16px]"
+        style={{ border: '1px solid rgba(255,246,224,.55)' }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-[14px] rounded-[13px]"
+        style={{ border: '1px solid rgba(74,46,5,.18)' }}
+        aria-hidden
+      />
+
+      <div className="relative text-center px-7 py-6" style={{ color: '#4a2e05' }}>
         <div
           className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-bold uppercase tracking-wide"
           style={{ backgroundColor: 'rgba(74,46,5,.16)' }}
@@ -133,9 +156,20 @@ function FaolQoshniHero({ entry }: { entry: LeaderboardEntry }) {
             </div>
           </div>
         </div>
-        <div className="font-bold text-[26px] mt-3" style={{ color: '#3a2404' }}>
+        <div
+          className="font-display mt-3 text-[30px] font-bold leading-tight"
+          style={{ color: '#3a2404' }}
+        >
           {entry.user.full_name}
         </div>
+        {mahallaName && (
+          <div
+            className="mt-0.5 text-[13px] font-semibold uppercase tracking-[0.14em]"
+            style={{ color: 'rgba(74,46,5,.62)' }}
+          >
+            {fmt(s.mahallaSuffixShort, { name: mahallaName })}
+          </div>
+        )}
         <div
           className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 mt-2.5 font-bold text-[16px]"
           style={{ background: '#4a2e05', color: '#F6DFA6' }}
@@ -486,7 +520,7 @@ export default function MahallaScreen() {
         </button>
       )}
 
-      {data.faol_qoshni && <FaolQoshniHero entry={data.faol_qoshni} />}
+      {data.faol_qoshni && <FaolQoshniHero entry={data.faol_qoshni} mahallaName={data.name} />}
 
       <div className="mt-5 space-y-4">
         <div className="flex gap-2">
