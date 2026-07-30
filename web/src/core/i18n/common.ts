@@ -76,4 +76,6 @@ export const postTypeLabels: Record<string, Entry> = {
   newcomer: { uz: "Yangi qo'shni", uzc: 'Янги қўшни', ru: 'Новый сосед', en: 'New neighbor' },
   share: { uz: 'Ulashish', uzc: 'Улашиш', ru: 'Пост', en: 'Share' },
   poll: { uz: "So'rovnoma", uzc: 'Сўровнома', ru: 'Опрос', en: 'Poll' },
+  taziya: { uz: "Ta'ziya", uzc: 'Таъзия', ru: 'Соболезнование', en: 'Bereavement' },
+  shoshilinch: { uz: 'Shoshilinch', uzc: 'Шошилинч', ru: 'Срочно', en: 'Urgent' },
 }

@@ -319,7 +319,17 @@ class DingDongOut(BaseModel):
 
 # ---------- posts ----------
 
-PostType = Literal["help", "announcement", "charity", "event", "newcomer", "share", "poll"]
+PostType = Literal[
+    "help", "announcement", "charity", "event", "newcomer", "share", "poll",
+    # «Xabar bering» — the two obligation-grade broadcasts (see routers/posts.py)
+    "taziya",  # a death in the mahalla; attendance is a duty, not an invitation
+    "shoshilinch",  # an emergency happening right now
+]
+
+# help categories and emergency categories share one column; which set is legal
+# depends on the type, and the router enforces that.
+HELP_CATEGORIES = ("tool", "ride", "labor", "childcare", "other")
+EMERGENCY_CATEGORIES = ("fire", "medical", "missing", "livestock", "other")
 
 POLL_MIN_OPTIONS = 2
 POLL_MAX_OPTIONS = 5  # more than this stops being a *quick* poll
@@ -330,8 +340,13 @@ class PostIn(BaseModel):
     # share posts don't need a title (derived from body); others require one
     title: str | None = Field(default=None, max_length=200)
     body: str | None = Field(default=None, max_length=4000)
-    category: Literal["tool", "ride", "labor", "childcare", "other"] | None = None
+    category: (
+        Literal["tool", "ride", "labor", "childcare", "other"]
+        | Literal["fire", "medical", "missing", "livestock"]
+        | None
+    ) = None
     event_date: datetime | None = None
+    place: str | None = Field(default=None, max_length=200)
     goal: str | None = Field(default=None, max_length=200)
     # charity: the target, in whole so'm. Set once at creation.
     goal_amount: int | None = Field(default=None, ge=0, le=10_000_000_000)
@@ -403,6 +418,7 @@ class PostOut(BaseModel):
     body: str | None = None
     category: str | None = None
     event_date: datetime | None = None
+    place: str | None = None
     goal: str | None = None
     image_url: str | None = None
     status: str

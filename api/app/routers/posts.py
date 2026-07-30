@@ -15,9 +15,69 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 TYPE_EMOJI = {
     "help": "🤝", "announcement": "📢", "charity": "❤️",
     "event": "🎉", "share": "📷", "poll": "📊",
+    "taziya": "🕊", "shoshilinch": "🚨",
 }
 
 POST_PHOTO_CAP = 6
+
+# ---------- «Xabar bering»: the two obligation-grade broadcasts ----------
+#
+# These two types are different in kind from everything else in the feed. A help
+# request is an invitation; a ta'ziya is a duty. In an Uzbek mahalla the gates of a
+# bereaved house stand open for three days and any neighbour may enter — missing it
+# because nobody told you is a real social injury, and the current mechanism (a phone
+# tree) is slow and drops people. That is the gap these fill.
+#
+# Because they are duties, they are also the loudest thing the app can do: both DM
+# every member immediately. So each carries a guard proportionate to its harm.
+#
+# TA'ZIYA is gated on a VERIFIED household. A false death notice is not spam, it is a
+# desecration, and it would reach every phone in the mahalla before anyone could stop
+# it. Requiring the author's family to have been vouched for by neighbours costs a
+# genuine announcer nothing — the family is always known — and makes the abuse need a
+# real, traceable identity first. The raisi and platform admins pass regardless, so a
+# household that has not registered yet is never left unable to announce a death.
+#
+# SHOSHILINCH is deliberately NOT gated. A fire is a fire, and a newcomer whose house
+# is burning must not be told to get vouched for first. Its protection is different:
+# it is closable, reportable, and short-lived on the feed.
+EMERGENCY_CATEGORIES = set(schemas.EMERGENCY_CATEGORIES)
+HELP_CATEGORIES = set(schemas.HELP_CATEGORIES)
+
+# Which category set each type may draw from. Both sets live in ONE column, so
+# without this a help request could be filed under "fire" and an emergency under
+# "childcare" — nonsense pairs that Pydantic cannot reject on its own, because the
+# legal set depends on a sibling field.
+CATEGORY_SETS = {"help": HELP_CATEGORIES, "shoshilinch": EMERGENCY_CATEGORIES}
+
+
+def _is_steward(db: Session, user: models.User) -> bool:
+    """The raisi of one's own mahalla, or a platform admin."""
+    if user.is_admin:
+        return True
+    m = db.get(models.Mahalla, user.mahalla_id)
+    return m is not None and m.raisi_user_id == user.id
+
+
+def _check_broadcast(db: Session, data: schemas.PostIn, user: models.User) -> None:
+    """Validate the two broadcast types before anything is written."""
+    if data.type == "taziya":
+        if data.event_date is None:
+            raise HTTPException(status_code=400, detail="Janoza vaqtini kiriting")
+        household = db.get(models.Household, user.household_id) if user.household_id else None
+        verified = household is not None and household.verification_status == "verified"
+        if not verified and not _is_steward(db, user):
+            raise HTTPException(
+                status_code=403,
+                detail="Ta'ziya e'lonini tasdiqlangan xonadon yoki raisi bera oladi",
+            )
+    elif data.type == "shoshilinch":
+        if data.category not in EMERGENCY_CATEGORIES:
+            raise HTTPException(status_code=400, detail="Shoshilinch turini tanlang")
+
+    allowed = CATEGORY_SETS.get(data.type)
+    if allowed is not None and data.category is not None and data.category not in allowed:
+        raise HTTPException(status_code=400, detail="Bu tur uchun noto'g'ri toifa")
 
 # One screenful and a bit. Small enough that a village connection returns something
 # quickly, large enough that most people never need a second page.
@@ -154,6 +214,7 @@ def post_out(
         body=p.body,
         category=p.category,
         event_date=p.event_date,
+        place=p.place,
         goal=p.goal,
         image_url=p.image_path,
         status=p.status,
@@ -326,6 +387,7 @@ def create_post(
         raise HTTPException(status_code=400, detail="Yordam turini tanlang")
     if data.type == "event" and data.event_date is None:
         raise HTTPException(status_code=400, detail="Sanani kiriting")
+    _check_broadcast(db, data, user)
 
     options: list[str] = []
     if data.type == "poll":
@@ -356,6 +418,7 @@ def create_post(
         body=data.body,
         category=data.category,
         event_date=data.event_date,
+        place=(data.place or "").strip() or None,
         goal=data.goal,
         charity_goal_amount=data.goal_amount if data.type == "charity" else None,
         image_path=photos[0] if photos else None,  # cover = first
@@ -367,7 +430,27 @@ def create_post(
         db.add(models.PollOption(post_id=post.id, text=text[:80], position=position))
     # share posts don't ping the whole mahalla — they're browse-content, not a
     # call to action; the structured types keep their fan-out
-    if post.type != "share":
+    if post.type in ("taziya", "shoshilinch"):
+        # Their own copy, not the generic "{name} posted {title}". A death notice
+        # that arrives reading "📌 Founder Aka: Rustam ota" is a small cruelty, and
+        # the DM has to carry the janoza time because that is what people act on
+        # without opening anything.
+        notify.notify_mahalla(
+            db,
+            user.mahalla_id,
+            post.type,
+            link=f"/app/posts/{post.id}",
+            exclude=[user.id],
+            event={"taziya": "taziya_posted", "shoshilinch": "emergency_posted"}[post.type],
+            # an emergency has no scheduled time — it is happening now — so it takes
+            # {name} alone rather than a message ending in a dangling separator
+            params=(
+                {"name": post.title, "when": post.event_date.strftime("%d.%m %H:%M")}
+                if post.type == "taziya" and post.event_date
+                else {"name": post.title}
+            ),
+        )
+    elif post.type != "share":
         notify.notify_mahalla(
             db,
             user.mahalla_id,

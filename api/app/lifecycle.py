@@ -30,6 +30,14 @@ FEED_WINDOW = {
     "newcomer": timedelta(days=30),
     "share": timedelta(days=60),
     "poll": timedelta(days=14),  # a quick poll is stale quickly by definition
+    # Mourning has a calendar in Uzbek practice: the three days of open gates, then
+    # the yigirmasi (20th day) and the qirqi (40th day). 45 days keeps the notice on
+    # the feed through the last of those, so nobody misses a commemoration because
+    # the app quietly aged the death away after a week.
+    "taziya": timedelta(days=45),
+    # The opposite case: an emergency is either over or it is not, and a week-old
+    # "🚨" at the top of the feed teaches people to ignore the siren.
+    "shoshilinch": timedelta(days=7),
 }
 DEFAULT_WINDOW = timedelta(days=30)
 

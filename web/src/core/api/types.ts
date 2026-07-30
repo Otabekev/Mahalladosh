@@ -152,7 +152,19 @@ export interface HouseholdUpdate {
   visibility?: HouseholdVisibility
 }
 
-export type PostType = 'help' | 'announcement' | 'charity' | 'event' | 'newcomer' | 'share' | 'poll'
+export type PostType =
+  | 'help'
+  | 'announcement'
+  | 'charity'
+  | 'event'
+  | 'newcomer'
+  | 'share'
+  | 'poll'
+  // «Xabar bering» — the two obligation-grade broadcasts
+  | 'taziya'
+  | 'shoshilinch'
+
+export type EmergencyCategory = 'fire' | 'medical' | 'missing' | 'livestock' | 'other'
 export type HelpCategory = 'tool' | 'ride' | 'labor' | 'childcare' | 'other'
 export type PostStatus = 'open' | 'resolved' | 'closed'
 export type DiscoverScope = 'region' | 'country'
@@ -174,8 +186,10 @@ export interface PostIn {
   type: PostType
   title?: string | null
   body?: string | null
-  category?: HelpCategory | null
+  category?: HelpCategory | EmergencyCategory | null
   event_date?: string | null
+  /** Where it happens — the janoza place, the hashar meeting point. */
+  place?: string | null
   goal?: string | null
   /** Charity only: the target, in whole so'm. */
   goal_amount?: number | null
@@ -204,8 +218,9 @@ export interface Post {
   type: PostType
   title: string
   body: string | null
-  category: HelpCategory | null
+  category: HelpCategory | EmergencyCategory | null
   event_date: string | null
+  place: string | null
   goal: string | null
   image_url: string | null
   status: PostStatus

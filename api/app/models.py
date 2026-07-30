@@ -226,8 +226,13 @@ class Post(Base):
     body: Mapped[str | None] = mapped_column(Text)
     image_path: Mapped[str | None] = mapped_column(String(300))  # /api/uploads/<file>
 
-    category: Mapped[str | None] = mapped_column(String(30))  # help: tool|ride|labor|childcare|other
+    # help: tool|ride|labor|childcare|other · shoshilinch: fire|medical|missing|livestock|other
+    category: Mapped[str | None] = mapped_column(String(30))
     event_date: Mapped[datetime | None] = mapped_column(DateTime)
+    # Where it happens. Added for ta'ziya — a janoza notice without a place is not
+    # actionable — and it closes the same gap on events, which until now carried a
+    # time and no location at all.
+    place: Mapped[str | None] = mapped_column(String(200))
     goal: Mapped[str | None] = mapped_column(String(200))  # charity: what it is FOR, in words
 
     # Charity collections. Amounts are whole so'm as INTEGERS — never floats, because

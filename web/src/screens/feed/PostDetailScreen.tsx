@@ -18,6 +18,7 @@ import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { feedStrings } from '@/core/i18n/feed'
 import { raisiStrings } from '@/core/i18n/raisi'
+import { broadcastStrings } from '@/core/i18n/broadcast'
 import { useConfirm } from '@/components/confirm'
 import { useBack } from '@/components/useBack'
 import { RahmatButton } from '@/components/RahmatButton'
@@ -334,6 +335,7 @@ export default function PostDetailScreen() {
   const s = useStrings(feedStrings)
   const c = useStrings(common)
   const r = useStrings(raisiStrings)
+  const bStrings = useStrings(broadcastStrings)
   const confirm = useConfirm()
   const back = useBack()
   const navigate = useNavigate()
@@ -493,6 +495,7 @@ export default function PostDetailScreen() {
           </div>
         )}
         {post.event_date && <p className="text-sm text-sub mt-2">📅 {formatEventDate(post.event_date)}</p>}
+        {post.place && <p className="text-sm text-sub mt-1">📍 {post.place}</p>}
         {post.goal && <p className="text-sm text-sub mt-1">🎯 {post.goal}</p>}
         <div className="flex items-center gap-2 mt-4 pt-3 border-t border-line">
           <button onClick={() => goProfile(post.author.id)} className="shrink-0 rounded-full">
@@ -576,13 +579,20 @@ export default function PostDetailScreen() {
       )}
 
       {/* author controls */}
-      {post.status === 'open' && isAuthor && (
+      {/* A ta'ziya is never "finished" or "resolved" — it simply ages out of the
+          feed on the mourning calendar. Offering the author a Yakunlash button on a
+          death notice would be grotesque, so these controls skip that one type. */}
+      {post.status === 'open' && isAuthor && post.type !== 'taziya' && (
         <div className="flex flex-col gap-2 mb-3">
           {resolve.error && <ErrorNote message={resolve.error.message} />}
           {closePost.error && <ErrorNote message={closePost.error.message} />}
           {post.type === 'help' ? (
             <Button variant="gold" full onClick={() => setModalOpen(true)}>
               {s.markResolved}
+            </Button>
+          ) : post.type === 'shoshilinch' ? (
+            <Button variant="secondary" full onClick={finishWithoutHelper} loading={resolve.isPending}>
+              {bStrings.emergencyOver}
             </Button>
           ) : (
             <Button variant="secondary" full onClick={finishWithoutHelper} loading={resolve.isPending}>

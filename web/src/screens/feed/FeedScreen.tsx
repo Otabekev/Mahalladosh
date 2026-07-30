@@ -19,6 +19,7 @@ import { fmt, useStrings } from '@/core/i18n'
 import { feedStrings } from '@/core/i18n/feed'
 import { raisiStrings } from '@/core/i18n/raisi'
 import { RahmatButton } from '@/components/RahmatButton'
+import { TaziyaCard, EmergencyCard } from './BroadcastCards'
 import { PullToRefresh } from '@/components/PullToRefresh'
 import { PollCard } from '@/components/PollCard'
 import { CharityBar } from '@/components/CharityBar'
@@ -230,6 +231,12 @@ function HelpCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
 }
 
 function FeedCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
+  // A ta'ziya keeps its own card even after the mourning period — it must never
+  // fall back to the ordinary warm card and sit in the feed looking like an
+  // announcement about a person.
+  if (post.type === 'taziya') return <TaziyaCard post={post} onOpen={onOpen} />
+  if (post.type === 'shoshilinch' && post.status === 'open')
+    return <EmergencyCard post={post} onOpen={onOpen} />
   return post.type === 'help' && post.status === 'open' ? (
     <HelpCard post={post} onOpen={onOpen} />
   ) : (

@@ -18,9 +18,10 @@ import {
 import { fmt, useStrings } from '@/core/i18n'
 import { common } from '@/core/i18n/common'
 import { feedStrings } from '@/core/i18n/feed'
+import { broadcastStrings } from '@/core/i18n/broadcast'
 import { formatSom } from '@/components/CharityBar'
 import { useCreatePost } from '@/core/queries/posts'
-import type { HelpCategory, PostIn, PostType } from '@/core/api/types'
+import type { EmergencyCategory, HelpCategory, PostIn, PostType } from '@/core/api/types'
 
 type CreatableType = Exclude<PostType, 'newcomer'>
 
@@ -37,6 +38,24 @@ const TYPE_OPTIONS: { type: Exclude<CreatableType, 'share'>; descKey: FeedKey; p
   { type: 'poll', descKey: 'pollDesc', placeholderKey: 'pollPlaceholder' },
 ]
 
+type BroadKey = keyof typeof broadcastStrings
+
+/** The two obligation-grade broadcasts, kept in their own group. They are duties
+ *  rather than everyday posts, and listing them beside "Ulashish" would invite
+ *  someone to reach for 🚨 when they meant 📢. */
+const BROADCAST_OPTIONS: { type: 'taziya' | 'shoshilinch'; descKey: BroadKey }[] = [
+  { type: 'shoshilinch', descKey: 'shoshilinchDesc' },
+  { type: 'taziya', descKey: 'taziyaDesc' },
+]
+
+const EMERGENCY_CATEGORIES: { value: EmergencyCategory; labelKey: BroadKey }[] = [
+  { value: 'fire', labelKey: 'catFire' },
+  { value: 'medical', labelKey: 'catMedical' },
+  { value: 'missing', labelKey: 'catMissing' },
+  { value: 'livestock', labelKey: 'catLivestock' },
+  { value: 'other', labelKey: 'catOther' },
+]
+
 const HELP_CATEGORIES: { value: HelpCategory; labelKey: FeedKey }[] = [
   { value: 'tool', labelKey: 'catTool' },
   { value: 'ride', labelKey: 'catRide' },
@@ -49,6 +68,7 @@ export default function CreatePostScreen() {
   const navigate = useNavigate()
   const create = useCreatePost()
   const s = useStrings(feedStrings)
+  const b = useStrings(broadcastStrings)
   const c = useStrings(common)
   const typeLabel = usePostTypeLabel()
 
@@ -56,7 +76,9 @@ export default function CreatePostScreen() {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [category, setCategory] = useState<HelpCategory>('tool')
+  const [emergency, setEmergency] = useState<EmergencyCategory>('fire')
   const [eventDate, setEventDate] = useState('')
+  const [place, setPlace] = useState('')
   const [goal, setGoal] = useState('')
   const [goalAmount, setGoalAmount] = useState('')
   const [images, setImages] = useState<string[]>([])
@@ -94,6 +116,33 @@ export default function CreatePostScreen() {
             )
           })}
         </div>
+
+        {/* Set apart, below, and quieter than the everyday types. These reach every
+            phone in the mahalla the moment they are sent. */}
+        <div className="mt-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-sub mb-1">
+            {b.sectionTitle}
+          </p>
+          <p className="text-xs text-sub/80 mb-2">{b.sectionNote}</p>
+          <div className="grid grid-cols-1 gap-2">
+            {BROADCAST_OPTIONS.map((opt) => {
+              const bMeta = POST_TYPE_META[opt.type]
+              return (
+                <Card
+                  key={opt.type}
+                  className="p-4 flex items-center gap-4 border-brand/25"
+                  onClick={() => setType(opt.type)}
+                >
+                  <span className="text-2xl">{bMeta.icon}</span>
+                  <div>
+                    <div className="font-bold text-ink">{typeLabel(opt.type)}</div>
+                    <div className="text-sm text-sub">{b[opt.descKey]}</div>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
       </div>
     )
   }
@@ -107,7 +156,10 @@ export default function CreatePostScreen() {
       ? body.trim().length > 0 || images.length > 0
       : type === 'poll'
         ? title.trim().length >= 3 && filledOptions.length >= POLL_MIN_OPTIONS
-        : title.trim().length >= 3
+        : // a janoza notice without a time is not actionable, so the button waits
+          type === 'taziya'
+          ? title.trim().length >= 3 && eventDate.length > 0
+          : title.trim().length >= 3
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -118,7 +170,10 @@ export default function CreatePostScreen() {
     } else {
       input.title = title.trim()
       if (type === 'help') input.category = category
-      if (type === 'event' && eventDate) input.event_date = new Date(eventDate).toISOString()
+      if (type === 'shoshilinch') input.category = emergency
+      if ((type === 'event' || type === 'taziya') && eventDate)
+        input.event_date = new Date(eventDate).toISOString()
+      if ((type === 'event' || type === 'taziya') && place.trim()) input.place = place.trim()
       if (type === 'charity' && goal.trim()) input.goal = goal.trim()
       if (type === 'charity') {
         const amount = Number(goalAmount.replace(/\D/g, '') || '0')
@@ -181,7 +236,15 @@ export default function CreatePostScreen() {
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={option ? s[option.placeholderKey] : undefined}
+                  placeholder={
+                    type === 'taziya'
+                      ? b.taziyaNamePlaceholder
+                      : type === 'shoshilinch'
+                        ? b.shoshilinchPlaceholder
+                        : option
+                          ? s[option.placeholderKey]
+                          : undefined
+                  }
                   maxLength={200}
                   autoFocus
                 />
@@ -199,10 +262,40 @@ export default function CreatePostScreen() {
                 </Field>
               )}
 
-              {type === 'event' && (
-                <Field label={s.fieldDate}>
+              {type === 'shoshilinch' && (
+                <Field label={b.fieldEmergencyType} hint={b.callWarning}>
+                  <Select
+                    value={emergency}
+                    onChange={(e) => setEmergency(e.target.value as EmergencyCategory)}
+                  >
+                    {EMERGENCY_CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {b[cat.labelKey]}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+
+              {(type === 'event' || type === 'taziya') && (
+                <Field label={type === 'taziya' ? b.fieldJanoza : s.fieldDate}>
                   <Input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
                 </Field>
+              )}
+
+              {(type === 'event' || type === 'taziya') && (
+                <Field label={b.fieldPlace}>
+                  <Input
+                    value={place}
+                    onChange={(e) => setPlace(e.target.value)}
+                    placeholder={b.placePlaceholder}
+                    maxLength={200}
+                  />
+                </Field>
+              )}
+
+              {type === 'taziya' && (
+                <p className="-mt-1 mb-4 text-xs text-sub/85 leading-relaxed">{b.taziyaGateWhy}</p>
               )}
 
               {type === 'charity' && (

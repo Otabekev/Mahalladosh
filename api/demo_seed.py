@@ -179,7 +179,22 @@ def run():
                  event_date=NOW + timedelta(days=6), body="Guzardagi choyxonada, 18:00 da.")
     db.add(models.PostResponse(post_id=yigin.id, user_id=users["sardor"].id))
     post("toshpolat", "announcement", "Shanba kuni umumiy hashar — 8:00 da guzarda", 600,
-         body="Ko'chani obodonlashtiriamiz. Barcha xonadonlardan bir kishi kutamiz.")
+         body="Ko'chani obodonlashtiriamiz. Barcha xonadonlardan bir kishi kutamiz.",
+         place="Guzar oldida")
+
+    # ---- «Xabar bering»: one of each, so both cards are visible in the demo ----
+    # The ta'ziya is placed nine days back on purpose: past the three days of open
+    # gates but well inside the mourning calendar, which is the state the card
+    # spends most of its life in.
+    post("otabek", "taziya", "Rustam ota Ergashaliyev", 60 * 24 * 9,
+         event_date=NOW - timedelta(days=9) + timedelta(hours=4),
+         place="Yoshlik masjidi",
+         body="Uch kun eshik ochiq. Alloh rahmat qilsin.")
+    # and a resolved emergency, which shows the lifecycle rather than just the siren
+    post("sardor", "shoshilinch", "Qora sigir yo'qoldi — 3-ko'cha tomonda",
+         60 * 24 * 2, category="livestock", status="closed",
+         resolved_at=NOW - timedelta(days=2) + timedelta(hours=3),
+         body="Topildi, rahmat qo'shnilar! Guzar orqasidagi maysazorda ekan.")
     hashar = post("gulnora", "share", "O'tgan hashardan xotira 💚", 1440, body="O'tgan hashardan xotira",
                   image_path=img("post_hashar.jpg"))
     db.add(models.PostResponse(post_id=hashar.id, user_id=users["otabek"].id, message="Ajoyib kun edi"))

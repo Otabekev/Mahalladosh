@@ -195,6 +195,11 @@ export const POST_TYPE_META: Record<string, { color: string; icon: string }> = {
   newcomer: { color: 'green', icon: '👋' },
   share: { color: 'gray', icon: '📷' },
   poll: { color: 'blue', icon: '📊' },
+  // A ta'ziya is grey on purpose. Every other pill competes for attention; this one
+  // must not — the card around it already carries the weight, and a bright badge on
+  // a death notice reads as decoration.
+  taziya: { color: 'gray', icon: '🕊' },
+  shoshilinch: { color: 'rose', icon: '🚨' },
 }
 
 /** Returns a resolver for localized post-type labels (re-renders on language change). */

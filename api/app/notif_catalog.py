@@ -185,6 +185,22 @@ CATALOG: dict[str, dict[str, str]] = {
         "ru": "📬 На этой неделе в махалле: {posts} объявл. · {helped} помощь · {neighbours} новых соседей",
         "en": "📬 This week in your mahalla: {posts} posts · {helped} helped · {neighbours} new neighbours",
     },
+    # ---------- «Xabar bering»: the obligation-grade broadcasts ----------
+    # A ta'ziya is not an invitation, so the copy does not read like one — no author
+    # byline, no "posted". The janoza time rides in the message itself because that
+    # is the fact people act on without opening anything.
+    "taziya_posted": {
+        "uz": "🕊 {name} vafot etdi. Janoza: {when}. Alloh rahmat qilsin.",
+        "uzc": "🕊 {name} вафот этди. Жаноза: {when}. Аллоҳ раҳмат қилсин.",
+        "ru": "🕊 {name} скончался(ась). Джаноза: {when}. Соболезнуем.",
+        "en": "🕊 {name} has passed away. Janoza: {when}.",
+    },
+    "emergency_posted": {
+        "uz": "🚨 Shoshilinch: {name}",
+        "uzc": "🚨 Шошилинч: {name}",
+        "ru": "🚨 Срочно: {name}",
+        "en": "🚨 Urgent: {name}",
+    },
     # ---------- utilities («Chiroq bormi?») ----------
     # The unplanned alerts say how many HOUSEHOLDS are dark, not how many people
     # tapped: a family of four on four phones is one dark house, and a count that
