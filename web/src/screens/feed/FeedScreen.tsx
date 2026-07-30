@@ -27,6 +27,7 @@ import { useAuth } from '@/core/stores/auth'
 import type { DiscoverScope, Post } from '@/core/api/types'
 import { BugunCard } from './BugunCard'
 import { OnboardingChecklistCard } from './OnboardingChecklistCard'
+import { WhyCard } from './WhyCard'
 import { UpcomingStrip } from './UpcomingStrip'
 
 type FeedTab = 'mahalla' | DiscoverScope
@@ -285,12 +286,19 @@ function MahallaFeed({ onOpen }: { onOpen: (id: number) => void }) {
       )}
       {feed.error && <ErrorNote message={feed.error.message} />}
 
+      {/* An empty feed is where a lone first neighbour decides whether to come
+          back. A "no posts yet" placeholder loses them; this answers why they
+          are here and gives them three things that work with nobody else
+          around. It vanishes as soon as the mahalla has anything to show. */}
       {!feed.isLoading && posts.length === 0 && (
-        <EmptyState
-          icon="📭"
-          title={s.emptyFeedTitle}
-          action={<Button onClick={() => navigate('/app/new')}>{s.emptyFeedAction}</Button>}
-        />
+        <>
+          <WhyCard />
+          <EmptyState
+            icon="📭"
+            title={s.emptyFeedTitle}
+            action={<Button onClick={() => navigate('/app/new')}>{s.emptyFeedAction}</Button>}
+          />
+        </>
       )}
 
       {posts.map((post) => <FeedCard key={post.id} post={post} onOpen={() => onOpen(post.id)} />)}
